@@ -76,31 +76,6 @@ When importing a `.gbxmodel` tag, the Toolkit will detect the shader type and as
 
 ---
 
-## Project Structure
-
-```
-GlyphFX/
-├── src/
-│   ├── common/
-│   │   ├── includes/       # Shared headers, macros, constants
-│   │   └── utils/          # Reusable functions across shaders
-│   ├── environment/        # shader_environment
-│   ├── model/              # shader_model
-│   └── transparent/
-│       ├── chicago/
-│       ├── chicago_extended/
-│       ├── generic/
-│       ├── glass/
-│       ├── meter/
-│       ├── plasma/
-│       └── water/
-├── examples/               # 3ds Max example scenes
-├── docs/                   # Extended documentation
-└── README.md
-```
-
----
-
 ## Preview
 
 > Screenshots and viewport comparisons coming soon.
@@ -112,14 +87,6 @@ GlyphFX/
 - **Halo CE Editing Kit** - Shader source provided by 343 Industries
 - **[Censhine](https://github.com/Sledmine/censhine)** - Decrypted shader reference, instrumental for the initial `shader_model` proof of concept
 - **Halo CE community** - For keeping this game alive all these years
-
----
-
-## License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-The original shader source code from the Halo CE Editing Kit is property of **343 Industries / Microsoft**. This project does not redistribute those files.
 
 ---
 

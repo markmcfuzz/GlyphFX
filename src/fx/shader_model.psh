@@ -1,0 +1,167 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/model.psh
+//
+// Pixel shader for shader_model.
+// ----------------------------------------------------------------------------
+
+float4 PS_Main(PS_INPUT i) : SV_TARGET
+{
+    // --- Lighting vectors ---
+    float3 N  = normalize(i.wNormal);
+    float3 Ln = normalize(i.lampVec);
+    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+
+    float NdotL      = saturate(dot(N,  Ln));
+    float NdotL_fill = saturate(dot(N, -Ln));
+    float NdotV      = saturate(dot(N,  V));
+
+    float3 diffuse_light_base = AmbientColor.rgb
+                              + LampColor * LampIntensity * NdotL
+                              + FillLightColor.rgb * NdotL_fill;
+
+    // --- Texture samples ---
+    float4 base_map = EnableBaseMap
+                        ? BaseMapTexture.Sample(smpWrap, i.uv0)
+                        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 detail_map = EnableDetailMap
+                        ? DetailMapTexture.Sample(smpWrap, i.uv1)
+                        : (DetailFunction == 1) ? float4(1, 1, 1, 1)
+                                                : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 multipurpose_map = EnableMultipurposeMap
+                                ? MultipurposeMapTexture.Sample(smpWrap, i.uv0)
+                                : float4(0, 0, 0, 0);
+
+    // --- Reflection ---
+    float4 reflection_map = float4(0, 0, 0, 0);
+    if (EnableReflectionCube)
+    {
+        // Use world-space normal as base, blend toward true reflection vector
+        float3 reflVec = normalize(lerp(i.wNormal, reflect(-V, N), 0.7));
+
+        // Pitch rotation for vertical cubemap alignment
+        float cp = cos(CubemapPitch);
+        float sp = sin(CubemapPitch);
+        reflVec = normalize(float3(
+            reflVec.x,
+            reflVec.y * cp - reflVec.z * sp,
+            reflVec.y * sp + reflVec.z * cp
+        ));
+
+        reflection_map = SampleHaloCECubeMap(
+            ReflectionCubeTexture, smpClamp,
+            reflVec, ReflectionBlur);
+    }
+
+    // --- Xbox channel swap ---
+    if (UseXboxChannelOrder)
+        multipurpose_map = multipurpose_map.agrb;
+
+    // --- Diffuse light + self-illumination ---
+    float3 diffuse_light = saturate(diffuse_light_base
+                           + multipurpose_map.g * SelfIlluminationColor.rgb);
+
+    // --- Reflection mask and alpha ---
+    float SRCALPHA;
+    float specular_reflection_mask;
+
+    if (ReflectionMask == 1)
+    {
+        specular_reflection_mask = base_map.a * detail_map.a;
+        SRCALPHA = multipurpose_map.a;
+    }
+    else
+    {
+        specular_reflection_mask = multipurpose_map.b;
+        SRCALPHA = base_map.a;
+    }
+    specular_reflection_mask *= NdotV;
+
+    // --- Reflection tint ---
+    float3 reflTint = lerp(ParallelTintColor.rgb     * ParallelBrightness,
+                            PerpendicularTintColor.rgb * PerpendicularBrightness,
+                            NdotV);
+    float3 tinted_reflection = reflection_map.rgb * reflTint;
+
+    // --- Change colour ---
+    float3 color_change = lerp((float3)1.0, ChangeColor.rgb, multipurpose_map.a);
+    diffuse_light *= color_change;
+
+    // --- Detail mask ---
+    float detail_mask;
+    if      (DetailMask == 1) detail_mask = 1.0 - multipurpose_map.b;
+    else if (DetailMask == 2) detail_mask =       multipurpose_map.b;
+    else if (DetailMask == 3) detail_mask = 1.0 - multipurpose_map.g;
+    else if (DetailMask == 4) detail_mask =       multipurpose_map.g;
+    else if (DetailMask == 5) detail_mask = 1.0 - multipurpose_map.a;
+    else if (DetailMask == 6) detail_mask =       multipurpose_map.a;
+    else if (DetailMask == 7) detail_mask = 1.0 - multipurpose_map.r;
+    else if (DetailMask == 8) detail_mask =       multipurpose_map.r;
+    else                      detail_mask = 1.0;
+
+    // --- Detail blend ---
+    float3 detail_neutral = (DetailFunction == 1) ? (float3)1.0 : (float3)0.5;
+    float3 detail = lerp(detail_neutral, detail_map.rgb, detail_mask);
+
+    // --- Combine base + detail + light + reflection ---
+    float3 base = base_map.rgb;
+    float3 lit;
+
+    if (!DetailAfterReflection)
+    {
+        float3 detail_result;
+        if      (DetailFunction == 0) detail_result = base * detail * 2.0;
+        else if (DetailFunction == 1) detail_result = base * detail;
+        else                          detail_result = base + 2.0 * detail - 1.0;
+
+        lit = saturate(detail_result) * diffuse_light
+            + tinted_reflection * specular_reflection_mask;
+    }
+    else
+    {
+        float3 lit_base = saturate(base * diffuse_light
+                                    + tinted_reflection * specular_reflection_mask);
+
+        float3 detail_result;
+        if      (DetailFunction == 0) detail_result = lit_base * detail * 2.0;
+        else if (DetailFunction == 1) detail_result = lit_base * detail;
+        else                          detail_result = lit_base + 2.0 * detail - 1.0;
+
+        lit = saturate(detail_result);
+    }
+    lit = saturate(lit);
+
+    // --- Fog ---
+    // Fog weight is not available in the viewport; matches shader_model.fx behaviour.
+    float3 SRCCOLOR;
+    if (TrueAtmosphericFog)
+    {
+        float  fog_a = 0.0;
+        float3 fog   = saturate(c_fog_color_correction_1.rgb
+                                - fog_a * c_fog_color_correction_E.rgb);
+        SRCCOLOR = lerp(lit * c_fog_color_correction_0.a,
+                        c_fog_color_correction_0.rgb, fog_a) + fog;
+    }
+    else
+        SRCCOLOR = lit;
+
+    // --- Debug scale ---
+    tinted_reflection *= ReflectionIntensityScale;
+
+    // --- Debug visualisation ---
+    if      (DebugMode == 1) return float4(base_map.rgb,                                 1.0);
+    else if (DebugMode == 2) return float4(multipurpose_map.rgb,                         1.0);
+    else if (DebugMode == 3) return float4(multipurpose_map.rrr,                         1.0);
+    else if (DebugMode == 4) return float4(multipurpose_map.ggg,                         1.0);
+    else if (DebugMode == 5) return float4(multipurpose_map.bbb,                         1.0);
+    else if (DebugMode == 6) return float4(multipurpose_map.aaa,                         1.0);
+    else if (DebugMode == 7) return float4(detail_map.rgb,                               1.0);
+    else if (DebugMode == 8) return float4(tinted_reflection * specular_reflection_mask, 1.0);
+
+    // --- Alpha test ---
+    if (!NotAlphaTested)
+        clip(SRCALPHA - c_alpha_ref);
+
+    return float4(SRCCOLOR, 1.0);
+}

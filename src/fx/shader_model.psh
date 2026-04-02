@@ -76,13 +76,15 @@ float4 PS_Main(PS_INPUT i) : SV_TARGET
         specular_reflection_mask = multipurpose_map.b;
         SRCALPHA = base_map.a;
     }
-    specular_reflection_mask *= NdotV;
+    // Matches D1.w from model.vsh: lerp(ParallelBrightness, PerpendicularBrightness, NdotV)
+    specular_reflection_mask *= saturate(lerp(ParallelBrightness, PerpendicularBrightness, NdotV));
+    //specular_reflection_mask *= NdotV;
 
     // --- Reflection tint ---
     float3 reflTint = lerp(ParallelTintColor.rgb     * ParallelBrightness,
                             PerpendicularTintColor.rgb * PerpendicularBrightness,
                             NdotV);
-    float3 tinted_reflection = reflection_map.rgb * reflTint;
+    float3 tinted_reflection = reflection_map.rgb * reflTint * 1.12; // Brightness boost to match shader_model.fx (compensates for lack of NdotV multiplication in reflection mask)
 
     // --- Change colour ---
     float3 color_change = lerp((float3)1.0, ChangeColor.rgb, multipurpose_map.a);

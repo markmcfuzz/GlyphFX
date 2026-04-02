@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Shader Model:**
     - Enhance reflection calculations in pixel shader by adjusting specular reflection mask and adding brightness boost for tinted reflections to match original shader_model.
+    - Adjust light intensity amount for better initial setup.
     - Shader is more accurate to the original.
 
 ## [0.1.0] - 2026-04-01

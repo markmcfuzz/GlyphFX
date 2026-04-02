@@ -54,7 +54,7 @@ float LampIntensity
     string UIName   = "Light Intensity  (Scene Light)";
     string UIWidget = "slider";
     float  UIMin = 0.0; float UIMax = 2.0; float UIStep = 0.01;
-> = 1.0;
+> = 0.6;
 
 // Debug visualisation — set to non-zero to inspect individual channels.
 //  0 = normal render

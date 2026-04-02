@@ -72,7 +72,7 @@ int DebugMode
     string UIWidget = "Spinner";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
-
+// Debug parameter to adjust reflection intensity without affecting diffuse lighting, for testing cube map loading and alignment.
 float ReflectionIntensityScale
 <
     string UIName   = "Debug Reflection Intensity Scale";
@@ -82,6 +82,7 @@ float ReflectionIntensityScale
 
 float ReflectionBlur
 <
+    //string UIName   = "Debug Reflection Blur  (0=sharp, 1=full blur)";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 8; float UIStep = 0.5;
 > = 0.0;
@@ -178,7 +179,7 @@ bool EnableReflectionCube
 // ----------------------------------------------------------------------------
 float Translucency
 <
-    string UIName   = "Translucency";
+    //string UIName   = "Translucency";
     string UIGroup  = "Base Map Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;

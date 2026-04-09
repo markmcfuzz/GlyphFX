@@ -30,23 +30,20 @@ DepthStencilState DS_Default
 // ----------------------------------------------------------------------------
 // Technique
 // ----------------------------------------------------------------------------
-fxgroup dx11
+technique11 shader_model
+<
+    string UIName = "Halo CE - Shader Model";
+    string Script = "Pass=p0;";
+>
 {
-    technique11 HaloCE_ShaderModel
+    pass p0
     <
-        string UIName = "Halo CE - Shader Model";
-        string Script = "Pass=p0;";
+        string Script = "Draw=geometry;";
     >
     {
-        pass p0
-        <
-            string Script = "Draw=geometry;";
-        >
-        {
-            SetVertexShader  ( CompileShader( vs_5_0, VS_Main() ) );
-            SetGeometryShader( NULL );
-            SetPixelShader   ( CompileShader( ps_5_0, PS_Main() ) );
-            SetDepthStencilState( DS_Default, 0 );
-        }
+        SetVertexShader  ( CompileShader( vs_5_0, VS_Main() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader   ( CompileShader( ps_5_0, PS_Main() ) );
+        SetDepthStencilState( DS_Default, 0 );
     }
 }

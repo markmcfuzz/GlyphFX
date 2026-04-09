@@ -26,20 +26,20 @@ float3 LampColor : LIGHTCOLOR
 #else
 float3 LampColor
 <
-    string UIName   = "Light Color";
+    //string UIName   = "Light Color";
     string UIWidget = "Color";
 > = float3(1.0, 1.0, 1.0);
 #endif
 
 float4 AmbientColor
 <
-    string UIName   = "Ambient Color";
+    //string UIName   = "Ambient Color";
     string UIWidget = "Color";
 > = float4(0.3, 0.3, 0.3, 1.0);
 
 float4 FillLightColor
 <
-    string UIName   = "Fill Light Color";
+    //string UIName   = "Fill Light Color";
     string UIWidget = "Color";
 > = float4(0.3, 0.3, 0.35, 1.0);
 
@@ -51,11 +51,15 @@ float SpecularPower
 
 float LampIntensity
 <
-    string UIName   = "Light Intensity  (Scene Light)";
+    //string UIName   = "Light Intensity  (Scene Light)";
     string UIWidget = "slider";
     float  UIMin = 0.0; float UIMax = 2.0; float UIStep = 0.01;
 > = 0.6;
 
+// ----------------------------------------------------------------------------
+// Debug Parameters
+// These are not intended for artistic control, but are useful for inspecting
+// ----------------------------------------------------------------------------
 // Debug visualisation — set to non-zero to inspect individual channels.
 //  0 = normal render
 //  1 = base map (unlit)
@@ -68,14 +72,14 @@ float LampIntensity
 //  8 = reflection only (no diffuse) — tests whether cube map is loading
 int DebugMode
 <
-    string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";
+    //string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";
     string UIWidget = "Spinner";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
 // Debug parameter to adjust reflection intensity without affecting diffuse lighting, for testing cube map loading and alignment.
 float ReflectionIntensityScale
 <
-    string UIName   = "Debug Reflection Intensity Scale";
+    //string UIName   = "Debug Reflection Intensity Scale";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
 > = 1.0;
@@ -113,65 +117,42 @@ bool DetailAfterReflection
 <
     string UIName  = "Detail After Reflection";
     string UIGroup = "Shader Model Flags";
+    int    UIOrder = 0;
 > = false;
 
 bool TwoSided
 <
     string UIName  = "Two Sided";
     string UIGroup = "Shader Model Flags";
+    int    UIOrder = 1;
 > = false;
 
 bool NotAlphaTested
 <
     string UIName  = "Not Alpha Tested";
     string UIGroup = "Shader Model Flags";
+    int    UIOrder = 2;
 > = false;
 
 bool AlphaBlendedDecal
 <
     string UIName  = "Alpha Blended Decal";
     string UIGroup = "Shader Model Flags";
+    int    UIOrder = 3;
 > = false;
 
 bool TrueAtmosphericFog
 <
     string UIName  = "True Atmospheric Fog";
     string UIGroup = "Shader Model Flags";
+    int    UIOrder = 4;
 > = false;
 
 bool UseXboxChannelOrder
 <
     string UIName  = "Use Xbox Multipurpose Channel Order";
     string UIGroup = "Shader Model Flags";
-> = false;
-
-// ----------------------------------------------------------------------------
-// Texture-connected flags
-// DX11 samples unbound textures as black (0,0,0,0), which breaks blend modes
-// that expect a neutral value. Set each flag only when the texture is assigned.
-// ----------------------------------------------------------------------------
-bool EnableBaseMap
-<
-    string UIName  = "Enable Base Map";
-    string UIGroup = "Shader Model Flags";
-> = false;
-
-bool EnableDetailMap
-<
-    string UIName  = "Enable Detail Map";
-    string UIGroup = "Shader Model Flags";
-> = false;
-
-bool EnableMultipurposeMap
-<
-    string UIName  = "Enable Multipurpose Map";
-    string UIGroup = "Shader Model Flags";
-> = false;
-
-bool EnableReflectionCube
-<
-    string UIName  = "Enable Reflection Cube";
-    string UIGroup = "Shader Model Flags";
+    int    UIOrder = 5;
 > = false;
 
 // ----------------------------------------------------------------------------
@@ -190,6 +171,7 @@ float4 ChangeColor
     string UIName   = "Change Color";
     string UIGroup  = "Base Map Properties";
     string UIWidget = "Color";
+    int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
 float4 SelfIlluminationColor
@@ -197,6 +179,7 @@ float4 SelfIlluminationColor
     string UIName   = "Self Illumination Color";
     string UIGroup  = "Base Map Properties";
     string UIWidget = "Color";
+    int    UIOrder = 7;
 > = float4(0, 0, 0, 0);
 
 float MapUScale
@@ -205,6 +188,7 @@ float MapUScale
     string UIGroup  = "Base Map Properties";
     string UIWidget = "slider";
     float  UIMin = -64; float UIMax = 64; float UIStep = 0.01;
+    int    UIOrder = 8;
 > = 1.0;
 
 float MapVScale
@@ -213,6 +197,7 @@ float MapVScale
     string UIGroup  = "Base Map Properties";
     string UIWidget = "slider";
     float  UIMin = -64; float UIMax = 64; float UIStep = 0.01;
+    int    UIOrder = 9;
 > = 1.0;
 
 Texture2D BaseMapTexture
@@ -220,6 +205,7 @@ Texture2D BaseMapTexture
     string UIName       = "Base Map";
     string UIGroup      = "Base Map Properties";
     string ResourceType = "2D";
+    int    UIOrder = 10;
 >;
 
 // ----------------------------------------------------------------------------
@@ -230,6 +216,7 @@ Texture2D MultipurposeMapTexture
     string UIName       = "Multipurpose Map";
     string UIGroup      = "Multipurpose Properties";
     string ResourceType = "2D";
+    int    UIOrder = 11;
 >;
 
 int DetailFunction
@@ -238,6 +225,7 @@ int DetailFunction
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
+    int    UIOrder = 12;
 > = 0;
 
 int DetailMask
@@ -246,30 +234,34 @@ int DetailMask
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
+    int    UIOrder = 13;
 > = 0;
 
 float DetailMapScale
 <
-    string UIName   = "Detail Map Scale (U)";
+    string UIName   = "Detail Map Scale";
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;
+    int    UIOrder = 14;
 > = 1.0;
-
-float DetailMapVScale
-<
-    string UIName   = "Detail Map V Scale  (0 = square, copies U scale)";
-    string UIGroup  = "Multipurpose Properties";
-    string UIWidget = "slider";
-    float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;
-> = 0.0;
 
 Texture2D DetailMapTexture
 <
     string UIName       = "Detail Map";
     string UIGroup      = "Multipurpose Properties";
     string ResourceType = "2D";
+    int    UIOrder = 15;
 >;
+
+float DetailMapVScale
+<
+    string UIName   = "Detail Map V Scale";
+    string UIGroup  = "Multipurpose Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;
+    int    UIOrder = 16;
+> = 0.0;
 
 float PerpendicularBrightness
 <
@@ -277,6 +269,7 @@ float PerpendicularBrightness
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 17;
 > = 0.0;
 
 float4 PerpendicularTintColor
@@ -284,6 +277,7 @@ float4 PerpendicularTintColor
     string UIName   = "Perpendicular Tint Color";
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "Color";
+    int    UIOrder = 18;
 > = float4(1, 1, 1, 1);
 
 float ParallelBrightness
@@ -292,6 +286,7 @@ float ParallelBrightness
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 19;
 > = 0.0;
 
 float4 ParallelTintColor
@@ -299,6 +294,7 @@ float4 ParallelTintColor
     string UIName   = "Parallel Tint Color";
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "Color";
+    int    UIOrder = 20;
 > = float4(1, 1, 1, 1);
 
 int ReflectionMask
@@ -314,7 +310,37 @@ Texture2D ReflectionCubeTexture
     string UIName       = "Reflection Cube Map";
     string UIGroup      = "Multipurpose Properties";
     string ResourceType = "2D";
+    int    UIOrder = 21;
 >;
+
+// ----------------------------------------------------------------------------
+// Texture-connected flags
+// DX11 samples unbound textures as black (0,0,0,0), which breaks blend modes
+// that expect a neutral value. Set each flag only when the texture is assigned.
+// ----------------------------------------------------------------------------
+bool EnableBaseMap
+<
+    string UIName  = "Enable Base Map";
+    string UIGroup = "Shader Model Flags";
+> = true;
+
+bool EnableDetailMap
+<
+    string UIName  = "Enable Detail Map";
+    string UIGroup = "Shader Model Flags";
+> = true;
+
+bool EnableMultipurposeMap
+<
+    string UIName  = "Enable Multipurpose Map";
+    string UIGroup = "Shader Model Flags";
+> = true;
+
+bool EnableReflectionCube
+<
+    string UIName  = "Enable Reflection Cube";
+    string UIGroup = "Shader Model Flags";
+> = true;
 
 // ----------------------------------------------------------------------------
 // Other Properties
@@ -349,5 +375,6 @@ float4 c_fog_color_correction_1
     string UIGroup  = "Other Properties";
     string UIWidget = "Color";
 > = float4(1, 1, 1, 1);
+
 
 #endif // GLYPHFX_MODEL_PARAMS_FXH

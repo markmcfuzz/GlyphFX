@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Research and Re-implementation of `shader_transparent_chicago.fx`, `shader_transparent_chicago_extended.fx` amd `shader_transparent_generic.fx`
+- `shader_transparent_meter.fx` and `shader_transparent_chicago.fx` are now re-implemented, but not yet fully tested and documented.
+- Research and Re-implementation of `shader_transparent_chicago_extended.fx` and `shader_transparent_generic.fx`
+
+## [0.1.2] - 2026-04-09
+
+### Changed
+
+- **Shader Model:**
+    - Adjusted parameters order to match original `shader_model` tag.
+    - Hide debug parameters and ambient/light by default.
+    - Renamed technique to `shader_model`
 
 ## [0.1.1] - 2026-04-01
 

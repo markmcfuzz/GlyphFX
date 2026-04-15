@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- `shader_transparent_meter.fx` and `shader_transparent_chicago.fx` are now re-implemented, but not yet fully tested and documented.
 - Research and Re-implementation of `shader_transparent_chicago_extended.fx` and `shader_transparent_generic.fx`
+
+## [0.2.0] - 2026-04-15
+
+### Added
+- `shader_transparent_meter.fx` and `shader_transparent_chicago.fx` fully re-implemented and tested. Not documented yet.
+
 
 ## [0.1.3] - 2026-04-15
 

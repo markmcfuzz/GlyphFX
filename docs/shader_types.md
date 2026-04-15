@@ -26,13 +26,13 @@ Used for `gbxmodel` tags.
 
 | Parameter | Description |
 |---|---|
-| Detail Function | How the detail map blends with the base map |
+| [Detail Function] | How the detail map blends with the base map |
 | [Detail Mask] | Which multipurpose channel used as mask |
-| Reflection Mask | Source of the reflection intensity mask |
-| Change Color | Tint color applied to areas defined by mp.A |
-| Self Illumination Color | Color added to lit areas defined by mp.G |
+| Change Color | Tint color applied to areas defined by multipurpose alpha channel |
+| Self Illumination Color | Color added to lit areas defined by multipurpose green channel |
 | Perpendicular / Parallel Tint | Reflection tint at different view angles |
 
+[Detail Function]: parameters\shader_model\detail_function.md "Detail Function parameter"
 [Detail Mask]: parameters\shader_model\detail_mask.md "Detail Mask parameter"
 
 ### Shader Model Flags
@@ -46,7 +46,7 @@ Used for `gbxmodel` tags.
 | True Atmospheric Fog | Enables planar atmospheric fog |
 | Use Xbox Multipurpose Channel Order | R = specular, G = self-illumination, B = change color, A = auxiliary |
 
-### Debug Parameters
+### Debug Parameters (disabled by default)
 | Parameter | Description |
 |---|---|
 | Debug Mode | Inspect RGB and individual channels from multipurpose, base map (unlit), detail map (unlit), and reflection maps (no diffuse) |
@@ -69,6 +69,8 @@ Used for simple transparent surfaces with a fixed pipeline of map stages.
 
 **File:** `fx/shader_transparent_chicago.fx`  
 **Status:** In progress
+
+
 
 ---
 

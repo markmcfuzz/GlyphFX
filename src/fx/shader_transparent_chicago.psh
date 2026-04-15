@@ -1,0 +1,229 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_chicago.psh
+//
+// Pixel shader for shader_transparent_chicago.
+// Ported from shaders/fx/chicago_shader.psh.
+//
+// ── MAP STAGE PIPELINE ───────────────────────────────────────────────────────
+// Up to 4 texture maps are blended sequentially.  Map 1 is always the base.
+// Maps 2–4 are enabled with EnableMap2 / EnableMap3 / EnableMap4.
+//
+// Each active stage blends the accumulated value with the new map sample
+// using the per-stage ColorFunction / AlphaFunction enum:
+//   0  Current         pass through the accumulated value unchanged
+//   1  Next Map        replace with the incoming map value
+//   2  Multiply        A × B
+//   3  Double Mul      saturate( 2 × A × B )
+//   4  Add             saturate( A + B )
+//   5  Add-Signed      saturate( A + B − 0.5 )
+//   6  Add-Signed      (same formula; both enum values exist in the tag)
+//   7  Subtract        saturate( A − B )
+//
+// AlphaReplicate spreads the sampled alpha across RGB before blending.
+// UClamped / VClamped clamp the UV to [0, 1] on each axis.
+// MipmapBias shifts the sampled mip level via SampleBias.
+//
+// ── FRAMEBUFFER BLEND MODES ──────────────────────────────────────────────────
+// Each blend mode has its own pixel-shader entry point and a matching
+// technique in shader_transparent_chicago.fx.  Select the technique that
+// matches the "Framebuffer Blend Function" value in the tag.
+//
+//   Alpha Blend     — opacity from the texture's alpha channel.
+//                     For textures WITH an alpha channel.
+//                     White alpha = opaque; black alpha = transparent.
+//
+//   Multiply        — polygon RGB multiplies the background.
+//                     White (1,1,1) = no effect; black (0,0,0) = full black.
+//                     GPU blend state (DEST_COLOR / ZERO) does the math.
+//
+//   Double Multiply — same as Multiply but 2× result.
+//                     Mid grey (0.5) leaves the background unchanged.
+//                     GPU blend state (DEST_COLOR / SRC_COLOR) does the math.
+//
+//   Add             — opacity from RGB luminance.
+//                     For textures WITHOUT an alpha channel.
+//                     Black = invisible; bright white = full glow added to bg.
+//                     GPU blend state (SRC_ALPHA / ONE) does the additive mix.
+// ----------------------------------------------------------------------------
+
+// ─── Per-stage blend helpers ─────────────────────────────────────────────────
+
+// Blends accumulated color A with incoming stage color B.
+float3 BlendColor(float3 A, float3 B, int func)
+{
+    if      (func == 1) return B;
+    else if (func == 2) return A * B;
+    else if (func == 3) return saturate(2.0 * A * B);
+    else if (func == 4) return saturate(A + B);
+    else if (func == 5) return saturate(A + B - 0.5);
+    else if (func == 6) return saturate(A + B - 0.5);
+    else if (func == 7) return saturate(A - B);
+    return A;   // 0 = Current — pass through
+}
+
+// Blends accumulated alpha A with incoming stage alpha B.
+float BlendAlpha(float A, float B, int func)
+{
+    if      (func == 1) return B;
+    else if (func == 2) return A * B;
+    else if (func == 3) return saturate(2.0 * A * B);
+    else if (func == 4) return saturate(A + B);
+    else if (func == 5) return saturate(A + B - 0.5);
+    else if (func == 6) return saturate(A + B - 0.5);
+    else if (func == 7) return saturate(A - B);
+    return A;
+}
+
+// ─── Map pipeline ────────────────────────────────────────────────────────────
+// Samples all active map stages and returns the accumulated RGBA result.
+
+float4 PS_Evaluate(TC_PS_INPUT i)
+{
+    // Map 1 — base stage, always active.
+    float2 uv0 = i.uv0;
+    if (Map1_UClamped) uv0.x = saturate(uv0.x);
+    if (Map1_VClamped) uv0.y = saturate(uv0.y);
+
+    float4 t0 = Map1_Unfiltered
+              ? Map1Texture.SampleBias(smpPoint, uv0, Map1_MipmapBias)
+              : Map1Texture.SampleBias(smpWrap,  uv0, Map1_MipmapBias);
+
+    // AlphaReplicate spreads the alpha channel across RGB before stage blending.
+    float3 accColor = Map1_AlphaReplicate ? t0.aaa : t0.rgb;
+    float  accAlpha = t0.a;
+
+    [branch]
+    if (EnableMap2)
+    {
+        float2 uv1 = i.uv1;
+        if (Map2_UClamped) uv1.x = saturate(uv1.x);
+        if (Map2_VClamped) uv1.y = saturate(uv1.y);
+
+        float4 t1 = Map2_Unfiltered
+                  ? Map2Texture.SampleBias(smpPoint, uv1, Map2_MipmapBias)
+                  : Map2Texture.SampleBias(smpWrap,  uv1, Map2_MipmapBias);
+
+        float3 b = Map2_AlphaReplicate ? t1.aaa : t1.rgb;
+        accColor = BlendColor(accColor, b,    Map2_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t1.a, Map2_AlphaFunction);
+    }
+
+    [branch]
+    if (EnableMap3)
+    {
+        float2 uv2 = i.uv2;
+        if (Map3_UClamped) uv2.x = saturate(uv2.x);
+        if (Map3_VClamped) uv2.y = saturate(uv2.y);
+
+        float4 t2 = Map3_Unfiltered
+                  ? Map3Texture.SampleBias(smpPoint, uv2, Map3_MipmapBias)
+                  : Map3Texture.SampleBias(smpWrap,  uv2, Map3_MipmapBias);
+
+        float3 b = Map3_AlphaReplicate ? t2.aaa : t2.rgb;
+        accColor = BlendColor(accColor, b,    Map3_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t2.a, Map3_AlphaFunction);
+    }
+
+    [branch]
+    if (EnableMap4)
+    {
+        float2 uv3 = i.uv3;
+        if (Map4_UClamped) uv3.x = saturate(uv3.x);
+        if (Map4_VClamped) uv3.y = saturate(uv3.y);
+
+        float4 t3 = Map4_Unfiltered
+                  ? Map4Texture.SampleBias(smpPoint, uv3, Map4_MipmapBias)
+                  : Map4Texture.SampleBias(smpWrap,  uv3, Map4_MipmapBias);
+
+        float3 b = Map4_AlphaReplicate ? t3.aaa : t3.rgb;
+        accColor = BlendColor(accColor, b,    Map4_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t3.a, Map4_AlphaFunction);
+    }
+
+    return float4(saturate(accColor), saturate(accAlpha));
+}
+
+// ─── Opacity helpers ─────────────────────────────────────────────────────────
+
+// Applies contrast (centred at 0.5), bias and gamma to a raw opacity value.
+float ApplyOpacityControls(float raw)
+{
+    float o = saturate((raw - 0.5) * OpacityContrast + 0.5);
+    o = saturate(o + OpacityBias);
+    o = pow(o, 1.0 / max(OpacityGamma, 0.001));
+    return o;
+}
+
+// Stochastic (dithered) discard using a screen-space hash.
+// Ensures near-transparent fragments don't write to the depth buffer, which
+// is required because DepthWriteMask = ALL is a Nitrous constraint.
+// Fragments with alpha == 0 always discard; alpha == 1 always survive.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither * DitherScale);
+}
+
+// ─── Pixel shader entry points ────────────────────────────────────────────────
+
+// Alpha Blend — uses the texture's alpha channel for opacity.
+// Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
+//   → PS outputs alpha = 0.0 → Nitrous Standard/High Quality composites the
+//     RGB output over the dark viewport background → black areas stay black.
+// Textures WITH an alpha channel: c.a < 1.0 on transparent pixels.
+//   → Opacity controls + dither clip for smooth transparency.
+float4 PS_AlphaBlend(TC_PS_INPUT i) : SV_TARGET
+{
+    float4 c = PS_Evaluate(i);
+    if (c.a >= 1.0)
+        return float4(c.rgb, 0.0);
+    float alpha = ApplyOpacityControls(c.a);
+    DitherClip(alpha, i.clipPos);
+    return float4(c.rgb, alpha);
+}
+
+// Add — SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
+// Use this technique when the texture has NO alpha channel.
+// Luminance drives the alpha: dark pixels → alpha ≈ 0 → additive contribution ≈ 0.
+// DitherClip DISCARDS dark pixels so they don't write to the depth buffer —
+// without this they produce a black polygon silhouette even when blending to zero.
+// Brightness scales the output RGB to match the in-game renderer intensity.
+float4 PS_Add(TC_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    float  lum   = dot(c.rgb, float3(0.299, 0.587, 0.114));
+    float  alpha = ApplyOpacityControls(lum);
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(c.rgb * Brightness, alpha);
+}
+
+// Multiply — stochastic approximation via inverted luminance.
+// Bright pixels (lum ≈ 1) → alpha = 1 - lum ≈ 0 → discarded by DitherClip.
+// Dark pixels (lum ≈ 0)   → alpha = 1 - lum ≈ 1 → survive, drawn opaquely.
+// White areas vanish → background (armour) shows through unchanged.
+// Dark areas draw their colour on top → approximates darkening the background.
+float4 PS_Multiply(TC_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    float3 rgb = saturate(c.rgb * 1.2);
+    float  lum   = dot(c.rgb, float3(0.6, 0.6, 0.6));
+    float  alpha = 1.0 - lum;
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(rgb, 0.0);
+}
+
+// Double Multiply — tent function: clips both dark AND bright pixels,
+// only mid-tones (lum ≈ 0.5) survive.
+//   alpha = 1 - |lum * 2 - 1|
+//   lum = 0.0 → alpha = 0 → black clipped
+//   lum = 0.5 → alpha = 1 → mid-tone survives (soft blues, etc.)
+//   lum = 1.0 → alpha = 0 → white clipped
+float4 PS_DoubleMultiply(TC_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    float  lum   = dot(c.rgb, float3(0.5, 0.5, 0.5));
+    float  alpha = 0.75 - abs(lum * 2.0 - 1.1);
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(c.rgb, alpha);
+}

@@ -34,4 +34,16 @@ SamplerState smpClamp
     AddressW  = Clamp;
 };
 
+// ----------------------------------------------------------------------------
+// Point sampler — used when the Unfiltered flag is set (e.g. transparent_meter)
+// ----------------------------------------------------------------------------
+SamplerState smpPoint
+{
+    MinFilter = Point;
+    MagFilter = Point;
+    MipFilter = None;
+    AddressU  = Wrap;
+    AddressV  = Wrap;
+};
+
 #endif // GLYPHFX_SAMPLERS_FXH

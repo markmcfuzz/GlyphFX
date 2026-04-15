@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `shader_transparent_meter.fx` and `shader_transparent_chicago.fx` are now re-implemented, but not yet fully tested and documented.
 - Research and Re-implementation of `shader_transparent_chicago_extended.fx` and `shader_transparent_generic.fx`
 
+## [0.1.3] - 2026-04-15
+
+### Added
+- Documentation for `shader_model` parameters "detail function" for blending the detail map with the base map.
+
+### Changed
+- Updated `cyborg.max` example scene to use the new `shader_model` parameters and techniques.
+- Updated `shader_types.md` documentation.
+- Moved asset cyborg files to `examples/cyborg` folder for better organization.
+
 ## [0.1.2] - 2026-04-09
 
 ### Changed

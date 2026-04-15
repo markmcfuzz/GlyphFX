@@ -20,11 +20,11 @@
 |---|---|
 | `shader_environment` | In progress |
 | `shader_model` | Done |
-| `shader_transparent_chicago` | In progress |
+| `shader_transparent_chicago` | Done |
 | `shader_transparent_chicago_extended` | In progress |
 | `shader_transparent_generic` | In progress |
 | `shader_transparent_glass` | In progress |
-| `shader_transparent_meter` | In progress |
+| `shader_transparent_meter` | Done |
 | `shader_transparent_plasma` | In progress |
 | `shader_transparent_water` | In progress |
 
@@ -37,7 +37,7 @@
 </div>
 
 <div align="left">
-  <a href="https://download.microsoft.com/download/1/7/1/1718ccc4-6315-4d8e-9543-8e28a4e18c4c/dxwebsetup.exe" target="_blank"><img src="https://img.shields.io/badge/DirectX-9%2B-76B900?labelColor=302d41&style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX"></a>
+  <a href="https://download.microsoft.com/download/1/7/1/1718ccc4-6315-4d8e-9543-8e28a4e18c4c/dxwebsetup.exe" target="_blank"><img src="https://img.shields.io/badge/DirectX-11%2B-76B900?labelColor=302d41&style=for-the-badge&logo=nvidia&logoColor=white" alt="DirectX"></a>
 </div>
 
 <div align="left">
@@ -59,7 +59,7 @@
 
 3. Click the `.fx` file slot and browse to the shader you want, for example:
    ```
-   GlyphFX/src/model/model.fx
+   GlyphFX/src/fx/shader_model.fx
    ```
 
 4. The material parameters will appear in the UI - assign your textures and tweak values as needed.
@@ -72,13 +72,24 @@ If you're using [HaloCE Max Toolkit](https://github.com/markmcfuzz/HaloCE-Max-To
 git clone --recursive https://github.com/markmcfuzz/HaloCE-Max-Toolkit
 ```
 
+Or download the zip (for beta pre-releases) and .exe installer versions from releases. 
+
 When importing a `.gbxmodel` tag, the Toolkit will detect the shader type and assign the corresponding `.fx` from GlyphFX, pre-configured with the values from the tag.
 
 ---
 
 ## Preview
 
-> Screenshots and viewport comparisons coming soon.
+This comparison shows the **cyborg** model rendered in 3ds Max.<br>
+
+- On the left side we have applied standard materials (only base map).
+- On the right side we have a **DirectX Shader** with `GlyphFX` using the `shader_model.fx` and `shader_transparent_chicago.fx` - the shading is very similar to the game, giving modders a much better preview of how their models will look in-game.<br>
+<br>
+
+<div align="center">
+<img src="img/c_shader_trans.png" alt="Cyborg Shader Comparison" width="45%"/>
+<img src="img/c_no_shader_trans.png" alt="Cyborg Shader Model Comparison" width="45%"/>
+</div>
 
 ---
 

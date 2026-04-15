@@ -1,0 +1,78 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_meter.psh
+// Pixel shader for shader_transparent_meter
+// Ported from original 343i transparent_meter.psh
+// Original constant layout:
+//   c0 = meter_flash_color          → FlashColor.rgb
+//   c1 = meter_gradient_max_color   → GradientMaxColor.rgba  (a = sensitivity)
+//   c2 = meter_gradient_min_color   → GradientMinColor.rgb + MeterValue (c2.a)
+//   c3 = meter_background_color     → BackgroundColor.rgb, a = 1-BackgroundTransparency
+//   c4 = meter_tint_color           → TintColor.rgb  (c4.a = 1-MeterTransparency)
+//   c5 = meter_flash_color_variable → FlashColor.rgb * FlashBrightness
+// The FlashColorIsNegative flag inverts the flash contribution sign.
+// The Unfiltered flag switches to a point sampler.
+// ----------------------------------------------------------------------------
+float4 PS_Main(TM_PS_INPUT i) : SV_TARGET
+{
+    // Sample the meter map (filtered or point depending on Unfiltered flag)
+    float4 t0 = Unfiltered
+                ? MeterMap.Sample(smpPoint, i.uv0)
+                : MeterMap.Sample(smpWrap,  i.uv0);
+
+    // -------------------------------------------------------------------------
+    // Gradient blend factor
+    // c1.a * t0.b, then saturate(result * 8)
+    // With GradientMaxColor.a = 0.125, this maps t0.b [0,1] to gradBlend [0,1].
+    // -------------------------------------------------------------------------
+    float gradBlend = saturate(GradientMaxColor.a * t0.b * 8.0);
+
+    // -------------------------------------------------------------------------
+    // Gradient color — lerp from min to max driven by gradBlend
+    // -------------------------------------------------------------------------
+    float3 gradColor = GradientMinColor.rgb
+                     + gradBlend * (GradientMaxColor.rgb - GradientMinColor.rgb);
+
+    // -------------------------------------------------------------------------
+    // Flash contribution
+    // The flash factor is derived from the blue component of the gradient color:
+    //   flashFactor = 2 * (0.5 - gradColor.b) = 1 - 2*gradColor.b
+    // This creates a highlight at the low-blue end of the gradient.
+    // FlashColorIsNegative inverts the sign (subtracts instead of adds).
+    // -------------------------------------------------------------------------
+    float  flashFactor   = 2.0 * (0.5 - gradColor.b);
+    float3 flashVariable = FlashColor.rgb * FlashBrightness;
+    float  flashSign     = FlashColorIsNegative ? -1.0 : 1.0;
+    float3 litColor      = gradColor + flashSign * flashFactor * flashVariable;
+
+    // -------------------------------------------------------------------------
+    // Meter threshold
+    // step(MeterValue, t0.b): 1 where tex.b >= MeterValue  → background region
+    //                         0 where tex.b <  MeterValue  → fill region
+    // -------------------------------------------------------------------------
+    float isBg = step(MeterValue, t0.b);
+
+    // -------------------------------------------------------------------------
+    // Select fill vs background color and alpha
+    // -------------------------------------------------------------------------
+    float3 finalColor = lerp(litColor, BackgroundColor.rgb, isBg);
+    float  meterAlpha = 1.0 - MeterTransparency;
+    float  bgAlpha    = 1.0 - BackgroundTransparency;
+    float  finalAlpha = lerp(meterAlpha, bgAlpha, isBg);
+
+    // -------------------------------------------------------------------------
+    // Modulate RGB and alpha by the texture alpha channel (shape / mask).
+    // Without this, pixels where t0.a = 0 but t0.b < MeterValue fall into
+    // the fill region with finalAlpha = 1, producing opaque black fragments.
+    // -------------------------------------------------------------------------
+    finalColor *= t0.a;
+    finalAlpha *= t0.a;
+
+    // Discard fully transparent pixels so they do not write to the depth
+    // buffer.  Without this, masked-out regions (t0.a ≈ 0) write depth at
+    // the biased value and block the shader_model from showing through.
+    float2 screenUV = i.clipPos.xy / i.clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(finalAlpha - dither * DitherScale);
+
+    return float4(finalColor, finalAlpha);
+}

@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Research and Re-implementation of `shader_transparent_chicago_extended.fx` and `shader_transparent_generic.fx`
 
+## [0.3.0] - 2026-04-17
+
+### Added
+
+- `shader_environment.fx` fully implemented. Not documented yet. Still needs to test the self-illumination/animation functions.
+
+## [0.2.1] - 2026-04-17
+
+### Changed
+
+- Updated `shader_transparent_chicago.fx` params to match original shader order.
+- Updated `_cubemap.fxh` to blend transitions more smoothly.
+
 ## [0.2.0] - 2026-04-15
 
 ### Added

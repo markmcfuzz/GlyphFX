@@ -74,4 +74,31 @@ struct TC_VS_OUTPUT
 
 typedef TC_VS_OUTPUT TC_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_environment — diffuse + bump + detail + self-illumination + reflection
+// Requires tangent/binormal for tangent-space bump mapping.
+// ----------------------------------------------------------------------------
+struct SE_VS_INPUT
+{
+    float4 position : POSITION;
+    float3 normal   : NORMAL;
+    float3 tangent  : TANGENT;
+    float3 binormal : BINORMAL;
+    float2 uv0      : TEXCOORD0;
+};
+
+struct SE_VS_OUTPUT
+{
+    float4 clipPos    : SV_POSITION;
+    float3 wNormal    : TEXCOORD0;   // world-space normal
+    float3 wPos       : TEXCOORD1;   // world-space position
+    float3 lampVec    : TEXCOORD2;   // surface → lamp vector (world space)
+    float2 uv0        : TEXCOORD3;   // base map UV
+    float3 oNormal    : TEXCOORD4;   // object-space normal for cubemap
+    float3 wTangent   : TEXCOORD5;   // world-space tangent (for bump mapping)
+    float3 wBinormal  : TEXCOORD6;   // world-space binormal (for bump mapping)
+};
+
+typedef SE_VS_OUTPUT SE_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

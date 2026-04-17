@@ -1,0 +1,298 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_environment.psh
+//
+// Pixel shader for shader_environment.
+//
+// Consolidates the original multi-pass environment rendering into a single
+// pass for the 3ds Max viewport:
+//   · Diffuse: base + blended detail (primary/secondary) + micro detail
+//   · Bump-mapped lighting and fresnel
+//   · Three-channel self-illumination (primary / secondary / plasma)
+//   · Cube-map reflection (bumped or flat) with specular tint
+// ----------------------------------------------------------------------------
+
+float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
+{
+    // ========================================================================
+    // Lighting vectors
+    // ========================================================================
+    float3 N  = normalize(i.wNormal);
+    float3 T  = normalize(i.wTangent);
+    float3 B  = normalize(i.wBinormal);
+    float3 Ln = normalize(i.lampVec);
+    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+
+    // ========================================================================
+    // Compute all UV coordinates from the single base UV
+    // ========================================================================
+    float2 baseUV           = i.uv0;
+    float2 primaryDetailUV  = i.uv0 * PrimaryDetailMapScale;
+    float2 secondaryDetailUV= i.uv0 * SecondaryDetailMapScale;
+    float2 microDetailUV    = i.uv0 * MicroDetailMapScale;
+    float2 bumpUV           = i.uv0 * BumpMapScale;
+    float2 selfIllumUV      = i.uv0 * SelfIlluminationMapScale;
+
+    // ========================================================================
+    // Texture samples
+    // ========================================================================
+    float4 base_map = EnableBaseMap
+        ? BaseMapTexture.Sample(smpWrap, baseUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 primary_detail = EnablePrimaryDetailMap
+        ? PrimaryDetailMapTexture.Sample(smpWrap, primaryDetailUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 secondary_detail = EnableSecondaryDetailMap
+        ? SecondaryDetailMapTexture.Sample(smpWrap, secondaryDetailUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 micro_detail = EnableMicroDetailMap
+        ? MicroDetailMapTexture.Sample(smpWrap, microDetailUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 bump_map = EnableBumpMap
+        ? BumpMapTexture.Sample(smpWrap, bumpUV)
+        : float4(0.5, 0.5, 1.0, 1.0);
+
+    float4 self_illum_map = EnableSelfIlluminationMap
+        ? SelfIlluminationMapTexture.Sample(smpWrap, selfIllumUV)
+        : float4(0, 0, 0, 0);
+
+    // ========================================================================
+    // Bump normal — tangent-space → world-space
+    // ========================================================================
+    float3 bumpN;
+    if (EnableBumpMap)
+    {
+        float3 bump_ts = normalize(bump_map.rgb * 2.0 - 1.0);
+        bumpN = normalize(bump_ts.x * T + bump_ts.y * B + bump_ts.z * N);
+    }
+    else
+    {
+        bumpN = N;
+    }
+
+    // ========================================================================
+    // Detail blending — depends on Environment Type
+    // ========================================================================
+    float4 blended_detail;
+
+    if (EnvironmentType == 0)          // NORMAL
+    {
+        // Secondary detail alpha controls blend between primary and secondary
+        float bf = secondary_detail.a;
+        blended_detail = lerp(primary_detail, secondary_detail, bf);
+    }
+    else                                // BLENDED / BLENDED BASE SPECULAR
+    {
+        // Base map alpha: white (1) = primary, black (0) = secondary
+        float bf = base_map.a;
+        blended_detail = lerp(secondary_detail, primary_detail, bf);
+    }
+
+    // ========================================================================
+    // Specular mask
+    // ========================================================================
+    float specular_mask;
+    if (BumpMapIsSpecularMask)
+    {
+        specular_mask = bump_map.a;
+    }
+    else if (EnvironmentType == 2)      // BLENDED BASE SPECULAR
+    {
+        specular_mask = base_map.a * micro_detail.a;
+    }
+    else if (EnvironmentType == 1)      // BLENDED
+    {
+        specular_mask = blended_detail.a * micro_detail.a;
+    }
+    else                                // NORMAL
+    {
+        // Base map alpha acts as reflection/specular mask (like mp.B in shader_model)
+        specular_mask = base_map.a * blended_detail.a * micro_detail.a;
+    }
+
+    // ========================================================================
+    // Apply detail map function to base
+    // ========================================================================
+    float3 diffuse_color;
+    if      (DetailMapFunction == 1)     // multiply
+        diffuse_color = base_map.rgb * blended_detail.rgb;
+    else if (DetailMapFunction == 2)     // double/biased add
+        diffuse_color = saturate(base_map.rgb + 2.0 * blended_detail.rgb - 1.0);
+    else                                 // double/biased multiply (0)
+        diffuse_color = saturate(base_map.rgb * blended_detail.rgb * 2.0);
+
+    // ========================================================================
+    // Apply micro detail function
+    // ========================================================================
+    if      (MicroDetailMapFunction == 1) // multiply
+        diffuse_color = diffuse_color * micro_detail.rgb;
+    else if (MicroDetailMapFunction == 2) // double/biased add
+        diffuse_color = saturate(diffuse_color + 2.0 * micro_detail.rgb - 1.0);
+    else                                  // double/biased multiply (0)
+        diffuse_color = saturate(diffuse_color * micro_detail.rgb * 2.0);
+
+    // ========================================================================
+    // Material color tint
+    // In-game, material color (0,0,0) still renders as ~0.3 grey — the engine
+    // never lets surfaces go fully black.
+    // ========================================================================
+    float3 mat = max(MaterialColor.rgb, 0.3);
+    diffuse_color *= mat;
+
+    // ========================================================================
+    // Diffuse lighting
+    // ========================================================================
+    float NdotL      = saturate(dot(bumpN, Ln));
+    float NdotL_fill = saturate(dot(bumpN, -Ln));
+    float NdotV      = saturate(dot(bumpN, V));
+
+    float3 diffuse_light = AmbientColor.rgb
+                         + LampColor * LampIntensity * NdotL
+                         + FillLightColor.rgb * NdotL_fill;
+
+    // ========================================================================
+    // Specular highlight (viewport light)
+    // ========================================================================
+    float3 H        = normalize(Ln + V);
+    float  NdotH    = saturate(dot(bumpN, H));
+    float  spec_pow = SpecularExtraShiny ? 16.0 : 8.0;
+    float  spec_term = pow(NdotH, spec_pow);
+
+    float3 spec_tint = lerp(SpecParallelColor.rgb, SpecPerpendicularColor.rgb, NdotV);
+    float3 specular  = spec_term * spec_tint * SpecBrightness * specular_mask;
+    if (SpecularOverbright)
+        specular *= 2.0;
+
+    // ========================================================================
+    // Self-illumination (three-channel: primary + secondary + plasma)
+    // ========================================================================
+    float3 primary_color   = lerp(PrimaryOffColor.rgb,   PrimaryOnColor.rgb,   PrimaryAnimationValue);
+    float3 secondary_color = lerp(SecondaryOffColor.rgb,  SecondaryOnColor.rgb,  SecondaryAnimationValue);
+
+    float3 primary_glow   = primary_color   * self_illum_map.r;
+    float3 secondary_glow = secondary_color * self_illum_map.g;
+
+    // Plasma — matches the hard-edge effect from env_lm_normal.psh
+    float plasma_i1 = PlasmaAnimationValue + 0.5 - max(0.0, self_illum_map.a);
+    float plasma_i2 = self_illum_map.a       + 0.5 - max(0.0, PlasmaAnimationValue);
+    float plasma    = (plasma_i1 < 0.5) ? plasma_i1 : plasma_i2;
+    plasma = saturate(plasma * plasma * 4.0);       // plasma^2 * 4
+    plasma = plasma * plasma;                        // 16 * plasma^4
+    plasma = (plasma < 0.5) ? 0.0 : pow(2.0 * plasma - 1.0, 2.0); // plasma^8
+
+    float3 plasma_color = saturate(PlasmaOnColor.rgb * plasma + PlasmaOffColor.rgb);
+    float3 plasma_glow  = plasma_color * self_illum_map.b;
+
+    float3 self_illumination = saturate(primary_glow + secondary_glow + plasma_glow);
+
+    // ========================================================================
+    // Cube-map reflection
+    // ========================================================================
+    float4 reflection = float4(0, 0, 0, 0);
+    if (EnableReflectionCube)
+    {
+        float3 reflVec;
+        if (ReflectionType == 0)        // bumped cube map
+            reflVec = reflect(-V, bumpN);
+        else                             // flat cube map
+            reflVec = reflect(-V, N);
+
+        // Pitch rotation for vertical cubemap alignment
+        float cp = cos(CubemapPitch);
+        float sp = sin(CubemapPitch);
+        reflVec = normalize(float3(
+            reflVec.x,
+            reflVec.y * cp - reflVec.z * sp,
+            reflVec.y * sp + reflVec.z * cp
+        ));
+
+        reflection = SampleHaloCECubeMap(
+            ReflectionCubeTexture, smpClamp,
+            reflVec, ReflectionBlur);
+    }
+
+    // ========================================================================
+    // Reflection tinting (env_reflection_bumped.psh / env_reflection_flat.psh)
+    //
+    // Fresnel-based blend between raw reflection and pow-8 specular highlights,
+    // modulated by perpendicular/parallel brightness from Reflection Properties.
+    // ========================================================================
+    float diffuse_refl = pow(NdotV, 2.0);
+    float attenuation  = lerp(ReflParallelBrightness,
+                              ReflPerpendicularBrightness, diffuse_refl);
+    float3 tint_color  = lerp(SpecParallelColor.rgb,
+                              SpecPerpendicularColor.rgb, diffuse_refl);
+
+    float3 spec_refl       = pow(abs(reflection.rgb), 8.0);
+    float3 tinted_refl     = lerp(spec_refl, reflection.rgb, tint_color);
+    float3 final_reflection = tinted_refl * attenuation * specular_mask
+                            * ReflectionIntensityScale;
+
+    // ========================================================================
+    // Bump attenuation — matches env_lm_normal.psh
+    //
+    // In the original engine the lightmap pass multiplies the lightmap color
+    // by bump_attenuation (dot of bump normal vs. vertex normal).  This gives
+    // the surface its visible relief.  When reflections are added on top the
+    // bump detail stays visible because it modulates the diffuse base.
+    // ========================================================================
+    float bump_attenuation = EnableBumpMap
+        ? saturate(dot(bumpN, N))
+        : 1.0;
+
+    // ========================================================================
+    // Combine
+    // ========================================================================
+    float3 lit_diffuse = diffuse_color * bump_attenuation * diffuse_light
+                       + self_illumination;
+
+    // Reflection is added on top of the bump-modulated diffuse — the diffuse
+    // term already carries the surface relief so it remains visible above
+    // the reflection layer.
+    float3 lit = lit_diffuse + final_reflection + specular * LampIntensity;
+    lit = saturate(lit);
+
+    // ========================================================================
+    // Fog (viewport approximation — no runtime fog weight available)
+    // ========================================================================
+    float3 SRCCOLOR;
+    if (TrueAtmosphericFog)
+    {
+        float  fog_a = 0.0;
+        float3 fog   = saturate(c_fog_color_correction_1.rgb
+                                - fog_a * c_fog_color_correction_E.rgb);
+        SRCCOLOR = lerp(lit * c_fog_color_correction_0.a,
+                        c_fog_color_correction_0.rgb, fog_a) + fog;
+    }
+    else
+        SRCCOLOR = lit;
+
+    // ========================================================================
+    // Debug visualisation
+    // ========================================================================
+    if      (DebugMode == 1) return float4(base_map.rgb,         1.0);
+    else if (DebugMode == 2) return float4(primary_detail.rgb,   1.0);
+    else if (DebugMode == 3) return float4(secondary_detail.rgb, 1.0);
+    else if (DebugMode == 4) return float4(micro_detail.rgb,     1.0);
+    else if (DebugMode == 5) return float4(bump_map.rgb,         1.0);
+    else if (DebugMode == 6) return float4(self_illum_map.rgb,   1.0);
+    else if (DebugMode == 7) return float4(specular_mask.rrr,    1.0);
+    else if (DebugMode == 8) return float4(final_reflection,     1.0);
+    else if (DebugMode == 9)
+    {
+        // Show blend factor used for detail blending
+        float bf = (EnvironmentType == 0) ? secondary_detail.a : base_map.a;
+        return float4(bf.rrr, 1.0);
+    }
+
+    // ========================================================================
+    // Alpha test — perforated shaders use bump map alpha
+    // ========================================================================
+    if (AlphaTested)
+        clip(bump_map.a - c_alpha_ref);
+
+    return float4(SRCCOLOR, 1.0);
+}

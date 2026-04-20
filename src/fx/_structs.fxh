@@ -109,4 +109,12 @@ typedef SE_VS_INPUT  TG_VS_INPUT;
 typedef SE_VS_OUTPUT TG_VS_OUTPUT;
 typedef TG_VS_OUTPUT TG_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_transparent_water — same vertex layout as glass/environment
+// (position + normal + tangent + binormal + UV for bump-mapped reflections).
+// ----------------------------------------------------------------------------
+typedef SE_VS_INPUT  TW_VS_INPUT;
+typedef SE_VS_OUTPUT TW_VS_OUTPUT;
+typedef TW_VS_OUTPUT TW_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

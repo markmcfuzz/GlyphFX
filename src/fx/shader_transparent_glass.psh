@@ -1,0 +1,236 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_glass.psh
+//
+// Pixel shader for shader_transparent_glass.
+//
+// Consolidates the original multi-pass glass rendering into a single pass
+// for the 3ds Max viewport:
+//   · Background tint: tint map × tint color
+//   · Reflection: bump-mapped or flat cube-map with fresnel tint
+//   · Diffuse: diffuse map × diffuse detail × light, alpha-blended
+//   · Specular: specular map × specular detail × spec light, alpha-blended
+// ----------------------------------------------------------------------------
+
+// Stochastic (dithered) discard for semi-transparent glass in Nitrous.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither);
+}
+
+float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
+{
+    // ------------------------------------------------------------------------
+    // Lighting vectors
+    // ------------------------------------------------------------------------
+    float3 N  = normalize(i.wNormal);
+    float3 T  = normalize(i.wTangent);
+    float3 B  = normalize(i.wBinormal);
+    float3 Ln = normalize(i.lampVec);
+    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+
+    // ------------------------------------------------------------------------
+    // Compute all UV coordinates from the single base UV
+    // ------------------------------------------------------------------------
+    float2 baseUV          = i.uv0;
+    float2 bumpUV          = i.uv0 * BumpMapScale;
+    float2 tintUV          = i.uv0 * BackgroundTintMapScale;
+    float2 diffuseUV       = i.uv0 * DiffuseMapScale;
+    float2 diffuseDetailUV = i.uv0 * DiffuseDetailMapScale;
+    float2 specularUV      = i.uv0 * SpecularMapScale;
+    float2 specularDetailUV= i.uv0 * SpecularDetailMapScale;
+
+    // ------------------------------------------------------------------------
+    // Texture samples
+    // ------------------------------------------------------------------------
+    float4 tint_map = EnableBackgroundTintMap
+        ? BackgroundTintMapTexture.Sample(smpWrap, tintUV)
+        : float4(1, 1, 1, 1);
+
+    float4 bump_map = EnableBumpMap
+        ? BumpMapTexture.Sample(smpWrap, bumpUV)
+        : float4(0.5, 0.5, 1.0, 1.0);
+
+    float4 diffuse_map = EnableDiffuseMap
+        ? DiffuseMapTexture.Sample(smpWrap, diffuseUV)
+        : float4(0, 0, 0, 0);
+
+    float4 diffuse_detail = EnableDiffuseDetailMap
+        ? DiffuseDetailMapTexture.Sample(smpWrap, diffuseDetailUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 specular_map = EnableSpecularMap
+        ? SpecularMapTexture.Sample(smpWrap, specularUV)
+        : float4(0, 0, 0, 0);
+
+    float4 specular_detail = EnableSpecularDetailMap
+        ? SpecularDetailMapTexture.Sample(smpWrap, specularDetailUV)
+        : float4(0.5, 0.5, 0.5, 1.0);
+
+    // ------------------------------------------------------------------------
+    // Bump normal — tangent-space → world-space
+    // ------------------------------------------------------------------------
+    float3 bumpN;
+    if (EnableBumpMap)
+    {
+        float3 bump_ts = normalize(bump_map.rgb * 2.0 - 1.0);
+        bumpN = normalize(bump_ts.x * T + bump_ts.y * B + bump_ts.z * N);
+    }
+    else
+    {
+        bumpN = N;
+    }
+
+    float NdotV = saturate(dot(bumpN, V));
+
+    // ------------------------------------------------------------------------
+    // 1. Background tint
+    //    transparent_glass_tint.psh: tint_map * tint_color
+    // ------------------------------------------------------------------------
+    float3 tint = tint_map.rgb * BackgroundTintColor.rgb;
+
+    // ------------------------------------------------------------------------
+    // 2. Cube-map reflection
+    //    transparent_glass_reflection_bumped.psh / _flat.psh
+    // ------------------------------------------------------------------------
+    float3 final_reflection = float3(0, 0, 0);
+    if (EnableReflectionCube)
+    {
+        float3 reflVec;
+        if (ReflectionType == 0 || ReflectionType == 2)   // bumped cube map
+            reflVec = reflect(-V, bumpN);
+        else                                                // flat cube map
+            reflVec = reflect(-V, N);
+
+        // Pitch rotation for vertical cubemap alignment
+        float cp = cos(CubemapPitch);
+        float sp = sin(CubemapPitch);
+        reflVec = normalize(float3(
+            reflVec.x,
+            reflVec.y * cp - reflVec.z * sp,
+            reflVec.y * sp + reflVec.z * cp
+        ));
+
+        float4 reflection = SampleHaloCECubeMap(
+            ReflectionCubeTexture, smpClamp,
+            reflVec, ReflectionBlur);
+
+        // Specular colour from reflection (pow 8)
+        float3 specular_color = pow(abs(reflection.rgb), 8.0);
+
+        // Fresnel: pow(NdotV, 2)
+        float diffuse_refl = pow(NdotV, 2.0);
+
+        // Specular mask — matches original glass behaviour
+        float3 specular_mask;
+        if (BumpMapIsSpecularMask && EnableBumpMap)
+            specular_mask = bump_map.rgb;
+        else
+            specular_mask = (float3)1.0;
+
+        // Attenuation via perpendicular/parallel brightness
+        float attenuation = lerp(ReflParallelBrightness,
+                                 ReflPerpendicularBrightness, diffuse_refl);
+
+        // Tint colour via perpendicular/parallel tint
+        float3 tint_color = lerp(ReflParallelTintColor.rgb,
+                                 ReflPerpendicularTintColor.rgb, diffuse_refl);
+
+        // Blend between specular highlight and raw reflection by tint
+        float3 tinted_refl = lerp(specular_color, reflection.rgb, tint_color);
+
+        final_reflection = tinted_refl * attenuation * specular_mask
+                         * ReflectionIntensityScale;
+    }
+
+    // ------------------------------------------------------------------------
+    // 3. Diffuse lighting
+    //    transparent_glass_diffuse.psh: diffuse × detail × 2 × light
+    //    Result is alpha-blended over tint + reflection.
+    // ------------------------------------------------------------------------
+    float NdotL      = saturate(dot(bumpN, Ln));
+    float NdotL_fill = saturate(dot(bumpN, -Ln));
+
+    float3 diffuse_light = AmbientColor.rgb
+                         + LampColor * LampIntensity * NdotL
+                         + FillLightColor.rgb * NdotL_fill;
+
+    // Double-biased multiply: diffuse_map × diffuse_detail × 2
+    float3 diffuse_color = saturate(diffuse_map.rgb * diffuse_detail.rgb * 2.0);
+    float3 lit_diffuse   = diffuse_color * diffuse_light;
+
+    // Diffuse opacity: product of both map alphas
+    float diffuse_alpha = diffuse_map.a * diffuse_detail.a;
+
+    // ------------------------------------------------------------------------
+    // 4. Specular lighting
+    //    Same structure as diffuse but with specular maps and specular light.
+    // ------------------------------------------------------------------------
+    float3 H        = normalize(Ln + V);
+    float  NdotH    = saturate(dot(bumpN, H));
+    float  spec_pow = 16.0;
+    float  spec_term = pow(NdotH, spec_pow);
+
+    float3 specular_light = LampColor * LampIntensity * spec_term;
+
+    // Double-biased multiply: specular_map × specular_detail × 2
+    float3 specular_color_final = saturate(specular_map.rgb * specular_detail.rgb * 2.0);
+    float3 lit_specular = specular_color_final * specular_light;
+
+    // Specular opacity: product of both map alphas
+    float specular_alpha = specular_map.a * specular_detail.a;
+
+    // ------------------------------------------------------------------------
+    // Combine all layers (matching the original multi-pass compositing order)
+    //
+    //   Pass 1 — Tint: multiplies background (we use tint as base colour)
+    //   Pass 2 — Reflection: additive on top of tint
+    //   Pass 3 — Diffuse: alpha-blended over tint + reflection
+    //   Pass 4 — Specular: alpha-blended over everything
+    // ------------------------------------------------------------------------
+    float3 color = tint + final_reflection;
+    color = lerp(color, lit_diffuse,          diffuse_alpha);
+    color = lerp(color, color + lit_specular, specular_alpha);
+    color = saturate(color);
+
+    // ------------------------------------------------------------------------
+    // Overall glass opacity
+    //
+    // Glass is fundamentally transparent.  The visible opacity comes from
+    // tint darkness, reflection brightness and the diffuse/specular alpha
+    // channels.  We compute a composite opacity so the viewport can
+    // approximate the transparency.
+    // ------------------------------------------------------------------------
+    float refl_lum    = dot(final_reflection, float3(0.299, 0.587, 0.114));
+    float tint_lum    = 1.0 - dot(tint, float3(0.299, 0.587, 0.114));
+    float glass_alpha = saturate(max(refl_lum, max(diffuse_alpha, specular_alpha))
+                                 + tint_lum * 0.5);
+
+    // ------------------------------------------------------------------------
+    // Debug visualisation
+    // ------------------------------------------------------------------------
+    if      (DebugMode == 1) return float4(tint_map.rgb,         1.0);
+    else if (DebugMode == 2) return float4(bump_map.rgb,         1.0);
+    else if (DebugMode == 3) return float4(final_reflection,     1.0);
+    else if (DebugMode == 4) return float4(diffuse_map.rgb,      1.0);
+    else if (DebugMode == 5) return float4(diffuse_detail.rgb,   1.0);
+    else if (DebugMode == 6) return float4(specular_map.rgb,     1.0);
+    else if (DebugMode == 7) return float4(specular_detail.rgb,  1.0);
+    else if (DebugMode == 8)
+    {
+        float3 sm = BumpMapIsSpecularMask ? bump_map.rgb : (float3)1.0;
+        return float4(sm, 1.0);
+    }
+
+    // ------------------------------------------------------------------------
+    // Alpha test
+    // ------------------------------------------------------------------------
+    if (AlphaTested)
+        clip(glass_alpha - c_alpha_ref);
+
+    // Dithered transparency for Nitrous viewport
+    DitherClip(glass_alpha, i.clipPos);
+
+    return float4(color, 1.0);
+}

@@ -1,0 +1,250 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_water.psh
+//
+// Pixel shader for shader_transparent_water.
+//
+// Consolidates the original multi-pass water rendering into a single pass
+// for the 3ds Max viewport:
+//   · Ripple bump convolution — up to 4 ripple layers blended into one normal
+//   · Reflection — bump-perturbed cube-map with fresnel perpendicular/parallel
+//                  tint and brightness
+//   · Opacity — base map alpha modulates reflection, base map color modulates
+//               background
+//
+// Original passes reproduced:
+//   transparent_water_bumpmap_convolution.psh  (ripple blending)
+//   transparent_water_reflection.psh           (reflection)
+//   transparent_water_opacity.psh              (base map modulation)
+// ----------------------------------------------------------------------------
+
+// Stochastic (dithered) discard for semi-transparent water in Nitrous.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither);
+}
+
+// ----------------------------------------------------------------------------
+// Ripple bump convolution
+//
+// Samples the ripple maps texture at up to 4 UV locations (one per ripple
+// layer), weighted by each ripple's contribution factor.
+//
+// Mirrors the hierarchical lerp structure of the original
+// transparent_water_bumpmap_convolution.psh:
+//   r0 = lerp(ripple0, ripple1, c0.a)
+//   r1 = lerp(ripple2, ripple3, c1.a)
+//   result = (lerp(r0, r1, c2.a) + 1) * 0.5
+// We approximate this with a weighted average of all active layers.
+// ----------------------------------------------------------------------------
+float3 ComputeRippleNormal(float2 baseUV)
+{
+    float3 blended = float3(0, 0, 0);
+    float  totalWeight = 0;
+
+    // Default flat normal in tangent space (points straight up)
+    float3 flatN = float3(0, 0, 1);
+
+    if (!EnableRippleMaps)
+        return flatN;
+
+    float scale = max(RippleScale, 0.001);
+
+    // ---- Ripple 0 ----
+    [branch] if (EnableRipple0 && Ripple0_ContributionFactor > 0)
+    {
+        float2 ruv = baseUV * scale * max(Ripple0_MapRepeats, 0.001)
+                    + float2(Ripple0_MapOffsetU, Ripple0_MapOffsetV);
+        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+                   * 2.0 - 1.0;
+        blended     += n * Ripple0_ContributionFactor;
+        totalWeight += Ripple0_ContributionFactor;
+    }
+
+    // ---- Ripple 1 ----
+    [branch] if (EnableRipple1 && Ripple1_ContributionFactor > 0)
+    {
+        float2 ruv = baseUV * scale * max(Ripple1_MapRepeats, 0.001)
+                    + float2(Ripple1_MapOffsetU, Ripple1_MapOffsetV);
+        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+                   * 2.0 - 1.0;
+        blended     += n * Ripple1_ContributionFactor;
+        totalWeight += Ripple1_ContributionFactor;
+    }
+
+    // ---- Ripple 2 ----
+    [branch] if (EnableRipple2 && Ripple2_ContributionFactor > 0)
+    {
+        float2 ruv = baseUV * scale * max(Ripple2_MapRepeats, 0.001)
+                    + float2(Ripple2_MapOffsetU, Ripple2_MapOffsetV);
+        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+                   * 2.0 - 1.0;
+        blended     += n * Ripple2_ContributionFactor;
+        totalWeight += Ripple2_ContributionFactor;
+    }
+
+    // ---- Ripple 3 ----
+    [branch] if (EnableRipple3 && Ripple3_ContributionFactor > 0)
+    {
+        float2 ruv = baseUV * scale * max(Ripple3_MapRepeats, 0.001)
+                    + float2(Ripple3_MapOffsetU, Ripple3_MapOffsetV);
+        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+                   * 2.0 - 1.0;
+        blended     += n * Ripple3_ContributionFactor;
+        totalWeight += Ripple3_ContributionFactor;
+    }
+
+    if (totalWeight > 0)
+        return normalize(blended / totalWeight);
+
+    return flatN;
+}
+
+// ----------------------------------------------------------------------------
+// Main pixel shader
+// ----------------------------------------------------------------------------
+float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
+{
+    // ------------------------------------------------------------------------
+    // Lighting / view vectors
+    // ------------------------------------------------------------------------
+    float3 N  = normalize(i.wNormal);
+    float3 T  = normalize(i.wTangent);
+    float3 B  = normalize(i.wBinormal);
+    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+
+    // ------------------------------------------------------------------------
+    // Base map
+    // ------------------------------------------------------------------------
+    float4 base_map = EnableBaseMap
+        ? BaseMapTexture.Sample(smpWrap, i.uv0)
+        : float4(1, 1, 1, 1);
+
+    // ------------------------------------------------------------------------
+    // Ripple normal — tangent-space blended normal from up to 4 ripple layers
+    // ------------------------------------------------------------------------
+    float3 bumpTS = ComputeRippleNormal(i.uv0);
+
+    // Transform tangent-space normal to world space
+    float3 bumpN = normalize(bumpTS.x * T + bumpTS.y * B + bumpTS.z * N);
+
+    // Fresnel: perpendicular vs parallel viewing angle
+    float NdotV = saturate(dot(bumpN, V));
+
+    // ------------------------------------------------------------------------
+    // Reflection
+    //   transparent_water_reflection.psh:
+    //     reflected = 2 * (N·E / N·N) * N - E
+    //     result    = lerp(pow(cubemap, 8), cubemap, tint_color) * brightness
+    // ------------------------------------------------------------------------
+    float3 final_reflection = float3(0, 0, 0);
+    if (EnableReflectionMap)
+    {
+        float3 reflVec = reflect(-V, bumpN);
+
+        // Pitch rotation for vertical cubemap alignment
+        float cp = cos(CubemapPitch);
+        float sp = sin(CubemapPitch);
+        reflVec = normalize(float3(
+            reflVec.x,
+            reflVec.y * cp - reflVec.z * sp,
+            reflVec.y * sp + reflVec.z * cp
+        ));
+
+        float4 reflection = SampleHaloCECubeMap(
+            ReflectionMapTexture, smpClamp,
+            reflVec, ReflectionBlur);
+
+        // Specular highlight from reflection (pow 8) — matches original
+        float3 specular_color = pow(abs(reflection.rgb), 8.0);
+
+        // Fresnel-driven perpendicular/parallel interpolation
+        float diffuse_refl = pow(NdotV, 2.0);
+
+        // Brightness attenuation
+        float brightness = lerp(ViewParallelBrightness,
+                                ViewPerpendicularBrightness, diffuse_refl);
+
+        // Tint colour
+        float3 tint_color = lerp(ViewParallelTintColor.rgb,
+                                 ViewPerpendicularTintColor.rgb, diffuse_refl);
+
+        // Blend specular highlight with raw reflection via tint
+        float3 tinted_refl = lerp(specular_color, reflection.rgb, tint_color);
+
+        final_reflection = tinted_refl * brightness * ReflectionIntensityScale;
+    }
+
+    // ------------------------------------------------------------------------
+    // Base map modulation
+    //   transparent_water_opacity.psh:
+    //     alpha modulates reflection: reflection *= base_map.a * fresnel_brightness
+    //     color modulates background: background = base_map.rgb
+    // ------------------------------------------------------------------------
+    if (BaseMapAlphaModulatesReflection)
+    {
+        float diffuse_refl = pow(NdotV, 2.0);
+        float alpha_atten = lerp(ViewParallelBrightness,
+                                 ViewPerpendicularBrightness, diffuse_refl);
+        final_reflection *= base_map.a * alpha_atten;
+    }
+
+    float3 background = float3(0, 0, 0);
+    if (BaseMapColorModulatesBackground)
+        background = base_map.rgb;
+
+    // ------------------------------------------------------------------------
+    // Combine — reflection added on top of background tint
+    //
+    // In the original engine water uses real additive + multiply blending
+    // passes.  Nitrous cannot do true additive compositing, so we use
+    // dithered discard for transparency.  To keep the surface looking solid
+    // we boost the colour on surviving pixels to compensate for the ones
+    // that are discarded.
+    // ------------------------------------------------------------------------
+    float3 color = background + final_reflection;
+
+    // ------------------------------------------------------------------------
+    // Overall water opacity
+    //
+    // Fresnel drives the surface visibility: glancing angles are more
+    // opaque, head-on can be more transparent.  We use the colour luminance
+    // boosted by a base floor so the surface always remains largely visible
+    // (water in the original engine is never invisible — the reflection
+    // pass always draws every pixel).
+    // ------------------------------------------------------------------------
+    float fresnel_factor = pow(NdotV, 2.0);
+    float fresnel_opacity = lerp(ViewParallelBrightness,
+                                 ViewPerpendicularBrightness, fresnel_factor);
+
+    float color_lum = dot(color, float3(0.299, 0.587, 0.114));
+
+    // Remap: scale the colour luminance so even dim reflections produce
+    // high alpha, and use fresnel_opacity as a floor.  This keeps the
+    // surface solid while still allowing some see-through in the darkest
+    // areas.
+    float water_alpha = saturate(fresnel_opacity + color_lum * 3.0);
+
+    // Base map alpha acts as a shape mask — where it's black (0) the water
+    // surface is not rendered at all (e.g. pond / river outlines).
+    if (BaseMapAlphaModulatesReflection)
+        water_alpha *= base_map.a;
+
+    // Boost surviving pixel colour to compensate for discarded neighbours.
+    // Without this, dithering makes the surface appear half as bright.
+    color = color / max(water_alpha, 0.15);
+    color = saturate(color);
+
+    // ------------------------------------------------------------------------
+    // Debug visualisation
+    // ------------------------------------------------------------------------
+    if      (DebugMode == 1) return float4(base_map.rgb,                   1.0);
+    else if (DebugMode == 2) return float4(bumpTS * 0.5 + 0.5,            1.0);
+    else if (DebugMode == 3) return float4(final_reflection,               1.0);
+
+    // Dithered transparency for Nitrous viewport
+    DitherClip(water_alpha, i.clipPos);
+
+    return float4(color, 1.0);
+}

@@ -18,12 +18,12 @@
 
 | Shader Type | Status |
 |---|---|
-| `shader_environment` | In progress |
+| `shader_environment` | Done |
 | `shader_model` | Done |
 | `shader_transparent_chicago` | Done |
 | `shader_transparent_chicago_extended` | In progress |
 | `shader_transparent_generic` | In progress |
-| `shader_transparent_glass` | In progress |
+| `shader_transparent_glass` | Done |
 | `shader_transparent_meter` | Done |
 | `shader_transparent_plasma` | In progress |
 | `shader_transparent_water` | In progress |

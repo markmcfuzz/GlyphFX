@@ -26,7 +26,7 @@
 | `shader_transparent_glass` | Done |
 | `shader_transparent_meter` | Done |
 | `shader_transparent_plasma` | In progress |
-| `shader_transparent_water` | In progress |
+| `shader_transparent_water` | Done |
 
 ---
 

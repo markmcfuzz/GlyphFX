@@ -108,7 +108,7 @@ float CubemapPitch
     //string UIName   = "Cubemap Pitch Rotation (radians)";
     string UIWidget = "slider";
     float  UIMin = -1.57; float UIMax = 1.57; float UIStep = 0.01;
-> = -0.25;
+> = -0.0;
 
 // ----------------------------------------------------------------------------
 // Shader Model Flags
@@ -154,6 +154,15 @@ bool UseXboxChannelOrder
     string UIGroup = "Shader Model Flags";
     int    UIOrder = 5;
 > = false;
+
+float DitherScale
+<
+    //string UIName   = "Dither Scale  (1 = full range)";
+    string UIGroup  = "Shader Model Flags";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 6;
+> = 1.0;
 
 // ----------------------------------------------------------------------------
 // Base Map Properties

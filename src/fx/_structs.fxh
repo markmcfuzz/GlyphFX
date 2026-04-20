@@ -101,4 +101,12 @@ struct SE_VS_OUTPUT
 
 typedef SE_VS_OUTPUT SE_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_transparent_glass — uses the same vertex layout as shader_environment
+// (position + normal + tangent + binormal + UV for bump-mapped reflections).
+// ----------------------------------------------------------------------------
+typedef SE_VS_INPUT  TG_VS_INPUT;
+typedef SE_VS_OUTPUT TG_VS_OUTPUT;
+typedef TG_VS_OUTPUT TG_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

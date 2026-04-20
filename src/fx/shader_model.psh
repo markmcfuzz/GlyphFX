@@ -4,6 +4,15 @@
 // Pixel shader for shader_model.
 // ----------------------------------------------------------------------------
 
+// Stochastic (dithered) discard — same technique as shader_transparent_chicago.
+// Fragments with alpha == 0 always discard; alpha == 1 always survive.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither * DitherScale);
+}
+
 float4 PS_Main(PS_INPUT i) : SV_TARGET
 {
     // --- Lighting vectors ---
@@ -161,8 +170,10 @@ float4 PS_Main(PS_INPUT i) : SV_TARGET
     else if (DebugMode == 7) return float4(detail_map.rgb,                               1.0);
     else if (DebugMode == 8) return float4(tinted_reflection * specular_reflection_mask, 1.0);
 
-    // --- Alpha test ---
-    if (!NotAlphaTested)
+    // --- Alpha blend / Alpha test ---
+    if (AlphaBlendedDecal)
+        DitherClip(SRCALPHA, i.clipPos);
+    else if (!NotAlphaTested)
         clip(SRCALPHA - c_alpha_ref);
 
     return float4(SRCCOLOR, 1.0);

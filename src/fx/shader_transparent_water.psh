@@ -5,10 +5,10 @@
 //
 // Consolidates the original multi-pass water rendering into a single pass
 // for the 3ds Max viewport:
-//   · Ripple bump convolution — up to 4 ripple layers blended into one normal
-//   · Reflection — bump-perturbed cube-map with fresnel perpendicular/parallel
+//   · Ripple bump convolution - up to 4 ripple layers blended into one normal
+//   · Reflection - bump-perturbed cube-map with fresnel perpendicular/parallel
 //                  tint and brightness
-//   · Opacity — base map alpha modulates reflection, base map color modulates
+//   · Opacity - base map alpha modulates reflection, base map color modulates
 //               background
 //
 // Original passes reproduced:
@@ -122,7 +122,7 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
         : float4(1, 1, 1, 1);
 
     // ------------------------------------------------------------------------
-    // Ripple normal — tangent-space blended normal from up to 4 ripple layers
+    // Ripple normal - tangent-space blended normal from up to 4 ripple layers
     // ------------------------------------------------------------------------
     float3 bumpTS = ComputeRippleNormal(i.uv0);
 
@@ -156,7 +156,7 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
             ReflectionMapTexture, smpClamp,
             reflVec, ReflectionBlur);
 
-        // Specular highlight from reflection (pow 8) — matches original
+        // Specular highlight from reflection (pow 8) - matches original
         float3 specular_color = pow(abs(reflection.rgb), 8.0);
 
         // Fresnel-driven perpendicular/parallel interpolation
@@ -195,7 +195,7 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
         background = base_map.rgb;
 
     // ------------------------------------------------------------------------
-    // Combine — reflection added on top of background tint
+    // Combine - reflection added on top of background tint
     //
     // In the original engine water uses real additive + multiply blending
     // passes.  Nitrous cannot do true additive compositing, so we use
@@ -211,7 +211,7 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
     // Fresnel drives the surface visibility: glancing angles are more
     // opaque, head-on can be more transparent.  We use the colour luminance
     // boosted by a base floor so the surface always remains largely visible
-    // (water in the original engine is never invisible — the reflection
+    // (water in the original engine is never invisible - the reflection
     // pass always draws every pixel).
     // ------------------------------------------------------------------------
     float fresnel_factor = pow(NdotV, 2.0);
@@ -226,7 +226,7 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
     // areas.
     float water_alpha = saturate(fresnel_opacity + color_lum * 3.0);
 
-    // Base map alpha acts as a shape mask — where it's black (0) the water
+    // Base map alpha acts as a shape mask - where it's black (0) the water
     // surface is not rendered at all (e.g. pond / river outlines).
     if (BaseMapAlphaModulatesReflection)
         water_alpha *= base_map.a;

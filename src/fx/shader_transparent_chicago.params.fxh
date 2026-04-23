@@ -3,10 +3,10 @@
 //
 // All UI-exposed parameters for shader_transparent_chicago.
 // Matches the Guerrilla tag layout:
-//   — global shader flags and framebuffer blend/fade settings
-//   — up to 4 map stages; stages 2-4 activated with EnableMapN booleans
-//   — per-map: flags, color/alpha blend function, UV transform, texture
-//   — extra flags at the bottom
+//   - global shader flags and framebuffer blend/fade settings
+//   - up to 4 map stages; stages 2-4 activated with EnableMapN booleans
+//   - per-map: flags, color/alpha blend function, UV transform, texture
+//   - extra flags at the bottom
 //
 // Color/alpha function enum (applies to Maps 2-4):
 //   0=current  1=next map  2=multiply  3=double multiply
@@ -87,7 +87,7 @@ bool Numeric
     int    UIOrder = 8;
 > = false;
 
-// Informational — select the matching technique to activate the correct blend.
+// Informational - select the matching technique to activate the correct blend.
 int FirstMapType
 <
     string UIName   = "First Map Type  (select matching technique)  [0=2D Map 1=Reflection Cubemap  2=Object Center Cubemap  3=Viewer Centered Cubemap]";
@@ -143,7 +143,7 @@ int LensFlareReference
 > = 0;
 
 // ----------------------------------------------------------------------------
-// Map 1  (always active — the base stage)
+// Map 1  (always active - the base stage)
 // Color/alpha function is tag-visible but has no effect on the base stage.
 // ----------------------------------------------------------------------------
 bool Map1_Unfiltered

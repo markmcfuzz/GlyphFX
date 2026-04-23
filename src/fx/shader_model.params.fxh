@@ -60,7 +60,7 @@ float LampIntensity
 // Debug Parameters
 // These are not intended for artistic control, but are useful for inspecting
 // ----------------------------------------------------------------------------
-// Debug visualisation — set to non-zero to inspect individual channels.
+// Debug visualisation - set to non-zero to inspect individual channels.
 //  0 = normal render
 //  1 = base map (unlit)
 //  2 = multipurpose map RGB
@@ -69,7 +69,7 @@ float LampIntensity
 //  5 = mp.B channel (grayscale)  <- PC specular/reflection mask
 //  6 = mp.A channel (grayscale)  <- PC change-color mask
 //  7 = detail map (unlit)
-//  8 = reflection only (no diffuse) — tests whether cube map is loading
+//  8 = reflection only (no diffuse) - tests whether cube map is loading
 int DebugMode
 <
     //string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";

@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // GlyphFX | fx/shader_transparent_water.fx
 //
-// Halo CE — shader_transparent_water
+// Halo CE - shader_transparent_water
 // Entry point.  Includes all modules and declares the DX11 technique.
 //
 // Water is rendered as a semi-transparent surface with bump-mapped cubemap
@@ -22,7 +22,7 @@ string ParamID = "0x003";
 #include "shader_transparent_water.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state — water is semi-transparent; Nitrous requires BlendEnable=FALSE
+// Blend state - water is semi-transparent; Nitrous requires BlendEnable=FALSE
 // so we use dithered alpha in the pixel shader instead.
 // ----------------------------------------------------------------------------
 BlendState BS_Water
@@ -48,7 +48,7 @@ DepthStencilState DS_Default
 };
 
 // ----------------------------------------------------------------------------
-// Rasterizer state — no back-face culling so both sides render (water is
+// Rasterizer state - no back-face culling so both sides render (water is
 // often two-sided).
 // ----------------------------------------------------------------------------
 RasterizerState RS_NoCull

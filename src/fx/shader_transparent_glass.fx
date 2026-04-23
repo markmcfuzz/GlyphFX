@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // GlyphFX | fx/shader_transparent_glass.fx
 //
-// Halo CE — shader_transparent_glass
+// Halo CE - shader_transparent_glass
 // Entry point.  Includes all modules and declares the DX11 technique.
 //
 // 3ds Max 2023+ | DirectX 11 | Shader Model 5.0
@@ -18,7 +18,7 @@ string ParamID = "0x003";
 #include "shader_transparent_glass.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state — glass is semi-transparent; Nitrous requires BlendEnable=FALSE
+// Blend state - glass is semi-transparent; Nitrous requires BlendEnable=FALSE
 // so we use dithered alpha in the pixel shader instead.
 // ----------------------------------------------------------------------------
 BlendState BS_Glass
@@ -44,7 +44,7 @@ DepthStencilState DS_Default
 };
 
 // ----------------------------------------------------------------------------
-// Rasterizer state — no back-face culling so both sides render (glass is
+// Rasterizer state - no back-face culling so both sides render (glass is
 // often two-sided).
 // ----------------------------------------------------------------------------
 RasterizerState RS_NoCull

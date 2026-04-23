@@ -4,7 +4,7 @@
 // Pixel shader for shader_model.
 // ----------------------------------------------------------------------------
 
-// Stochastic (dithered) discard — same technique as shader_transparent_chicago.
+// Stochastic (dithered) discard - same technique as shader_transparent_chicago.
 // Fragments with alpha == 0 always discard; alpha == 1 always survive.
 void DitherClip(float alpha, float4 clipPos)
 {

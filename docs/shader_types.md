@@ -56,7 +56,7 @@ Used for `gbxmodel` tags.
 
 ## shader_environment
 
-Used for level geometry — floors, walls, ceilings and terrain.
+Used for level geometry - floors, walls, ceilings and terrain.
 
 **File:** `fx/shader_environment.fx`  
 **Status:** In progress

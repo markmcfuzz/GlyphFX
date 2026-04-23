@@ -3,7 +3,7 @@
 //
 // Vertex shader for shader_transparent_chicago.
 // Computes four independently-transformed UV channels from the single mesh UV,
-// one per map stage. No lighting — this is a purely textured transparent shader.
+// one per map stage. No lighting - this is a purely textured transparent shader.
 // ----------------------------------------------------------------------------
 
 // Applies per-map scale / offset / rotation (degrees) to the base UV.

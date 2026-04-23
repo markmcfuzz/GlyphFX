@@ -142,9 +142,9 @@ bool RescaleBumpMap
 
 // ----------------------------------------------------------------------------
 // Environment Shader Type
-//   0 = NORMAL        — secondary detail alpha blends primary/secondary detail
-//   1 = BLENDED       — base map alpha blends primary/secondary detail
-//   2 = BLENDED BASE SPECULAR — same as BLENDED, specular mask from base alpha
+//   0 = NORMAL        - secondary detail alpha blends primary/secondary detail
+//   1 = BLENDED       - base map alpha blends primary/secondary detail
+//   2 = BLENDED BASE SPECULAR - same as BLENDED, specular mask from base alpha
 // ----------------------------------------------------------------------------
 int EnvironmentType
 <
@@ -418,9 +418,9 @@ bool DynamicMirror
     int    UIOrder = 59;
 > = false;
 
-//   0 = bumped cube-map   — bump map affects reflection direction + fresnel
-//   1 = flat cube-map     — bump attenuates fresnel, reflection is unbumped
-//   2 = bumped radiosity  — same as bumped cube-map?
+//   0 = bumped cube-map   - bump map affects reflection direction + fresnel
+//   1 = flat cube-map     - bump attenuates fresnel, reflection is unbumped
+//   2 = bumped radiosity  - same as bumped cube-map?
 int ReflectionType
 <
     string UIName   = "Reflection Type  [0=Bumped Cube Map  1=Flat Cube Map  2=Bumped Radiosity]";

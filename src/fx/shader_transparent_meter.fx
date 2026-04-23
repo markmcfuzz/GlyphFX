@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // GlyphFX | fx/shader_transparent_meter.fx
 //
-// Halo CE — shader_transparent_meter
+// Halo CE - shader_transparent_meter
 // Entry point. Includes all modules and declares the DX11 technique.
 //
 // 3ds Max 2023+ | DirectX 11 | Shader Model 5.0
@@ -17,7 +17,7 @@ string ParamID = "0x003";
 #include "shader_transparent_meter.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state — standard alpha blending
+// Blend state - standard alpha blending
 // Transparent objects composite over the scene normally.
 // Note: in-engine the Decal flag switches to a modulative blend mode;
 // that cannot be toggled per-pass here, so alpha blend is used for all cases.
@@ -35,7 +35,7 @@ BlendState BS_AlphaBlend
 };
 
 // ----------------------------------------------------------------------------
-// Depth state — write depth so opaque passes rendered after the meter cannot
+// Depth state - write depth so opaque passes rendered after the meter cannot
 // overwrite its pixels.  The VS Z-bias ensures the meter always wins against
 // coplanar shader_model geometry regardless of sub-material render order.
 // ----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ DepthStencilState DS_MeterDepth
 };
 
 // ----------------------------------------------------------------------------
-// Rasterizer state — no backface culling
+// Rasterizer state - no backface culling
 // Matches Halo's two-sided transparent rendering; the TwoSided flag is
 // retained as a tag-visible parameter but culling is disabled here for
 // correct viewport preview of all meter geometry orientations.

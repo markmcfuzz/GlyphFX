@@ -4,7 +4,7 @@
 // Vertex shader for shader_transparent_meter.
 //
 // Transforms the vertex position to clip space and passes the UV coordinate
-// straight through. No lighting, no normals — matches the original
+// straight through. No lighting, no normals - matches the original
 // transparent_meter.vsh which only outputs Pos and T0.
 // ----------------------------------------------------------------------------
 

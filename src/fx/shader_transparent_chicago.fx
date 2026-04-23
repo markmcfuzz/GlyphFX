@@ -1,15 +1,15 @@
 // ----------------------------------------------------------------------------
 // GlyphFX | fx/shader_transparent_chicago.fx
 //
-// Halo CE — shader_transparent_chicago
+// Halo CE - shader_transparent_chicago
 // Entry point.  Includes all modules and declares the DX11 techniques.
 //
 // Select the technique that matches the "Framebuffer Blend Function" in the tag:
 //
-//   HaloCE_Chicago_AlphaBlend      alpha blend  — texture WITH  alpha channel
-//   HaloCE_Chicago_Multiply        multiply     — polygon darkens / tints bg
-//   HaloCE_Chicago_DoubleMultiply  double mul   — same as multiply, 2× result
-//   HaloCE_Chicago_Add             add          — texture WITHOUT alpha channel
+//   HaloCE_Chicago_AlphaBlend      alpha blend  - texture WITH  alpha channel
+//   HaloCE_Chicago_Multiply        multiply     - polygon darkens / tints bg
+//   HaloCE_Chicago_DoubleMultiply  double mul   - same as multiply, 2× result
+//   HaloCE_Chicago_Add             add          - texture WITHOUT alpha channel
 //
 // 3ds Max 2023+ | DirectX 11 | Shader Model 5.0
 // ----------------------------------------------------------------------------
@@ -27,10 +27,10 @@ string ParamID = "0x003";
 // Blend states
 // ----------------------------------------------------------------------------
 
-// Alpha Blend — standard compositing:  src.a × src + (1 − src.a) × dst
+// Alpha Blend - standard compositing:  src.a × src + (1 − src.a) × dst
 // BlendEnable = FALSE: GPU blending is off, PS output goes directly to framebuffer.
 // SrcBlend = ONE / DestBlend = ZERO: tells Nitrous this is an OPAQUE material so
-// Standard/High Quality viewport composites it opaquely — black stays black.
+// Standard/High Quality viewport composites it opaquely - black stays black.
 // For DX mode, BlendEnable=FALSE means these factors are irrelevant anyway.
 BlendState BS_AlphaBlend
 {
@@ -44,10 +44,10 @@ BlendState BS_AlphaBlend
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Add — result = src.a × src.rgb + dst.rgb
+// Add - result = src.a × src.rgb + dst.rgb
 //   Luminance is used as alpha in PS_Add: dark pixels get alpha ≈ 0 and
 //   contribute almost nothing; bright pixels add their full colour on top.
-//   No polygon silhouette / dark rectangle — the background shows through
+//   No polygon silhouette / dark rectangle - the background shows through
 //   at dark pixels naturally without any discard or dithering.
 BlendState BS_Add
 {
@@ -61,7 +61,7 @@ BlendState BS_Add
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Multiply — stochastic approximation via inverted luminance dither.
+// Multiply - stochastic approximation via inverted luminance dither.
 //   Bright pixels (high lum) are discarded → background shows through.
 //   Dark pixels survive and draw their colour opaquely → darkens the background.
 //   BlendEnable = FALSE so Nitrous composites surviving fragments as opaque
@@ -78,7 +78,7 @@ BlendState BS_Multiply
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Double Multiply — same stochastic approach as Multiply.
+// Double Multiply - same stochastic approach as Multiply.
 //   Output RGB is pre-doubled (× 2) before the inverted-lum dither.
 //   Mid grey (0.5) × 2 = 1.0 → nearly always discarded → near-neutral effect.
 BlendState BS_DoubleMultiply
@@ -106,7 +106,7 @@ DepthStencilState DS_DepthReadWrite
 };
 
 // ----------------------------------------------------------------------------
-// Rasterizer state — no back-face culling so both sides render correctly.
+// Rasterizer state - no back-face culling so both sides render correctly.
 // ----------------------------------------------------------------------------
 RasterizerState RS_NoCull
 {
@@ -116,7 +116,7 @@ RasterizerState RS_NoCull
 // ----------------------------------------------------------------------------
 // Techniques
 // ----------------------------------------------------------------------------
-// Alpha Blend — uses texture alpha for opacity.
+// Alpha Blend - uses texture alpha for opacity.
 // Best for textures WITH an alpha channel.
 technique11 blend_func_alpha_blend
 <
@@ -137,7 +137,7 @@ technique11 blend_func_alpha_blend
         SetRasterizerState   ( RS_NoCull );
     }
 }
-// Multiply — polygon RGB multiplies the background.
+// Multiply - polygon RGB multiplies the background.
 // White = no effect; black = darkens to black.
 technique11 blend_func_multiply
 <
@@ -158,7 +158,7 @@ technique11 blend_func_multiply
         SetRasterizerState   ( RS_NoCull );
     }
 }
-// Double Multiply — same as Multiply but 2× result.
+// Double Multiply - same as Multiply but 2× result.
 // Mid grey (0.5) leaves background unchanged.
 technique11 blend_func_double_multiply
 <
@@ -179,7 +179,7 @@ technique11 blend_func_double_multiply
         SetRasterizerState   ( RS_NoCull );
     }
 }
-// Add — opacity from RGB luminance; colour is added to the background.
+// Add - opacity from RGB luminance; colour is added to the background.
 // Best for textures WITHOUT an alpha channel.
 technique11 blend_func_add
 <

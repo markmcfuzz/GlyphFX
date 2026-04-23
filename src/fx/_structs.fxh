@@ -37,7 +37,7 @@ struct VS_OUTPUT
 typedef VS_OUTPUT PS_INPUT;
 
 // ----------------------------------------------------------------------------
-// shader_transparent_meter — no lighting, position + UV only
+// shader_transparent_meter - no lighting, position + UV only
 // ----------------------------------------------------------------------------
 struct TM_VS_INPUT
 {
@@ -54,7 +54,7 @@ struct TM_VS_OUTPUT
 typedef TM_VS_OUTPUT TM_PS_INPUT;
 
 // ----------------------------------------------------------------------------
-// shader_transparent_chicago — position + base UV; VS outputs 4 transformed
+// shader_transparent_chicago - position + base UV; VS outputs 4 transformed
 // UV channels (one per map stage) computed from the single mesh UV.
 // ----------------------------------------------------------------------------
 struct TC_VS_INPUT
@@ -75,7 +75,7 @@ struct TC_VS_OUTPUT
 typedef TC_VS_OUTPUT TC_PS_INPUT;
 
 // ----------------------------------------------------------------------------
-// shader_environment — diffuse + bump + detail + self-illumination + reflection
+// shader_environment - diffuse + bump + detail + self-illumination + reflection
 // Requires tangent/binormal for tangent-space bump mapping.
 // ----------------------------------------------------------------------------
 struct SE_VS_INPUT
@@ -102,7 +102,7 @@ struct SE_VS_OUTPUT
 typedef SE_VS_OUTPUT SE_PS_INPUT;
 
 // ----------------------------------------------------------------------------
-// shader_transparent_glass — uses the same vertex layout as shader_environment
+// shader_transparent_glass - uses the same vertex layout as shader_environment
 // (position + normal + tangent + binormal + UV for bump-mapped reflections).
 // ----------------------------------------------------------------------------
 typedef SE_VS_INPUT  TG_VS_INPUT;
@@ -110,7 +110,7 @@ typedef SE_VS_OUTPUT TG_VS_OUTPUT;
 typedef TG_VS_OUTPUT TG_PS_INPUT;
 
 // ----------------------------------------------------------------------------
-// shader_transparent_water — same vertex layout as glass/environment
+// shader_transparent_water - same vertex layout as glass/environment
 // (position + normal + tangent + binormal + UV for bump-mapped reflections).
 // ----------------------------------------------------------------------------
 typedef SE_VS_INPUT  TW_VS_INPUT;

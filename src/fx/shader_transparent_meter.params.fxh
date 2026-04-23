@@ -2,7 +2,7 @@
 // GlyphFX | fx/shader_transparent_meter.params.fxh
 //
 // All UI-exposed parameters for shader_transparent_meter.
-// Also defines the lightweight VS/PS I/O structs used by this shader —
+// Also defines the lightweight VS/PS I/O structs used by this shader -
 // no lighting, no normals; just clip-space position and one UV channel.
 // ----------------------------------------------------------------------------
 

@@ -3,13 +3,13 @@
 //
 // All UI-exposed parameters for shader_transparent_water.
 // Matches the Guerrilla tag layout:
-//   — water shader flags
-//   — base map
-//   — view perpendicular/parallel brightness & tint color
-//   — reflection map (cubemap)
-//   — ripple global properties
-//   — ripple maps
-//   — ripples block (max 4 entries)
+//   - water shader flags
+//   - base map
+//   - view perpendicular/parallel brightness & tint color
+//   - reflection map (cubemap)
+//   - ripple global properties
+//   - ripple maps
+//   - ripples block (max 4 entries)
 // ----------------------------------------------------------------------------
 
 #ifndef GLYPHFX_TRANSPARENT_WATER_PARAMS_FXH

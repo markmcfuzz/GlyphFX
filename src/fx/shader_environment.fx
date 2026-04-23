@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // GlyphFX | fx/shader_environment.fx
 //
-// Halo CE — shader_environment
+// Halo CE - shader_environment
 // Entry point.  Includes all modules and declares the DX11 technique.
 //
 // 3ds Max 2023+ | DirectX 11 | Shader Model 5.0

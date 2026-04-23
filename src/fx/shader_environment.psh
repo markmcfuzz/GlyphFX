@@ -60,7 +60,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
         : float4(0, 0, 0, 0);
 
     // ========================================================================
-    // Bump normal — tangent-space → world-space
+    // Bump normal - tangent-space → world-space
     // ========================================================================
     float3 bumpN;
     if (EnableBumpMap)
@@ -74,7 +74,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
     }
 
     // ========================================================================
-    // Detail blending — depends on Environment Type
+    // Detail blending - depends on Environment Type
     // ========================================================================
     float4 blended_detail;
 
@@ -136,7 +136,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
 
     // ========================================================================
     // Material color tint
-    // In-game, material color (0,0,0) still renders as ~0.3 grey — the engine
+    // In-game, material color (0,0,0) still renders as ~0.3 grey - the engine
     // never lets surfaces go fully black.
     // ========================================================================
     float3 mat = max(MaterialColor.rgb, 0.3);
@@ -175,7 +175,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
     float3 primary_glow   = primary_color   * self_illum_map.r;
     float3 secondary_glow = secondary_color * self_illum_map.g;
 
-    // Plasma — matches the hard-edge effect from env_lm_normal.psh
+    // Plasma - matches the hard-edge effect from env_lm_normal.psh
     float plasma_i1 = PlasmaAnimationValue + 0.5 - max(0.0, self_illum_map.a);
     float plasma_i2 = self_illum_map.a       + 0.5 - max(0.0, PlasmaAnimationValue);
     float plasma    = (plasma_i1 < 0.5) ? plasma_i1 : plasma_i2;
@@ -232,7 +232,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
                             * ReflectionIntensityScale;
 
     // ========================================================================
-    // Bump attenuation — matches env_lm_normal.psh
+    // Bump attenuation - matches env_lm_normal.psh
     //
     // In the original engine the lightmap pass multiplies the lightmap color
     // by bump_attenuation (dot of bump normal vs. vertex normal).  This gives
@@ -249,14 +249,14 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
     float3 lit_diffuse = diffuse_color * bump_attenuation * diffuse_light
                        + self_illumination;
 
-    // Reflection is added on top of the bump-modulated diffuse — the diffuse
+    // Reflection is added on top of the bump-modulated diffuse - the diffuse
     // term already carries the surface relief so it remains visible above
     // the reflection layer.
     float3 lit = lit_diffuse + final_reflection + specular * LampIntensity;
     lit = saturate(lit);
 
     // ========================================================================
-    // Fog (viewport approximation — no runtime fog weight available)
+    // Fog (viewport approximation - no runtime fog weight available)
     // ========================================================================
     float3 SRCCOLOR;
     if (TrueAtmosphericFog)
@@ -289,7 +289,7 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
     }
 
     // ========================================================================
-    // Alpha test — perforated shaders use bump map alpha
+    // Alpha test - perforated shaders use bump map alpha
     // ========================================================================
     if (AlphaTested)
         clip(bump_map.a - c_alpha_ref);

@@ -3,11 +3,11 @@
 //
 // All UI-exposed parameters for shader_transparent_glass.
 // Matches the Guerrilla tag layout:
-//   — glass shader flags
-//   — background tint properties
-//   — reflection properties (bumped / flat cube-map)
-//   — diffuse properties
-//   — specular properties
+//   - glass shader flags
+//   - background tint properties
+//   - reflection properties (bumped / flat cube-map)
+//   - diffuse properties
+//   - specular properties
 // ----------------------------------------------------------------------------
 
 #ifndef GLYPHFX_TRANSPARENT_GLASS_PARAMS_FXH
@@ -174,10 +174,10 @@ Texture2D BackgroundTintMapTexture
 // reflection map is magnified.
 // ----------------------------------------------------------------------------
 
-//   0 = bumped cube-map   — bump map affects reflection direction + fresnel
-//   1 = flat cube-map     — bump attenuates fresnel, reflection is unbumped
-//   2 = dynamic mirror (bumped)  — mirror reflection (not implemented in viewport)
-//   3 = dynamic mirror (flat)    — mirror reflection (not implemented in viewport)
+//   0 = bumped cube-map   - bump map affects reflection direction + fresnel
+//   1 = flat cube-map     - bump attenuates fresnel, reflection is unbumped
+//   2 = dynamic mirror (bumped)  - mirror reflection (not implemented in viewport)
+//   3 = dynamic mirror (flat)    - mirror reflection (not implemented in viewport)
 int ReflectionType
 <
     string UIName   = "Reflection Type  [0=Bumped Cube Map  1=Flat Cube Map  2=Dynamic Mirror Bumped  3=Dynamic Mirror Flat]";

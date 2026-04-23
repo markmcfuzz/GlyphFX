@@ -6,7 +6,7 @@
 //
 // ── MAP STAGE PIPELINE ───────────────────────────────────────────────────────
 // Up to 4 texture maps are blended sequentially.  Map 1 is always the base.
-// Maps 2–4 are enabled with EnableMap2 / EnableMap3 / EnableMap4.
+// Maps 2-4 are enabled with EnableMap2 / EnableMap3 / EnableMap4.
 //
 // Each active stage blends the accumulated value with the new map sample
 // using the per-stage ColorFunction / AlphaFunction enum:
@@ -28,19 +28,19 @@
 // technique in shader_transparent_chicago.fx.  Select the technique that
 // matches the "Framebuffer Blend Function" value in the tag.
 //
-//   Alpha Blend     — opacity from the texture's alpha channel.
+//   Alpha Blend     - opacity from the texture's alpha channel.
 //                     For textures WITH an alpha channel.
 //                     White alpha = opaque; black alpha = transparent.
 //
-//   Multiply        — polygon RGB multiplies the background.
+//   Multiply        - polygon RGB multiplies the background.
 //                     White (1,1,1) = no effect; black (0,0,0) = full black.
 //                     GPU blend state (DEST_COLOR / ZERO) does the math.
 //
-//   Double Multiply — same as Multiply but 2× result.
+//   Double Multiply - same as Multiply but 2× result.
 //                     Mid grey (0.5) leaves the background unchanged.
 //                     GPU blend state (DEST_COLOR / SRC_COLOR) does the math.
 //
-//   Add             — opacity from RGB luminance.
+//   Add             - opacity from RGB luminance.
 //                     For textures WITHOUT an alpha channel.
 //                     Black = invisible; bright white = full glow added to bg.
 //                     GPU blend state (SRC_ALPHA / ONE) does the additive mix.
@@ -58,7 +58,7 @@ float3 BlendColor(float3 A, float3 B, int func)
     else if (func == 5) return saturate(A + B - 0.5);
     else if (func == 6) return saturate(A + B - 0.5);
     else if (func == 7) return saturate(A - B);
-    return A;   // 0 = Current — pass through
+    return A;   // 0 = Current - pass through
 }
 
 // Blends accumulated alpha A with incoming stage alpha B.
@@ -79,7 +79,7 @@ float BlendAlpha(float A, float B, int func)
 
 float4 PS_Evaluate(TC_PS_INPUT i)
 {
-    // Map 1 — base stage, always active.
+    // Map 1 - base stage, always active.
     float2 uv0 = i.uv0;
     if (Map1_UClamped) uv0.x = saturate(uv0.x);
     if (Map1_VClamped) uv0.y = saturate(uv0.y);
@@ -167,7 +167,7 @@ void DitherClip(float alpha, float4 clipPos)
 
 // ─── Pixel shader entry points ────────────────────────────────────────────────
 
-// Alpha Blend — uses the texture's alpha channel for opacity.
+// Alpha Blend - uses the texture's alpha channel for opacity.
 // Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
 //   → PS outputs alpha = 0.0 → Nitrous Standard/High Quality composites the
 //     RGB output over the dark viewport background → black areas stay black.
@@ -183,10 +183,10 @@ float4 PS_AlphaBlend(TC_PS_INPUT i) : SV_TARGET
     return float4(c.rgb, alpha);
 }
 
-// Add — SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
+// Add - SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
 // Use this technique when the texture has NO alpha channel.
 // Luminance drives the alpha: dark pixels → alpha ≈ 0 → additive contribution ≈ 0.
-// DitherClip DISCARDS dark pixels so they don't write to the depth buffer —
+// DitherClip DISCARDS dark pixels so they don't write to the depth buffer -
 // without this they produce a black polygon silhouette even when blending to zero.
 // Brightness scales the output RGB to match the in-game renderer intensity.
 float4 PS_Add(TC_PS_INPUT i) : SV_TARGET
@@ -198,7 +198,7 @@ float4 PS_Add(TC_PS_INPUT i) : SV_TARGET
     return float4(c.rgb * Brightness, alpha);
 }
 
-// Multiply — stochastic approximation via inverted luminance.
+// Multiply - stochastic approximation via inverted luminance.
 // Bright pixels (lum ≈ 1) → alpha = 1 - lum ≈ 0 → discarded by DitherClip.
 // Dark pixels (lum ≈ 0)   → alpha = 1 - lum ≈ 1 → survive, drawn opaquely.
 // White areas vanish → background (armour) shows through unchanged.
@@ -213,7 +213,7 @@ float4 PS_Multiply(TC_PS_INPUT i) : SV_TARGET
     return float4(rgb, 0.0);
 }
 
-// Double Multiply — tent function: clips both dark AND bright pixels,
+// Double Multiply - tent function: clips both dark AND bright pixels,
 // only mid-tones (lum ≈ 0.5) survive.
 //   alpha = 1 - |lum * 2 - 1|
 //   lum = 0.0 → alpha = 0 → black clipped

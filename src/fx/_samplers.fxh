@@ -10,7 +10,7 @@
 #define GLYPHFX_SAMPLERS_FXH
 
 // ----------------------------------------------------------------------------
-// Wrap sampler — default for diffuse, detail, multipurpose maps
+// Wrap sampler - default for diffuse, detail, multipurpose maps
 // ----------------------------------------------------------------------------
 SamplerState smpWrap
 {
@@ -22,7 +22,7 @@ SamplerState smpWrap
 };
 
 // ----------------------------------------------------------------------------
-// Clamp sampler — used for cubemap / reflection lookups
+// Clamp sampler - used for cubemap / reflection lookups
 // ----------------------------------------------------------------------------
 SamplerState smpClamp
 {
@@ -35,7 +35,7 @@ SamplerState smpClamp
 };
 
 // ----------------------------------------------------------------------------
-// Point sampler — used when the Unfiltered flag is set (e.g. transparent_meter)
+// Point sampler - used when the Unfiltered flag is set (e.g. transparent_meter)
 // ----------------------------------------------------------------------------
 SamplerState smpPoint
 {

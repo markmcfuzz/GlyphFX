@@ -27,7 +27,7 @@ float4 PS_Main(TM_PS_INPUT i) : SV_TARGET
     float gradBlend = saturate(GradientMaxColor.a * t0.b * 8.0);
 
     // -------------------------------------------------------------------------
-    // Gradient color — lerp from min to max driven by gradBlend
+    // Gradient color - lerp from min to max driven by gradBlend
     // -------------------------------------------------------------------------
     float3 gradColor = GradientMinColor.rgb
                      + gradBlend * (GradientMaxColor.rgb - GradientMinColor.rgb);

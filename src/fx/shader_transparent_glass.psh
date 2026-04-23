@@ -69,7 +69,7 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
         : float4(0.5, 0.5, 0.5, 1.0);
 
     // ------------------------------------------------------------------------
-    // Bump normal — tangent-space → world-space
+    // Bump normal - tangent-space → world-space
     // ------------------------------------------------------------------------
     float3 bumpN;
     if (EnableBumpMap)
@@ -122,7 +122,7 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
         // Fresnel: pow(NdotV, 2)
         float diffuse_refl = pow(NdotV, 2.0);
 
-        // Specular mask — matches original glass behaviour
+        // Specular mask - matches original glass behaviour
         float3 specular_mask;
         if (BumpMapIsSpecularMask && EnableBumpMap)
             specular_mask = bump_map.rgb;
@@ -184,10 +184,10 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
     // ------------------------------------------------------------------------
     // Combine all layers (matching the original multi-pass compositing order)
     //
-    //   Pass 1 — Tint: multiplies background (we use tint as base colour)
-    //   Pass 2 — Reflection: additive on top of tint
-    //   Pass 3 — Diffuse: alpha-blended over tint + reflection
-    //   Pass 4 — Specular: alpha-blended over everything
+    //   Pass 1 - Tint: multiplies background (we use tint as base colour)
+    //   Pass 2 - Reflection: additive on top of tint
+    //   Pass 3 - Diffuse: alpha-blended over tint + reflection
+    //   Pass 4 - Specular: alpha-blended over everything
     // ------------------------------------------------------------------------
     float3 color = tint + final_reflection;
     color = lerp(color, lit_diffuse,          diffuse_alpha);

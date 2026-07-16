@@ -1015,7 +1015,7 @@ float AnimationCenterU3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 81;
+    int    UIOrder = 111;
 > = 0.0;
 
 float AnimationCenterV3
@@ -1024,7 +1024,7 @@ float AnimationCenterV3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 82;
+    int    UIOrder = 111;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -1289,7 +1289,7 @@ float AnimationCenterU4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 81;
+    int    UIOrder = 141;
 > = 0.0;
 
 float AnimationCenterV4
@@ -1298,7 +1298,7 @@ float AnimationCenterV4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 82;
+    int    UIOrder = 141;
 > = 0.0;
 
 // ----------------------------------------------------------------------------

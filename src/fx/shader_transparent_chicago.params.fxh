@@ -461,13 +461,23 @@ float RotationAnimationScale1
     int    UIOrder = 50;
 > = 0.0;
 
-float2 AnimationCenter1
+float AnimationCenterU1
 <
-    string UIName   = "Animation Center";
+    string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "Vector2";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 51;
-> = float2(0.000000, 0.000000);
+> = 0.0;
+
+float AnimationCenterV1
+<
+    string UIName   = "Animation Center V";
+    string UIGroup  = "2D Texture Animation 1";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 51;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Map 2
@@ -725,13 +735,23 @@ float RotationAnimationScale2
     int    UIOrder = 80;
 > = 0.0;
 
-float2 AnimationCenter2
+float AnimationCenterU2
 <
-    string UIName   = "Animation Center";
+    string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "Vector2";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 81;
-> = float2(0.000000, 0.000000);
+> = 0.0;
+
+float AnimationCenterV2
+<
+    string UIName   = "Animation Center V";
+    string UIGroup  = "2D Texture Animation 2";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 81;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Map 3
@@ -989,13 +1009,23 @@ float RotationAnimationScale3
     int    UIOrder = 110;
 > = 0.0;
 
-float2 AnimationCenter3
+float AnimationCenterU3
 <
-    string UIName   = "Animation Center";
+    string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "Vector2";
-    int    UIOrder = 111;
-> = float2(0.000000, 0.000000);
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 81;
+> = 0.0;
+
+float AnimationCenterV3
+<
+    string UIName   = "Animation Center V";
+    string UIGroup  = "2D Texture Animation 3";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 82;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Map 4
@@ -1253,13 +1283,23 @@ float RotationAnimationScale4
     int    UIOrder = 140;
 > = 0.0;
 
-float2 AnimationCenter4
+float AnimationCenterU4
 <
-    string UIName   = "Animation Center";
+    string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "Vector2";
-    int    UIOrder = 141;
-> = float2(0.000000, 0.000000);
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 81;
+> = 0.0;
+
+float AnimationCenterV4
+<
+    string UIName   = "Animation Center V";
+    string UIGroup  = "2D Texture Animation 4";
+    string UIWidget = "slider";
+    float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 82;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Extra Flags

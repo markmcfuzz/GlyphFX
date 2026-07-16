@@ -26,20 +26,20 @@ float3 LampColor : LIGHTCOLOR
 #else
 float3 LampColor
 <
-    //string UIName   = "Light Color";
+    string UIName   = "Light Color";
     string UIWidget = "Color";
 > = float3(1.0, 1.0, 1.0);
 #endif
 
 float4 AmbientColor
 <
-    //string UIName   = "Ambient Color";
+    string UIName   = "Ambient Color";
     string UIWidget = "Color";
 > = float4(0.3, 0.3, 0.3, 1.0);
 
 float4 FillLightColor
 <
-    //string UIName   = "Fill Light Color";
+    string UIName   = "Fill Light Color";
     string UIWidget = "Color";
 > = float4(0.3, 0.3, 0.35, 1.0);
 
@@ -51,7 +51,7 @@ float SpecularPower
 
 float LampIntensity
 <
-    //string UIName   = "Light Intensity  (Scene Light)";
+    string UIName   = "Light Intensity  (Scene Light)";
     string UIWidget = "slider";
     float  UIMin = 0.0; float UIMax = 2.0; float UIStep = 0.01;
 > = 0.6;
@@ -72,7 +72,7 @@ float LampIntensity
 //  8 = reflection only (no diffuse) - tests whether cube map is loading
 int DebugMode
 <
-    //string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";
+    string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";
     string UIWidget = "Spinner";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;

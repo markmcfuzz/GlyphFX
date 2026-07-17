@@ -5,13 +5,20 @@
 // Ported from ringworld's shader_transparent_generic.hlsl - the modern
 // reimplementation of the NV register combiners the original game used.
 // The game compiles one pixel shader per tag with the stage configuration
-// baked in; here the same math runs with runtime branching over the
-// material parameters instead.
+// baked in; here the same math runs over the material parameters instead.
+//
+// ── IMPLEMENTATION NOTE ──────────────────────────────────────────────────────
+// The combiner registers live in one indexable array (`regs`) and every
+// enum-driven decision (input select, input/output mapping, output routing)
+// is a table lookup instead of an if/else chain.  With 8 input selects × 25
+// options × 7 stages × 4 entry points, if/else chains take the D3D compiler
+// ~50 seconds to flatten; the table-driven form compiles in well under a
+// second with identical results.  Do not "simplify" this back into branches.
 //
 // ── COMBINER PIPELINE ────────────────────────────────────────────────────────
-// Up to 4 maps are sampled into t0-t3, then up to 7 stages run in order.
-// Each stage selects four color inputs (A-D) and four alpha inputs, applies
-// an input mapping to each, and combines them:
+// Up to 4 maps are sampled into map color 0-3, then up to 7 stages run in
+// order.  Each stage selects four color inputs (A-D) and four alpha inputs,
+// applies an input mapping to each, and combines them:
 //     AB       = A op B      (op = multiply | dot product; alpha always ×)
 //     CD       = C op D
 //     Mux/Sum  = mux flag off:  AB + CD
@@ -20,10 +27,11 @@
 // to its selected register (Discard = don't write).  After the last stage,
 // scratch color 0 / scratch alpha 0 hold the final color / alpha.
 //
-// Registers visible to the stages:
-//   t0-t3   map color/alpha 0-3       v0 / v1   vertex color 0/1
-//   r0/r1   scratch color 0/1         c0 / c1   per-stage constant color 0/1
-// r0 starts as (0, 0, 0, map 0 alpha).  Disabled maps read as (0, 0, 0, 0).
+// Register file layout (slot = the order used by the INPUT enums):
+//   0-3  map color/alpha 0-3     6-7  scratch color 0/1 (6 = final output)
+//   4-5  vertex color 0/1        8-9  per-stage constant color 0/1
+//   10   write-only dummy slot that absorbs "Discard" outputs
+// Scratch 0 starts as (0, 0, 0, map 0 alpha).  Disabled maps read (0,0,0,0).
 //
 // Constant color 0 is animated in-engine between the lower and upper bounds
 // by a wave function.  The viewport has no time source, so the peak value is
@@ -48,109 +56,62 @@
 // the four techniques.
 // ----------------------------------------------------------------------------
 
-// ─── Combiner registers ──────────────────────────────────────────────────────
+// ─── Combiner register file ──────────────────────────────────────────────────
 
-struct CombinerState
-{
-    float4 t0, t1, t2, t3;   // map color/alpha 0-3
-    float4 v0, v1;           // vertex color 0/1
-    float4 r0, r1;           // scratch color 0/1 (r0 = final output)
-};
+static float4 regs[11];
+
+// Input selections 0-4 are the combiner constants.
+static const float GX_KONST[5] = { 0.0, 1.0, 0.5, -1.0, -0.5 };
 
 // ─── Input mapping ───────────────────────────────────────────────────────────
 // 0=clamp(x)  1=1-clamp(x)  2=2*clamp(x)-1  3=1-2*clamp(x)
 // 4=clamp(x)-1/2  5=1/2-clamp(x)  6=x  7=-x
-// clamp(x) here is the combiner's "unsigned" read: negatives clamp to 0.
+// clamp(x) is the combiner's "unsigned" read: only negatives clamp to 0,
+// except mapping 1 which uses a full [0,1] clamp (as in ringworld).
+// Encoded as:  result = k.x*max(v,0) + k.y*saturate(v) + k.z*v + k.w
+static const float4 GX_INPUT_MAP[8] =
+{
+    float4( 1.0,  0.0,  0.0,  0.0),   // 0: clamp(x)
+    float4( 0.0, -1.0,  0.0,  1.0),   // 1: 1 - clamp(x)
+    float4( 2.0,  0.0,  0.0, -1.0),   // 2: 2*clamp(x) - 1
+    float4(-2.0,  0.0,  0.0,  1.0),   // 3: 1 - 2*clamp(x)
+    float4( 1.0,  0.0,  0.0, -0.5),   // 4: clamp(x) - 1/2
+    float4(-1.0,  0.0,  0.0,  0.5),   // 5: 1/2 - clamp(x)
+    float4( 0.0,  0.0,  1.0,  0.0),   // 6: x
+    float4( 0.0,  0.0, -1.0,  0.0)    // 7: -x
+};
 
 float3 ApplyInputMappingC(float3 v, int m)
 {
-    if      (m == 0) return max(v, 0.0);
-    else if (m == 1) return 1.0 - clamp(v, 0.0, 1.0);
-    else if (m == 2) return 2.0 * max(v, 0.0) - 1.0;
-    else if (m == 3) return -2.0 * max(v, 0.0) + 1.0;
-    else if (m == 4) return max(v, 0.0) - 0.5;
-    else if (m == 5) return -max(v, 0.0) + 0.5;
-    else if (m == 7) return -v;
-    return v;   // 6 = x (signed identity)
+    float4 k = GX_INPUT_MAP[clamp(m, 0, 7)];
+    return k.x * max(v, 0.0) + k.y * saturate(v) + k.z * v + k.w;
 }
 
 float ApplyInputMappingA(float v, int m)
 {
-    if      (m == 0) return max(v, 0.0);
-    else if (m == 1) return 1.0 - clamp(v, 0.0, 1.0);
-    else if (m == 2) return 2.0 * max(v, 0.0) - 1.0;
-    else if (m == 3) return -2.0 * max(v, 0.0) + 1.0;
-    else if (m == 4) return max(v, 0.0) - 0.5;
-    else if (m == 5) return -max(v, 0.0) + 0.5;
-    else if (m == 7) return -v;
-    return v;   // 6 = x (signed identity)
+    float4 k = GX_INPUT_MAP[clamp(m, 0, 7)];
+    return k.x * max(v, 0.0) + k.y * saturate(v) + k.z * v + k.w;
 }
 
 // ─── Input selection ─────────────────────────────────────────────────────────
-// Color: 0=zero 1=one 2=1/2 3=-1 4=-1/2 5-8=map color 9=vertex color 0
-// 10=vertex color 1 11/12=scratch color 13/14=constant color 15-18=map alpha
-// 19/20=vertex alpha 21/22=scratch alpha 23/24=constant alpha
+// Color: 0=zero 1=one 2=1/2 3=-1 4=-1/2 5-8=map color 9/10=vertex color
+// 11/12=scratch color 13/14=constant color 15-24=alpha of the same registers.
+// Alpha: same order, but 5-14 read .a and 15-24 read .b (the "blue" inputs).
 
-float3 SelectColorInput(CombinerState s, float4 c0, float4 c1, int sel)
+float3 SelectColorInput(int sel)
 {
-    if      (sel == 1)  return float3( 1.0,  1.0,  1.0);
-    else if (sel == 2)  return float3( 0.5,  0.5,  0.5);
-    else if (sel == 3)  return float3(-1.0, -1.0, -1.0);
-    else if (sel == 4)  return float3(-0.5, -0.5, -0.5);
-    else if (sel == 5)  return s.t0.rgb;
-    else if (sel == 6)  return s.t1.rgb;
-    else if (sel == 7)  return s.t2.rgb;
-    else if (sel == 8)  return s.t3.rgb;
-    else if (sel == 9)  return s.v0.rgb;
-    else if (sel == 10) return s.v1.rgb;
-    else if (sel == 11) return s.r0.rgb;
-    else if (sel == 12) return s.r1.rgb;
-    else if (sel == 13) return c0.rgb;
-    else if (sel == 14) return c1.rgb;
-    else if (sel == 15) return s.t0.aaa;
-    else if (sel == 16) return s.t1.aaa;
-    else if (sel == 17) return s.t2.aaa;
-    else if (sel == 18) return s.t3.aaa;
-    else if (sel == 19) return s.v0.aaa;
-    else if (sel == 20) return s.v1.aaa;
-    else if (sel == 21) return s.r0.aaa;
-    else if (sel == 22) return s.r1.aaa;
-    else if (sel == 23) return c0.aaa;
-    else if (sel == 24) return c1.aaa;
-    return float3(0.0, 0.0, 0.0);   // 0 = zero
+    sel = clamp(sel, 0, 24);
+    if (sel < 5)  return GX_KONST[sel].xxx;
+    if (sel < 15) return regs[sel - 5].rgb;
+    return regs[sel - 15].aaa;
 }
 
-// Alpha: 0=zero 1=one 2=1/2 3=-1 4=-1/2 5-8=map alpha 9/10=vertex alpha
-// 11/12=scratch alpha 13/14=constant alpha 15-18=map blue 19/20=vertex blue
-// 21/22=scratch blue 23/24=constant blue
-
-float SelectAlphaInput(CombinerState s, float4 c0, float4 c1, int sel)
+float SelectAlphaInput(int sel)
 {
-    if      (sel == 1)  return  1.0;
-    else if (sel == 2)  return  0.5;
-    else if (sel == 3)  return -1.0;
-    else if (sel == 4)  return -0.5;
-    else if (sel == 5)  return s.t0.a;
-    else if (sel == 6)  return s.t1.a;
-    else if (sel == 7)  return s.t2.a;
-    else if (sel == 8)  return s.t3.a;
-    else if (sel == 9)  return s.v0.a;
-    else if (sel == 10) return s.v1.a;
-    else if (sel == 11) return s.r0.a;
-    else if (sel == 12) return s.r1.a;
-    else if (sel == 13) return c0.a;
-    else if (sel == 14) return c1.a;
-    else if (sel == 15) return s.t0.b;
-    else if (sel == 16) return s.t1.b;
-    else if (sel == 17) return s.t2.b;
-    else if (sel == 18) return s.t3.b;
-    else if (sel == 19) return s.v0.b;
-    else if (sel == 20) return s.v1.b;
-    else if (sel == 21) return s.r0.b;
-    else if (sel == 22) return s.r1.b;
-    else if (sel == 23) return c0.b;
-    else if (sel == 24) return c1.b;
-    return 0.0;   // 0 = zero
+    sel = clamp(sel, 0, 24);
+    if (sel < 5)  return GX_KONST[sel];
+    if (sel < 15) return regs[sel - 5].a;
+    return regs[sel - 15].b;
 }
 
 // ─── Output function / mapping / write ───────────────────────────────────────
@@ -158,8 +119,7 @@ float SelectAlphaInput(CombinerState s, float4 c0, float4 c1, int sel)
 // 0 = multiply (result clamped to [-1, 1] like the combiner)  1 = dot product
 float3 CombineC(float3 x, float3 y, int f)
 {
-    if (f == 1) return dot(x, y).xxx;
-    return clamp(x * y, -1.0, 1.0);
+    return (f == 1) ? dot(x, y).xxx : clamp(x * y, -1.0, 1.0);
 }
 
 // The alpha pipeline always multiplies.
@@ -169,50 +129,41 @@ float CombineA(float x, float y)
 }
 
 // 0=identity 1=scale by 1/2 2=scale by 2 3=scale by 4 4=bias by -1/2
-// 5=expand normal ((x - 1/2) * 2)
+// 5=expand normal ((x - 1/2) * 2).  Encoded as:  result = k.x*v + k.y
+static const float2 GX_OUTPUT_MAP[6] =
+{
+    float2(1.0,  0.0),
+    float2(0.5,  0.0),
+    float2(2.0,  0.0),
+    float2(4.0,  0.0),
+    float2(1.0, -0.5),
+    float2(2.0, -1.0)
+};
+
 float3 ApplyOutputMappingC(float3 v, int m)
 {
-    if      (m == 1) return v * 0.5;
-    else if (m == 2) return v * 2.0;
-    else if (m == 3) return v * 4.0;
-    else if (m == 4) return v - 0.5;
-    else if (m == 5) return (v - 0.5) * 2.0;
-    return v;
+    float2 k = GX_OUTPUT_MAP[clamp(m, 0, 5)];
+    return k.x * v + k.y;
 }
 
 float ApplyOutputMappingA(float v, int m)
 {
-    if      (m == 1) return v * 0.5;
-    else if (m == 2) return v * 2.0;
-    else if (m == 3) return v * 4.0;
-    else if (m == 4) return v - 0.5;
-    else if (m == 5) return (v - 0.5) * 2.0;
-    return v;
+    float2 k = GX_OUTPUT_MAP[clamp(m, 0, 5)];
+    return k.x * v + k.y;
 }
 
-// 0=discard 1=scratch 0 2=scratch 1 3=vertex 0 4=vertex 1 5-8=map 0-3
-void WriteColorOutput(inout CombinerState s, float3 v, int o)
+// Output enum (0=discard 1=scratch 0 2=scratch 1 3=vertex 0 4=vertex 1
+// 5-8=map 0-3) -> register file slot.  Discard routes to the dummy slot.
+static const int GX_OUT_SLOT[9] = { 10, 6, 7, 4, 5, 0, 1, 2, 3 };
+
+void WriteColorOutput(float3 v, int o)
 {
-    if      (o == 1) s.r0.rgb = v;
-    else if (o == 2) s.r1.rgb = v;
-    else if (o == 3) s.v0.rgb = v;
-    else if (o == 4) s.v1.rgb = v;
-    else if (o == 5) s.t0.rgb = v;
-    else if (o == 6) s.t1.rgb = v;
-    else if (o == 7) s.t2.rgb = v;
-    else if (o == 8) s.t3.rgb = v;
+    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].rgb = v;
 }
 
-void WriteAlphaOutput(inout CombinerState s, float v, int o)
+void WriteAlphaOutput(float v, int o)
 {
-    if      (o == 1) s.r0.a = v;
-    else if (o == 2) s.r1.a = v;
-    else if (o == 3) s.v0.a = v;
-    else if (o == 4) s.v1.a = v;
-    else if (o == 5) s.t0.a = v;
-    else if (o == 6) s.t1.a = v;
-    else if (o == 7) s.t2.a = v;
-    else if (o == 8) s.t3.a = v;
+    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].a = v;
 }
 
 // ─── Stage evaluation ────────────────────────────────────────────────────────
@@ -220,8 +171,7 @@ void WriteAlphaOutput(inout CombinerState s, float v, int o)
 // read the register values from BEFORE this stage's writes; the six writes
 // happen together at the end (later writes to the same register win).
 
-void RunStage(inout CombinerState s,
-              float4 lowerBound, float4 upperBound, float4 color1,
+void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
               int color0Function,
               bool colorMux, bool alphaMux,
               int inA,  int inAMap,  int inB,  int inBMap,
@@ -235,48 +185,48 @@ void RunStage(inout CombinerState s,
     // Constant color 0: the engine animates lower -> upper with a wave
     // function.  No time source in the viewport, so hold the peak value
     // (upper bound), or the lower bound when the function is Zero.
-    float4 c0 = (color0Function == 1) ? lowerBound : upperBound;
-    float4 c1 = color1;
+    regs[8] = (color0Function == 1) ? lowerBound : upperBound;
+    regs[9] = color1;
 
-    float3 a = ApplyInputMappingC(SelectColorInput(s, c0, c1, inA), inAMap);
-    float3 b = ApplyInputMappingC(SelectColorInput(s, c0, c1, inB), inBMap);
-    float3 c = ApplyInputMappingC(SelectColorInput(s, c0, c1, inC), inCMap);
-    float3 d = ApplyInputMappingC(SelectColorInput(s, c0, c1, inD), inDMap);
+    float3 a = ApplyInputMappingC(SelectColorInput(inA), inAMap);
+    float3 b = ApplyInputMappingC(SelectColorInput(inB), inBMap);
+    float3 c = ApplyInputMappingC(SelectColorInput(inC), inCMap);
+    float3 d = ApplyInputMappingC(SelectColorInput(inD), inDMap);
 
     float3 ab     = CombineC(a, b, outABFunc);
     float3 cd     = CombineC(c, d, outCDFunc);
-    float3 muxSum = colorMux ? (s.r0.a >= 0.5 ? cd : ab) : ab + cd;
+    float3 muxSum = colorMux ? (regs[6].a >= 0.5 ? cd : ab) : ab + cd;
     muxSum = clamp(muxSum, -1.0, 1.0);
 
     ab     = ApplyOutputMappingC(ab,     outMapping);
     cd     = ApplyOutputMappingC(cd,     outMapping);
     muxSum = ApplyOutputMappingC(muxSum, outMapping);
 
-    float aA = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInA), aInAMap);
-    float aB = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInB), aInBMap);
-    float aC = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInC), aInCMap);
-    float aD = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInD), aInDMap);
+    float aA = ApplyInputMappingA(SelectAlphaInput(aInA), aInAMap);
+    float aB = ApplyInputMappingA(SelectAlphaInput(aInB), aInBMap);
+    float aC = ApplyInputMappingA(SelectAlphaInput(aInC), aInCMap);
+    float aD = ApplyInputMappingA(SelectAlphaInput(aInD), aInDMap);
 
     float abA     = CombineA(aA, aB);
     float cdA     = CombineA(aC, aD);
-    float muxSumA = alphaMux ? (s.r0.a >= 0.5 ? cdA : abA) : abA + cdA;
+    float muxSumA = alphaMux ? (regs[6].a >= 0.5 ? cdA : abA) : abA + cdA;
     muxSumA = clamp(muxSumA, -1.0, 1.0);
 
     abA     = ApplyOutputMappingA(abA,     aOutMapping);
     cdA     = ApplyOutputMappingA(cdA,     aOutMapping);
     muxSumA = ApplyOutputMappingA(muxSumA, aOutMapping);
 
-    WriteColorOutput(s, ab,     outAB);
-    WriteColorOutput(s, cd,     outCD);
-    WriteColorOutput(s, muxSum, outMuxSum);
-    WriteAlphaOutput(s, abA,     aOutAB);
-    WriteAlphaOutput(s, cdA,     aOutCD);
-    WriteAlphaOutput(s, muxSumA, aOutMuxSum);
+    WriteColorOutput(ab,     outAB);
+    WriteColorOutput(cd,     outCD);
+    WriteColorOutput(muxSum, outMuxSum);
+    WriteAlphaOutput(abA,     aOutAB);
+    WriteAlphaOutput(cdA,     aOutCD);
+    WriteAlphaOutput(muxSumA, aOutMuxSum);
 }
 
 // Expands one stage's 32 material parameters into a RunStage call.
-#define GX_RUN_STAGE(state, N)                                                 \
-    RunStage(state,                                                            \
+#define GX_RUN_STAGE(N)                                                        \
+    RunStage(                                                                  \
         Stage##N##_Color0AnimationLowerBound,                                  \
         Stage##N##_Color0AnimationUpperBound,                                  \
         Stage##N##_Color1,                                                     \
@@ -313,34 +263,35 @@ float4 SampleMap(Texture2D tex, float2 uv,
 
 float4 PS_Evaluate(STG_PS_INPUT i)
 {
-    CombinerState s;
+    regs[0] = SampleMap(Map1Texture, i.uv0, Map1_UClamped, Map1_VClamped,
+                        Map1_Unfiltered, Map1_MipmapBias);
+    regs[1] = EnableMap2 ? SampleMap(Map2Texture, i.uv1, Map2_UClamped, Map2_VClamped,
+                                     Map2_Unfiltered, Map2_MipmapBias)
+                         : float4(0.0, 0.0, 0.0, 0.0);
+    regs[2] = EnableMap3 ? SampleMap(Map3Texture, i.uv2, Map3_UClamped, Map3_VClamped,
+                                     Map3_Unfiltered, Map3_MipmapBias)
+                         : float4(0.0, 0.0, 0.0, 0.0);
+    regs[3] = EnableMap4 ? SampleMap(Map4Texture, i.uv3, Map4_UClamped, Map4_VClamped,
+                                     Map4_Unfiltered, Map4_MipmapBias)
+                         : float4(0.0, 0.0, 0.0, 0.0);
 
-    s.t0 = SampleMap(Map1Texture, i.uv0, Map1_UClamped, Map1_VClamped,
-                     Map1_Unfiltered, Map1_MipmapBias);
-    s.t1 = EnableMap2 ? SampleMap(Map2Texture, i.uv1, Map2_UClamped, Map2_VClamped,
-                                  Map2_Unfiltered, Map2_MipmapBias)
-                      : float4(0.0, 0.0, 0.0, 0.0);
-    s.t2 = EnableMap3 ? SampleMap(Map3Texture, i.uv2, Map3_UClamped, Map3_VClamped,
-                                  Map3_Unfiltered, Map3_MipmapBias)
-                      : float4(0.0, 0.0, 0.0, 0.0);
-    s.t3 = EnableMap4 ? SampleMap(Map4Texture, i.uv3, Map4_UClamped, Map4_VClamped,
-                                  Map4_Unfiltered, Map4_MipmapBias)
-                      : float4(0.0, 0.0, 0.0, 0.0);
+    regs[4]  = i.vColor0;
+    regs[5]  = i.vColor1;
+    regs[6]  = float4(0.0, 0.0, 0.0, regs[0].a);
+    regs[7]  = float4(0.0, 0.0, 0.0, 0.0);
+    regs[8]  = float4(0.0, 0.0, 0.0, 0.0);
+    regs[9]  = float4(0.0, 0.0, 0.0, 0.0);
+    regs[10] = float4(0.0, 0.0, 0.0, 0.0);
 
-    s.v0 = i.vColor0;
-    s.v1 = i.vColor1;
-    s.r0 = float4(0.0, 0.0, 0.0, s.t0.a);
-    s.r1 = float4(0.0, 0.0, 0.0, 0.0);
+    GX_RUN_STAGE(1);   // stage 1 is always active
+    [branch] if (EnableStage2) GX_RUN_STAGE(2);
+    [branch] if (EnableStage3) GX_RUN_STAGE(3);
+    [branch] if (EnableStage4) GX_RUN_STAGE(4);
+    [branch] if (EnableStage5) GX_RUN_STAGE(5);
+    [branch] if (EnableStage6) GX_RUN_STAGE(6);
+    [branch] if (EnableStage7) GX_RUN_STAGE(7);
 
-    GX_RUN_STAGE(s, 1);   // stage 1 is always active
-    [branch] if (EnableStage2) GX_RUN_STAGE(s, 2);
-    [branch] if (EnableStage3) GX_RUN_STAGE(s, 3);
-    [branch] if (EnableStage4) GX_RUN_STAGE(s, 4);
-    [branch] if (EnableStage5) GX_RUN_STAGE(s, 5);
-    [branch] if (EnableStage6) GX_RUN_STAGE(s, 6);
-    [branch] if (EnableStage7) GX_RUN_STAGE(s, 7);
-
-    return float4(saturate(s.r0.rgb), saturate(s.r0.a));
+    return float4(saturate(regs[6].rgb), saturate(regs[6].a));
 }
 
 // ─── Framebuffer fade ────────────────────────────────────────────────────────

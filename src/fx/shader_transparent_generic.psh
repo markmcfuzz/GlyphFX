@@ -33,11 +33,16 @@
 //   10   write-only dummy slot that absorbs "Discard" outputs
 // Scratch 0 starts as (0, 0, 0, map 0 alpha).  Disabled maps read (0,0,0,0).
 //
-// Constant color 0 is animated in-engine between the lower and upper bounds
-// by a wave function.  The viewport has no time source, so the peak value is
-// used: the upper bound for every function except Zero, which holds the
-// lower bound.  "Color0 Source" and "A-Out Controls Color0 Animation" need
-// external animation values and are informational only.
+// Constant color 0 is animated in-engine between the lower and upper bounds.
+// The viewport has no time source, so it shows the tag's IDLE state:
+//   - "A-Out Controls Color0 Animation" set: A-out is 0 until the external
+//     event fires (e.g. the shield being hit), so the LOWER bound is used.
+//   - wave function Zero: lower bound.
+//   - anything else: the wave peak, i.e. the upper bound.
+// "Color0 Source" multiplies an external color in-engine (e.g. the biped's
+// shield color); it has no viewport equivalent - bake that color into the
+// bounds' RGB instead.  The stage colors are ARGB: the RGB comes from the
+// color widget, the A from the separate "Alpha (A of ARGB)" slider.
 //
 // ── FRAMEBUFFER FADE ─────────────────────────────────────────────────────────
 // In-engine an extra combiner stage applies the Framebuffer Fade Mode; here
@@ -172,7 +177,7 @@ void WriteAlphaOutput(float v, int o)
 // happen together at the end (later writes to the same register win).
 
 void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
-              int color0Function,
+              int color0Function, bool aOutControlsColor0,
               bool colorMux, bool alphaMux,
               int inA,  int inAMap,  int inB,  int inBMap,
               int inC,  int inCMap,  int inD,  int inDMap,
@@ -182,10 +187,11 @@ void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
               int aInC, int aInCMap, int aInD, int aInDMap,
               int aOutAB, int aOutCD, int aOutMuxSum, int aOutMapping)
 {
-    // Constant color 0: the engine animates lower -> upper with a wave
-    // function.  No time source in the viewport, so hold the peak value
-    // (upper bound), or the lower bound when the function is Zero.
-    regs[8] = (color0Function == 1) ? lowerBound : upperBound;
+    // Constant color 0: the engine animates lower -> upper.  The viewport
+    // holds the idle state: lower bound when A-out drives the animation
+    // (A-out is 0 until the external event fires) or the function is Zero;
+    // the wave peak (upper bound) otherwise.
+    regs[8] = (aOutControlsColor0 || color0Function == 1) ? lowerBound : upperBound;
     regs[9] = color1;
 
     float3 a = ApplyInputMappingC(SelectColorInput(inA), inAMap);
@@ -224,13 +230,17 @@ void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
     WriteAlphaOutput(muxSumA, aOutMuxSum);
 }
 
-// Expands one stage's 32 material parameters into a RunStage call.
+// Expands one stage's material parameters into a RunStage call.  The ARGB
+// colors are composed from the RGB color widget + the separate alpha slider.
 #define GX_RUN_STAGE(N)                                                        \
     RunStage(                                                                  \
-        Stage##N##_Color0AnimationLowerBound,                                  \
-        Stage##N##_Color0AnimationUpperBound,                                  \
-        Stage##N##_Color1,                                                     \
+        float4(Stage##N##_Color0AnimationLowerBound.rgb,                       \
+               Stage##N##_Color0LowerAlpha),                                   \
+        float4(Stage##N##_Color0AnimationUpperBound.rgb,                       \
+               Stage##N##_Color0UpperAlpha),                                   \
+        float4(Stage##N##_Color1.rgb, Stage##N##_Color1Alpha),                 \
         Stage##N##_Color0AnimationFunction,                                    \
+        Stage##N##_AOutControlsColor0Animation,                                \
         Stage##N##_ColorMux, Stage##N##_AlphaMux,                              \
         Stage##N##_ColorInputA, Stage##N##_ColorInputAMapping,                 \
         Stage##N##_ColorInputB, Stage##N##_ColorInputBMapping,                 \
@@ -284,12 +294,24 @@ float4 PS_Evaluate(STG_PS_INPUT i)
     regs[10] = float4(0.0, 0.0, 0.0, 0.0);
 
     GX_RUN_STAGE(1);   // stage 1 is always active
+#if GX_GENERIC_STAGES >= 2
     [branch] if (EnableStage2) GX_RUN_STAGE(2);
+#endif
+#if GX_GENERIC_STAGES >= 3
     [branch] if (EnableStage3) GX_RUN_STAGE(3);
+#endif
+#if GX_GENERIC_STAGES >= 4
     [branch] if (EnableStage4) GX_RUN_STAGE(4);
+#endif
+#if GX_GENERIC_STAGES >= 5
     [branch] if (EnableStage5) GX_RUN_STAGE(5);
+#endif
+#if GX_GENERIC_STAGES >= 6
     [branch] if (EnableStage6) GX_RUN_STAGE(6);
+#endif
+#if GX_GENERIC_STAGES >= 7
     [branch] if (EnableStage7) GX_RUN_STAGE(7);
+#endif
 
     return float4(saturate(regs[6].rgb), saturate(regs[6].a));
 }

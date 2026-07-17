@@ -1317,6 +1317,7 @@ float4 Stage1_Color0AnimationLowerBound
     int    UIOrder = 140;
 > = float4(0, 0, 0, 0);
 
+// Hard-coded to 0.5 
 float Stage1_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
@@ -1324,7 +1325,7 @@ float Stage1_Color0LowerAlpha
     string UIWidget = "slider";
     int    UIOrder = 141;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-> = 0.0;
+> = 0.5;
 
 float4 Stage1_Color0AnimationUpperBound
 <
@@ -1663,8 +1664,6 @@ float4 Stage2_Color0AnimationLowerBound
     int    UIOrder = 179;
 > = float4(0, 0, 0, 0);
 
-// Hard-coded to 0.5 because the game uses this value for idle animation 
-// when A-Out controls Color0 Animation, and the tag doesn't store a value for this.
 float Stage2_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
@@ -1672,7 +1671,7 @@ float Stage2_Color0LowerAlpha
     string UIWidget = "slider";
     int    UIOrder = 180;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-> = 0.5;
+> = 0.0;
 
 float4 Stage2_Color0AnimationUpperBound
 <

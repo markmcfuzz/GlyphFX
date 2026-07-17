@@ -117,4 +117,31 @@ typedef SE_VS_INPUT  TW_VS_INPUT;
 typedef SE_VS_OUTPUT TW_VS_OUTPUT;
 typedef TW_VS_OUTPUT TW_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_transparent_generic - position + normal + base UV; VS outputs 4
+// transformed UV channels (one per map) plus the two Halo vertex color
+// registers the combiner stages can read:
+//   vColor0 = vertex color 0: diffuse light (rgb) + fade none (a)
+//   vColor1 = vertex color 1: fade parallel (rgb) + fade perpendicular (a)
+// ----------------------------------------------------------------------------
+struct STG_VS_INPUT
+{
+    float4 position : POSITION;
+    float3 normal   : NORMAL;
+    float2 uv0      : TEXCOORD0;
+};
+
+struct STG_VS_OUTPUT
+{
+    float4 clipPos : SV_POSITION;
+    float2 uv0     : TEXCOORD0;   // Map 1 transformed UV
+    float2 uv1     : TEXCOORD1;   // Map 2 transformed UV
+    float2 uv2     : TEXCOORD2;   // Map 3 transformed UV
+    float2 uv3     : TEXCOORD3;   // Map 4 transformed UV
+    float4 vColor0 : TEXCOORD4;   // vertex color 0 (see above)
+    float4 vColor1 : TEXCOORD5;   // vertex color 1 (see above)
+};
+
+typedef STG_VS_OUTPUT STG_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

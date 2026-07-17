@@ -19,6 +19,8 @@
 
 // Applies per-map scale / offset / rotation (degrees) to the base UV.
 // Rotation is applied around the UV origin before scale and offset.
+// A scale of 0 means 1 - the Halo tag convention (stock tag dumps store 0),
+// so values can be copied from Guerrilla verbatim.
 float2 MapUVTransform(float2 uv, float uScale, float vScale,
                       float uOffset, float vOffset, float rotDeg)
 {
@@ -27,7 +29,9 @@ float2 MapUVTransform(float2 uv, float uScale, float vScale,
     float  c = cos(a);
     float2 r = float2(uv.x * c - uv.y * s,
                       uv.x * s + uv.y * c);
-    return r * float2(uScale, vScale) + float2(uOffset, vOffset);
+    float2 sc = float2(uScale == 0.0 ? 1.0 : uScale,
+                       vScale == 0.0 ? 1.0 : vScale);
+    return r * sc + float2(uOffset, vOffset);
 }
 
 STG_VS_OUTPUT VS_Main(STG_VS_INPUT v)

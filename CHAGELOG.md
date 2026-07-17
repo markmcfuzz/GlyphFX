@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Research and Re-implementation of `shader_transparent_chicago_extended.fx` and `shader_transparent_generic.fx`
 - Documentation of all developed shaders and parameters.
+
+## [0.6.0] - 2026-07-16
+
+### Added
+
+- ``shader_transparent_generic.fx`` fully re-implemented and tested. Not tested neither documented yet.
 
 ## [0.5.0] - 2026-04-20
 

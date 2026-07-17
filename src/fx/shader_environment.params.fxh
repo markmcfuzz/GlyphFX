@@ -100,45 +100,105 @@ float CubemapPitch
 > = -0.0;
 
 // ----------------------------------------------------------------------------
+// Radiosity Properties
+// ----------------------------------------------------------------------------
+bool SimpleParameterization
+<
+    string UIName = "Simple Parameterization";
+    string UIGroup = "Shader General Fields";
+    int    UIOrder = 0;
+> = false;
+
+bool IgnoreNormals
+<
+    string UIName = "Ignore Normals";
+    string UIGroup = "Shader General Fields";
+    int    UIOrder = 1;
+> = false;
+
+bool TransparentLit
+<
+    string UIName = "Transparent Lit";
+    string UIGroup = "Shader General Fields";
+    int    UIOrder = 2;
+> = false;
+
+int DetailLevel
+<
+    string UIName   = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]";
+    string UIGroup  = "Shader General Fields";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 3; float UIStep = 1;
+    int    UIOrder = 3;
+> = 0;
+
+float Power
+<
+    string UIName   = "Power";
+    string UIGroup  = "Shader General Fields";
+    string UIWidget = "slider";
+    float  UIMin = -0; float UIMax = 9999; float UIStep = 1;
+    int    UIOrder = 4;
+> = 1;
+
+float4 ColorOfEmittedLight
+<
+    string UIName   = "Color of Emitted Light";
+    string UIGroup  = "Shader General Fields";
+    string UIWidget = "Color";
+    int    UIOrder = 5;
+> = float4(0, 0, 0, 0);
+
+float4 TintColor
+<
+    string UIName   = "Tint Color";
+    string UIGroup  = "Shader General Fields";
+    string UIWidget = "Color";
+    int    UIOrder = 6;
+> = float4(1, 1, 1, 1);
+
+// ----------------------------------------------------------------------------
+// Physics Properties
+// ----------------------------------------------------------------------------
+float MaterialType
+<
+    string UIName   = "Material Type";
+    string UIGroup  = "Shader General Fields";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+    int    UIOrder = 7;
+> = 0;
+
+// ----------------------------------------------------------------------------
 // Environment Shader Flags
 // ----------------------------------------------------------------------------
 bool AlphaTested
 <
     string UIName  = "Alpha Tested";
     string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 0;
+    int    UIOrder = 8;
 > = false;
 
 bool BumpMapIsSpecularMask
 <
     string UIName  = "Bump Map Is Specular Mask";
     string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 1;
+    int    UIOrder = 9;
 > = false;
 
 bool TrueAtmosphericFog
 <
     string UIName  = "True Atmospheric Fog";
     string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 2;
+    int    UIOrder = 10;
 > = false;
 
-// ----------------------------------------------------------------------------
-// Diffuse Flags
-// ----------------------------------------------------------------------------
-bool RescaleDetailMaps
+bool BumpAttenuation
 <
-    string UIName  = "Rescale Detail Maps";
-    string UIGroup = "Diffuse Properties";
-    int    UIOrder = 4;
-> = true;
-
-bool RescaleBumpMap
-<
-    string UIName  = "Rescale Bump Map";
-    string UIGroup = "Bump Properties";
-    int    UIOrder = 5;
-> = true;
+    string UIName  = "Use Variant 2 for Calculation Bump Attenuation";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 11;
+> = false;
 
 // ----------------------------------------------------------------------------
 // Environment Shader Type
@@ -152,18 +212,49 @@ int EnvironmentType
     string UIGroup  = "Environment Shader Type";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
-    int    UIOrder = 3;
+    int    UIOrder = 12;
 > = 0;
+
+int LensFlareSpacing
+<
+    string UIName   = "Lens Flare Spacing";
+    string UIGroup  = "Lens Flares";
+    string UIWidget = "Spinner";
+    int    UIOrder = 13;
+    float  UIMin = 0; float UIMax = 255; float UIStep = 1;
+> = 0;
+
+Texture2D LensFlare
+<
+    string UIName       = "Lens Flare";
+    string UIGroup      = "Lens Flares";
+    string ResourceType = "2D";
+    int    UIOrder = 14;
+>;
 
 // ----------------------------------------------------------------------------
 // Diffuse Properties
 // ----------------------------------------------------------------------------
+bool RescaleDetailMaps
+<
+    string UIName  = "Rescale Detail Maps";
+    string UIGroup = "Diffuse Properties";
+    int    UIOrder = 15;
+> = false;
+
+bool RescaleBumpMap
+<
+    string UIName  = "Rescale Bump Map";
+    string UIGroup = "Bump Properties";
+    int    UIOrder = 16;
+> = false;
+
 Texture2D BaseMapTexture
 <
     string UIName       = "Base Map";
     string UIGroup      = "Diffuse Properties";
     string ResourceType = "2D";
-    int    UIOrder = 10;
+    int    UIOrder = 17;
 >;
 
 int DetailMapFunction
@@ -172,7 +263,7 @@ int DetailMapFunction
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
-    int    UIOrder = 11;
+    int    UIOrder = 18;
 > = 0;
 
 float PrimaryDetailMapScale
@@ -181,7 +272,7 @@ float PrimaryDetailMapScale
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
-    int    UIOrder = 12;
+    int    UIOrder = 19;
 > = 0.0;
 
 Texture2D PrimaryDetailMapTexture
@@ -189,7 +280,7 @@ Texture2D PrimaryDetailMapTexture
     string UIName       = "Primary Detail Map";
     string UIGroup      = "Diffuse Properties";
     string ResourceType = "2D";
-    int    UIOrder = 13;
+    int    UIOrder = 20;
 >;
 
 float SecondaryDetailMapScale
@@ -198,7 +289,7 @@ float SecondaryDetailMapScale
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
-    int    UIOrder = 14;
+    int    UIOrder = 21;
 > = 0.0;
 
 Texture2D SecondaryDetailMapTexture
@@ -206,7 +297,7 @@ Texture2D SecondaryDetailMapTexture
     string UIName       = "Secondary Detail Map";
     string UIGroup      = "Diffuse Properties";
     string ResourceType = "2D";
-    int    UIOrder = 15;
+    int    UIOrder = 22;
 >;
 
 int MicroDetailMapFunction
@@ -215,7 +306,7 @@ int MicroDetailMapFunction
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
-    int    UIOrder = 16;
+    int    UIOrder = 23;
 > = 0;
 
 float MicroDetailMapScale
@@ -224,7 +315,7 @@ float MicroDetailMapScale
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
-    int    UIOrder = 17;
+    int    UIOrder = 24;
 > = 0.0;
 
 Texture2D MicroDetailMapTexture
@@ -232,7 +323,7 @@ Texture2D MicroDetailMapTexture
     string UIName       = "Micro Detail Map";
     string UIGroup      = "Diffuse Properties";
     string ResourceType = "2D";
-    int    UIOrder = 18;
+    int    UIOrder = 25;
 >;
 
 float4 MaterialColor
@@ -240,7 +331,7 @@ float4 MaterialColor
     string UIName   = "Material Color";
     string UIGroup  = "Diffuse Properties";
     string UIWidget = "Color";
-    int    UIOrder = 19;
+    int    UIOrder = 26;
 > = float4(0, 0, 0, 1);
 
 // ----------------------------------------------------------------------------
@@ -252,7 +343,7 @@ float BumpMapScale
     string UIGroup  = "Bump Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
-    int    UIOrder = 20;
+    int    UIOrder = 27;
 > = 0.0;
 
 Texture2D BumpMapTexture
@@ -260,8 +351,65 @@ Texture2D BumpMapTexture
     string UIName       = "Bump Map";
     string UIGroup      = "Bump Properties";
     string ResourceType = "2D";
-    int    UIOrder = 21;
+    int    UIOrder = 28;
 >;
+
+// ----------------------------------------------------------------------------
+// Texture Scrolling Animation
+// ----------------------------------------------------------------------------
+int UAnimationFunction
+<
+    string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
+    int    UIOrder = 29;
+> = 0;
+
+float UAnimationPeriod
+<
+    string UIName   = "U Animation Period................(Seconds)";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 30;
+> = 0.0;
+
+float UAnimationScale
+<
+    string UIName   = "U Animation Scale................(Repeats)";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 31;
+> = 0.0;
+
+int VAnimationFunction
+<
+    string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
+    int    UIOrder = 32;
+> = 0;
+
+float VAnimationPeriod
+<
+    string UIName   = "V Animation Period................(Seconds)";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 32;
+> = 0.0;
+
+float VAnimationScale
+<
+    string UIName   = "V Animation Scale................(Repeats)";
+    string UIGroup  = "Texture Scrolling Animation";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 33;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Self-Illumination Properties
@@ -274,12 +422,19 @@ Texture2D BumpMapTexture
 // value.  In the viewport, the animation value is exposed as a manual slider
 // (0 = fully off, 1 = fully on).
 // ----------------------------------------------------------------------------
+bool unfilteredFlag
+<
+    string UIName  = "Unfiltered";
+    string UIGroup = "Self-Illumination Properties";
+    int    UIOrder = 34;
+> = false;
+
 float4 PrimaryOnColor
 <
     string UIName   = "Primary On Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 30;
+    int    UIOrder = 35;
 > = float4(0, 0, 0, 1);
 
 float4 PrimaryOffColor
@@ -287,16 +442,43 @@ float4 PrimaryOffColor
     string UIName   = "Primary Off Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 31;
+    int    UIOrder = 36;
 > = float4(0, 0, 0, 1);
+
+int PrimaryAnimationFunction
+<
+    string UIName   = "Primary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
+    int    UIOrder = 37;
+> = 0;
+
+float PrimaryAnimationPeriod
+<
+    string UIName   = "Primary Animation Period................(Seconds)";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 38;
+> = 0.0;
+
+float PrimaryAnimationPhase
+<
+    string UIName   = "Primary Animation Phase";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 39;
+> = 0.0;
 
 float PrimaryAnimationValue
 <
-    string UIName   = "Primary Animation Value";
+    //string UIName   = "Primary Animation Value";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 32;
+    int    UIOrder = 40;
 > = 0.0;
 
 float4 SecondaryOnColor
@@ -304,24 +486,51 @@ float4 SecondaryOnColor
     string UIName   = "Secondary On Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 33;
-> = float4(0, 1, 0, 1);
+    int    UIOrder = 41;
+> = float4(0, 0, 0, 1);
 
 float4 SecondaryOffColor
 <
     string UIName   = "Secondary Off Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 34;
+    int    UIOrder = 42;
 > = float4(0, 0, 0, 1);
+
+int SecondaryAnimationFunction
+<
+    string UIName   = "Secondary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
+    int    UIOrder = 43;
+> = 0;
+
+float SecondaryAnimationPeriod
+<
+    string UIName   = "Secondary Animation Period................(Seconds)";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 44;
+> = 0.0;
+
+float SecondaryAnimationPhase
+<
+    string UIName   = "Secondary Animation Phase";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 45;
+> = 0.0;
 
 float SecondaryAnimationValue
 <
-    string UIName   = "Secondary Animation Value";
+    //string UIName   = "Secondary Animation Value";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 35;
+    int    UIOrder = 46;
 > = 0.0;
 
 float4 PlasmaOnColor
@@ -329,7 +538,7 @@ float4 PlasmaOnColor
     string UIName   = "Plasma On Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 36;
+    int    UIOrder = 47;
 > = float4(0, 0, 0, 1);
 
 float4 PlasmaOffColor
@@ -337,16 +546,43 @@ float4 PlasmaOffColor
     string UIName   = "Plasma Off Color";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 37;
+    int    UIOrder = 48;
 > = float4(0, 0, 0, 1);
+
+int PlasmaAnimationFunction
+<
+    string UIName   = "Plasma Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
+    int    UIOrder = 49;
+> = 0;
+
+float PlasmaAnimationPeriod
+<
+    string UIName   = "Plasma Animation Period................(Seconds)";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 50;
+> = 0.0;
+
+float PlasmaAnimationPhase
+<
+    string UIName   = "Plasma Animation Phase";
+    string UIGroup  = "Self-Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 51;
+> = 0.0;
 
 float PlasmaAnimationValue
 <
-    string UIName   = "Plasma Animation Value";
+    //string UIName   = "Plasma Animation Value";
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 38;
+    int    UIOrder = 52;
 > = 0.0;
 
 float SelfIlluminationMapScale
@@ -355,7 +591,7 @@ float SelfIlluminationMapScale
     string UIGroup  = "Self-Illumination Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
-    int    UIOrder = 39;
+    int    UIOrder = 53;
 > = 0.0;
 
 Texture2D SelfIlluminationMapTexture
@@ -363,7 +599,7 @@ Texture2D SelfIlluminationMapTexture
     string UIName       = "Self-Illumination Map";
     string UIGroup      = "Self-Illumination Properties";
     string ResourceType = "2D";
-    int    UIOrder = 40;
+    int    UIOrder = 54;
 >;
 
 // ----------------------------------------------------------------------------
@@ -373,14 +609,21 @@ bool SpecularOverbright
 <
     string UIName  = "Overbright";
     string UIGroup = "Specular Properties";
-    int    UIOrder = 50;
+    int    UIOrder = 55;
 > = false;
 
 bool SpecularExtraShiny
 <
     string UIName  = "Extra Shiny";
     string UIGroup = "Specular Properties";
-    int    UIOrder = 51;
+    int    UIOrder = 56;
+> = false;
+
+bool LightmapIsSpecular
+<
+    string UIName  = "Lightmap Is Specular";
+    string UIGroup = "Specular Properties";
+    int    UIOrder = 57;
 > = false;
 
 float SpecBrightness
@@ -389,7 +632,7 @@ float SpecBrightness
     string UIGroup  = "Specular Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 52;
+    int    UIOrder = 58;
 > = 0.0;
 
 float4 SpecPerpendicularColor
@@ -397,7 +640,7 @@ float4 SpecPerpendicularColor
     string UIName   = "Perpendicular Color";
     string UIGroup  = "Specular Properties";
     string UIWidget = "Color";
-    int    UIOrder = 53;
+    int    UIOrder = 59;
 > = float4(0.0, 0.0, 0.0, 1);
 
 float4 SpecParallelColor
@@ -405,7 +648,7 @@ float4 SpecParallelColor
     string UIName   = "Parallel Color";
     string UIGroup  = "Specular Properties";
     string UIWidget = "Color";
-    int    UIOrder = 54;
+    int    UIOrder = 60;
 > = float4(0.0, 0.0, 0.0, 1);
 
 // ----------------------------------------------------------------------------
@@ -415,7 +658,7 @@ bool DynamicMirror
 <
     string UIName  = "Dynamic Mirror";
     string UIGroup = "Reflection Properties";
-    int    UIOrder = 59;
+    int    UIOrder = 61;
 > = false;
 
 //   0 = bumped cube-map   - bump map affects reflection direction + fresnel
@@ -427,8 +670,17 @@ int ReflectionType
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
-    int    UIOrder = 60;
+    int    UIOrder = 62;
 > = 0;
+
+float LightmapBrightnessScale
+<
+    string UIName   = "Lightmap Brightness Scale";
+    string UIGroup  = "Reflection Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+    int    UIOrder = 63;
+> = 0.0;
 
 float ReflPerpendicularBrightness
 <
@@ -436,7 +688,7 @@ float ReflPerpendicularBrightness
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 61;
+    int    UIOrder = 64;
 > = 0.0;
 
 float ReflParallelBrightness
@@ -445,7 +697,7 @@ float ReflParallelBrightness
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 62;
+    int    UIOrder = 65;
 > = 0.0;
 
 // IMPORTANT: HCE reflection maps are 2D cross-layout atlases, NOT DX11 cubemaps.
@@ -454,7 +706,7 @@ Texture2D ReflectionCubeTexture
     string UIName       = "Reflection Cube Map";
     string UIGroup      = "Reflection Properties";
     string ResourceType = "2D";
-    int    UIOrder = 63;
+    int    UIOrder = 66;
 >;
 
 // ----------------------------------------------------------------------------
@@ -466,42 +718,49 @@ bool EnableBaseMap
 <
     string UIName  = "Enable Base Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 67;
 > = true;
 
 bool EnablePrimaryDetailMap
 <
     string UIName  = "Enable Primary Detail Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 68;
 > = true;
 
 bool EnableSecondaryDetailMap
 <
     string UIName  = "Enable Secondary Detail Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 69;
 > = true;
 
 bool EnableMicroDetailMap
 <
     string UIName  = "Enable Micro Detail Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 70;
 > = true;
 
 bool EnableBumpMap
 <
     string UIName  = "Enable Bump Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 71;
 > = true;
 
 bool EnableSelfIlluminationMap
 <
     string UIName  = "Enable Self-Illumination Map";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 72;
 > = false;
 
 bool EnableReflectionCube
 <
     string UIName  = "Enable Reflection Cube";
     string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 73;
 > = true;
 
 // ----------------------------------------------------------------------------

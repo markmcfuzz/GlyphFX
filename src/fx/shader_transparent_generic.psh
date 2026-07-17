@@ -1,0 +1,439 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_generic.psh
+//
+// Pixel shader for shader_transparent_generic.
+// Ported from ringworld's shader_transparent_generic.hlsl - the modern
+// reimplementation of the NV register combiners the original game used.
+// The game compiles one pixel shader per tag with the stage configuration
+// baked in; here the same math runs with runtime branching over the
+// material parameters instead.
+//
+// ── COMBINER PIPELINE ────────────────────────────────────────────────────────
+// Up to 4 maps are sampled into t0-t3, then up to 7 stages run in order.
+// Each stage selects four color inputs (A-D) and four alpha inputs, applies
+// an input mapping to each, and combines them:
+//     AB       = A op B      (op = multiply | dot product; alpha always ×)
+//     CD       = C op D
+//     Mux/Sum  = mux flag off:  AB + CD
+//                mux flag on:   scratch alpha 0 >= 0.5 ? CD : AB
+// The output mapping scales/biases all three results, then each is written
+// to its selected register (Discard = don't write).  After the last stage,
+// scratch color 0 / scratch alpha 0 hold the final color / alpha.
+//
+// Registers visible to the stages:
+//   t0-t3   map color/alpha 0-3       v0 / v1   vertex color 0/1
+//   r0/r1   scratch color 0/1         c0 / c1   per-stage constant color 0/1
+// r0 starts as (0, 0, 0, map 0 alpha).  Disabled maps read as (0, 0, 0, 0).
+//
+// Constant color 0 is animated in-engine between the lower and upper bounds
+// by a wave function.  The viewport has no time source, so the peak value is
+// used: the upper bound for every function except Zero, which holds the
+// lower bound.  "Color0 Source" and "A-Out Controls Color0 Animation" need
+// external animation values and are informational only.
+//
+// ── FRAMEBUFFER FADE ─────────────────────────────────────────────────────────
+// In-engine an extra combiner stage applies the Framebuffer Fade Mode; here
+// the equivalent math runs in each entry point:
+//   Alpha Blend       final alpha × fade
+//   Add               final rgb × fade
+//   Multiply          lerp(1.0, rgb, fade)   - fades to blend-neutral white
+//   Double Multiply   lerp(0.5, rgb, fade)   - fades to blend-neutral grey
+// Framebuffer Fade Source selects an external animation output and is
+// informational only.
+//
+// ── FRAMEBUFFER BLEND MODES ──────────────────────────────────────────────────
+// Same four-technique scheme as shader_transparent_chicago (see that file
+// for the full notes on each approximation).  Subtract, Component Min/Max
+// and Alpha-Multiply Add have no viewport equivalent - use the closest of
+// the four techniques.
+// ----------------------------------------------------------------------------
+
+// ─── Combiner registers ──────────────────────────────────────────────────────
+
+struct CombinerState
+{
+    float4 t0, t1, t2, t3;   // map color/alpha 0-3
+    float4 v0, v1;           // vertex color 0/1
+    float4 r0, r1;           // scratch color 0/1 (r0 = final output)
+};
+
+// ─── Input mapping ───────────────────────────────────────────────────────────
+// 0=clamp(x)  1=1-clamp(x)  2=2*clamp(x)-1  3=1-2*clamp(x)
+// 4=clamp(x)-1/2  5=1/2-clamp(x)  6=x  7=-x
+// clamp(x) here is the combiner's "unsigned" read: negatives clamp to 0.
+
+float3 ApplyInputMappingC(float3 v, int m)
+{
+    if      (m == 0) return max(v, 0.0);
+    else if (m == 1) return 1.0 - clamp(v, 0.0, 1.0);
+    else if (m == 2) return 2.0 * max(v, 0.0) - 1.0;
+    else if (m == 3) return -2.0 * max(v, 0.0) + 1.0;
+    else if (m == 4) return max(v, 0.0) - 0.5;
+    else if (m == 5) return -max(v, 0.0) + 0.5;
+    else if (m == 7) return -v;
+    return v;   // 6 = x (signed identity)
+}
+
+float ApplyInputMappingA(float v, int m)
+{
+    if      (m == 0) return max(v, 0.0);
+    else if (m == 1) return 1.0 - clamp(v, 0.0, 1.0);
+    else if (m == 2) return 2.0 * max(v, 0.0) - 1.0;
+    else if (m == 3) return -2.0 * max(v, 0.0) + 1.0;
+    else if (m == 4) return max(v, 0.0) - 0.5;
+    else if (m == 5) return -max(v, 0.0) + 0.5;
+    else if (m == 7) return -v;
+    return v;   // 6 = x (signed identity)
+}
+
+// ─── Input selection ─────────────────────────────────────────────────────────
+// Color: 0=zero 1=one 2=1/2 3=-1 4=-1/2 5-8=map color 9=vertex color 0
+// 10=vertex color 1 11/12=scratch color 13/14=constant color 15-18=map alpha
+// 19/20=vertex alpha 21/22=scratch alpha 23/24=constant alpha
+
+float3 SelectColorInput(CombinerState s, float4 c0, float4 c1, int sel)
+{
+    if      (sel == 1)  return float3( 1.0,  1.0,  1.0);
+    else if (sel == 2)  return float3( 0.5,  0.5,  0.5);
+    else if (sel == 3)  return float3(-1.0, -1.0, -1.0);
+    else if (sel == 4)  return float3(-0.5, -0.5, -0.5);
+    else if (sel == 5)  return s.t0.rgb;
+    else if (sel == 6)  return s.t1.rgb;
+    else if (sel == 7)  return s.t2.rgb;
+    else if (sel == 8)  return s.t3.rgb;
+    else if (sel == 9)  return s.v0.rgb;
+    else if (sel == 10) return s.v1.rgb;
+    else if (sel == 11) return s.r0.rgb;
+    else if (sel == 12) return s.r1.rgb;
+    else if (sel == 13) return c0.rgb;
+    else if (sel == 14) return c1.rgb;
+    else if (sel == 15) return s.t0.aaa;
+    else if (sel == 16) return s.t1.aaa;
+    else if (sel == 17) return s.t2.aaa;
+    else if (sel == 18) return s.t3.aaa;
+    else if (sel == 19) return s.v0.aaa;
+    else if (sel == 20) return s.v1.aaa;
+    else if (sel == 21) return s.r0.aaa;
+    else if (sel == 22) return s.r1.aaa;
+    else if (sel == 23) return c0.aaa;
+    else if (sel == 24) return c1.aaa;
+    return float3(0.0, 0.0, 0.0);   // 0 = zero
+}
+
+// Alpha: 0=zero 1=one 2=1/2 3=-1 4=-1/2 5-8=map alpha 9/10=vertex alpha
+// 11/12=scratch alpha 13/14=constant alpha 15-18=map blue 19/20=vertex blue
+// 21/22=scratch blue 23/24=constant blue
+
+float SelectAlphaInput(CombinerState s, float4 c0, float4 c1, int sel)
+{
+    if      (sel == 1)  return  1.0;
+    else if (sel == 2)  return  0.5;
+    else if (sel == 3)  return -1.0;
+    else if (sel == 4)  return -0.5;
+    else if (sel == 5)  return s.t0.a;
+    else if (sel == 6)  return s.t1.a;
+    else if (sel == 7)  return s.t2.a;
+    else if (sel == 8)  return s.t3.a;
+    else if (sel == 9)  return s.v0.a;
+    else if (sel == 10) return s.v1.a;
+    else if (sel == 11) return s.r0.a;
+    else if (sel == 12) return s.r1.a;
+    else if (sel == 13) return c0.a;
+    else if (sel == 14) return c1.a;
+    else if (sel == 15) return s.t0.b;
+    else if (sel == 16) return s.t1.b;
+    else if (sel == 17) return s.t2.b;
+    else if (sel == 18) return s.t3.b;
+    else if (sel == 19) return s.v0.b;
+    else if (sel == 20) return s.v1.b;
+    else if (sel == 21) return s.r0.b;
+    else if (sel == 22) return s.r1.b;
+    else if (sel == 23) return c0.b;
+    else if (sel == 24) return c1.b;
+    return 0.0;   // 0 = zero
+}
+
+// ─── Output function / mapping / write ───────────────────────────────────────
+
+// 0 = multiply (result clamped to [-1, 1] like the combiner)  1 = dot product
+float3 CombineC(float3 x, float3 y, int f)
+{
+    if (f == 1) return dot(x, y).xxx;
+    return clamp(x * y, -1.0, 1.0);
+}
+
+// The alpha pipeline always multiplies.
+float CombineA(float x, float y)
+{
+    return clamp(x * y, -1.0, 1.0);
+}
+
+// 0=identity 1=scale by 1/2 2=scale by 2 3=scale by 4 4=bias by -1/2
+// 5=expand normal ((x - 1/2) * 2)
+float3 ApplyOutputMappingC(float3 v, int m)
+{
+    if      (m == 1) return v * 0.5;
+    else if (m == 2) return v * 2.0;
+    else if (m == 3) return v * 4.0;
+    else if (m == 4) return v - 0.5;
+    else if (m == 5) return (v - 0.5) * 2.0;
+    return v;
+}
+
+float ApplyOutputMappingA(float v, int m)
+{
+    if      (m == 1) return v * 0.5;
+    else if (m == 2) return v * 2.0;
+    else if (m == 3) return v * 4.0;
+    else if (m == 4) return v - 0.5;
+    else if (m == 5) return (v - 0.5) * 2.0;
+    return v;
+}
+
+// 0=discard 1=scratch 0 2=scratch 1 3=vertex 0 4=vertex 1 5-8=map 0-3
+void WriteColorOutput(inout CombinerState s, float3 v, int o)
+{
+    if      (o == 1) s.r0.rgb = v;
+    else if (o == 2) s.r1.rgb = v;
+    else if (o == 3) s.v0.rgb = v;
+    else if (o == 4) s.v1.rgb = v;
+    else if (o == 5) s.t0.rgb = v;
+    else if (o == 6) s.t1.rgb = v;
+    else if (o == 7) s.t2.rgb = v;
+    else if (o == 8) s.t3.rgb = v;
+}
+
+void WriteAlphaOutput(inout CombinerState s, float v, int o)
+{
+    if      (o == 1) s.r0.a = v;
+    else if (o == 2) s.r1.a = v;
+    else if (o == 3) s.v0.a = v;
+    else if (o == 4) s.v1.a = v;
+    else if (o == 5) s.t0.a = v;
+    else if (o == 6) s.t1.a = v;
+    else if (o == 7) s.t2.a = v;
+    else if (o == 8) s.t3.a = v;
+}
+
+// ─── Stage evaluation ────────────────────────────────────────────────────────
+// Mirrors ringworld's STAGE macro exactly: all inputs and both mux decisions
+// read the register values from BEFORE this stage's writes; the six writes
+// happen together at the end (later writes to the same register win).
+
+void RunStage(inout CombinerState s,
+              float4 lowerBound, float4 upperBound, float4 color1,
+              int color0Function,
+              bool colorMux, bool alphaMux,
+              int inA,  int inAMap,  int inB,  int inBMap,
+              int inC,  int inCMap,  int inD,  int inDMap,
+              int outAB, int outABFunc, int outCD, int outCDFunc,
+              int outMuxSum, int outMapping,
+              int aInA, int aInAMap, int aInB, int aInBMap,
+              int aInC, int aInCMap, int aInD, int aInDMap,
+              int aOutAB, int aOutCD, int aOutMuxSum, int aOutMapping)
+{
+    // Constant color 0: the engine animates lower -> upper with a wave
+    // function.  No time source in the viewport, so hold the peak value
+    // (upper bound), or the lower bound when the function is Zero.
+    float4 c0 = (color0Function == 1) ? lowerBound : upperBound;
+    float4 c1 = color1;
+
+    float3 a = ApplyInputMappingC(SelectColorInput(s, c0, c1, inA), inAMap);
+    float3 b = ApplyInputMappingC(SelectColorInput(s, c0, c1, inB), inBMap);
+    float3 c = ApplyInputMappingC(SelectColorInput(s, c0, c1, inC), inCMap);
+    float3 d = ApplyInputMappingC(SelectColorInput(s, c0, c1, inD), inDMap);
+
+    float3 ab     = CombineC(a, b, outABFunc);
+    float3 cd     = CombineC(c, d, outCDFunc);
+    float3 muxSum = colorMux ? (s.r0.a >= 0.5 ? cd : ab) : ab + cd;
+    muxSum = clamp(muxSum, -1.0, 1.0);
+
+    ab     = ApplyOutputMappingC(ab,     outMapping);
+    cd     = ApplyOutputMappingC(cd,     outMapping);
+    muxSum = ApplyOutputMappingC(muxSum, outMapping);
+
+    float aA = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInA), aInAMap);
+    float aB = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInB), aInBMap);
+    float aC = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInC), aInCMap);
+    float aD = ApplyInputMappingA(SelectAlphaInput(s, c0, c1, aInD), aInDMap);
+
+    float abA     = CombineA(aA, aB);
+    float cdA     = CombineA(aC, aD);
+    float muxSumA = alphaMux ? (s.r0.a >= 0.5 ? cdA : abA) : abA + cdA;
+    muxSumA = clamp(muxSumA, -1.0, 1.0);
+
+    abA     = ApplyOutputMappingA(abA,     aOutMapping);
+    cdA     = ApplyOutputMappingA(cdA,     aOutMapping);
+    muxSumA = ApplyOutputMappingA(muxSumA, aOutMapping);
+
+    WriteColorOutput(s, ab,     outAB);
+    WriteColorOutput(s, cd,     outCD);
+    WriteColorOutput(s, muxSum, outMuxSum);
+    WriteAlphaOutput(s, abA,     aOutAB);
+    WriteAlphaOutput(s, cdA,     aOutCD);
+    WriteAlphaOutput(s, muxSumA, aOutMuxSum);
+}
+
+// Expands one stage's 32 material parameters into a RunStage call.
+#define GX_RUN_STAGE(state, N)                                                 \
+    RunStage(state,                                                            \
+        Stage##N##_Color0AnimationLowerBound,                                  \
+        Stage##N##_Color0AnimationUpperBound,                                  \
+        Stage##N##_Color1,                                                     \
+        Stage##N##_Color0AnimationFunction,                                    \
+        Stage##N##_ColorMux, Stage##N##_AlphaMux,                              \
+        Stage##N##_ColorInputA, Stage##N##_ColorInputAMapping,                 \
+        Stage##N##_ColorInputB, Stage##N##_ColorInputBMapping,                 \
+        Stage##N##_ColorInputC, Stage##N##_ColorInputCMapping,                 \
+        Stage##N##_ColorInputD, Stage##N##_ColorInputDMapping,                 \
+        Stage##N##_ColorOutputAB, Stage##N##_ColorOutputABFunction,            \
+        Stage##N##_ColorOutputCD, Stage##N##_ColorOutputCDFunction,            \
+        Stage##N##_ColorOutputABCDMuxSum, Stage##N##_ColorOutputMapping,       \
+        Stage##N##_AlphaInputA, Stage##N##_AlphaInputAMapping,                 \
+        Stage##N##_AlphaInputB, Stage##N##_AlphaInputBMapping,                 \
+        Stage##N##_AlphaInputC, Stage##N##_AlphaInputCMapping,                 \
+        Stage##N##_AlphaInputD, Stage##N##_AlphaInputDMapping,                 \
+        Stage##N##_AlphaOutputAB, Stage##N##_AlphaOutputCD,                    \
+        Stage##N##_AlphaOutputABCDMuxSum, Stage##N##_AlphaOutputMapping)
+
+// ─── Map sampling ────────────────────────────────────────────────────────────
+
+float4 SampleMap(Texture2D tex, float2 uv,
+                 bool uClamped, bool vClamped, bool unfiltered, float mipBias)
+{
+    if (uClamped) uv.x = saturate(uv.x);
+    if (vClamped) uv.y = saturate(uv.y);
+    return unfiltered ? tex.SampleBias(smpPoint, uv, mipBias)
+                      : tex.SampleBias(smpWrap,  uv, mipBias);
+}
+
+// ─── Combiner pipeline ───────────────────────────────────────────────────────
+// Samples the active maps and runs the active stages.  Returns the final
+// color/alpha from scratch register 0.
+
+float4 PS_Evaluate(STG_PS_INPUT i)
+{
+    CombinerState s;
+
+    s.t0 = SampleMap(Map1Texture, i.uv0, Map1_UClamped, Map1_VClamped,
+                     Map1_Unfiltered, Map1_MipmapBias);
+    s.t1 = EnableMap2 ? SampleMap(Map2Texture, i.uv1, Map2_UClamped, Map2_VClamped,
+                                  Map2_Unfiltered, Map2_MipmapBias)
+                      : float4(0.0, 0.0, 0.0, 0.0);
+    s.t2 = EnableMap3 ? SampleMap(Map3Texture, i.uv2, Map3_UClamped, Map3_VClamped,
+                                  Map3_Unfiltered, Map3_MipmapBias)
+                      : float4(0.0, 0.0, 0.0, 0.0);
+    s.t3 = EnableMap4 ? SampleMap(Map4Texture, i.uv3, Map4_UClamped, Map4_VClamped,
+                                  Map4_Unfiltered, Map4_MipmapBias)
+                      : float4(0.0, 0.0, 0.0, 0.0);
+
+    s.v0 = i.vColor0;
+    s.v1 = i.vColor1;
+    s.r0 = float4(0.0, 0.0, 0.0, s.t0.a);
+    s.r1 = float4(0.0, 0.0, 0.0, 0.0);
+
+    GX_RUN_STAGE(s, 1);   // stage 1 is always active
+    [branch] if (EnableStage2) GX_RUN_STAGE(s, 2);
+    [branch] if (EnableStage3) GX_RUN_STAGE(s, 3);
+    [branch] if (EnableStage4) GX_RUN_STAGE(s, 4);
+    [branch] if (EnableStage5) GX_RUN_STAGE(s, 5);
+    [branch] if (EnableStage6) GX_RUN_STAGE(s, 6);
+    [branch] if (EnableStage7) GX_RUN_STAGE(s, 7);
+
+    return float4(saturate(s.r0.rgb), saturate(s.r0.a));
+}
+
+// ─── Framebuffer fade ────────────────────────────────────────────────────────
+// 0=None  1=Fade When Perpendicular (vertex alpha 1)  2=Fade When Parallel
+// (vertex blue 1).  In-engine this is an extra combiner stage; here the
+// entry points apply it directly.
+
+float FramebufferFade(STG_PS_INPUT i)
+{
+    if (FramebufferFadeMode == 1) return saturate(i.vColor1.a);
+    if (FramebufferFadeMode == 2) return saturate(i.vColor1.b);
+    return 1.0;
+}
+
+// ─── Opacity helpers (same as shader_transparent_chicago) ───────────────────
+
+// Applies contrast (centred at 0.5), bias and gamma to a raw opacity value.
+float ApplyOpacityControls(float raw)
+{
+    float o = saturate((raw - 0.5) * OpacityContrast + 0.5);
+    o = saturate(o + OpacityBias);
+    o = pow(o, 1.0 / max(OpacityGamma, 0.001));
+    return o;
+}
+
+// Stochastic (dithered) discard using a screen-space hash.
+// Ensures near-transparent fragments don't write to the depth buffer, which
+// is required because DepthWriteMask = ALL is a Nitrous constraint.
+// Fragments with alpha == 0 always discard; alpha == 1 always survive.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither * DitherScale);
+}
+
+// ─── Pixel shader entry points ───────────────────────────────────────────────
+
+// Alpha Blend - uses the combiner's final alpha for opacity.
+// Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
+//   → PS outputs alpha = 0.0 → Nitrous Standard/High Quality composites the
+//     RGB output over the dark viewport background → black areas stay black.
+// Textures WITH an alpha channel: c.a < 1.0 on transparent pixels.
+//   → Opacity controls + dither clip for smooth transparency.
+float4 PS_AlphaBlend(STG_PS_INPUT i) : SV_TARGET
+{
+    float4 c = PS_Evaluate(i);
+    c.a *= FramebufferFade(i);
+    if (c.a >= 1.0)
+        return float4(c.rgb, 0.0);
+    float alpha = ApplyOpacityControls(c.a);
+    DitherClip(alpha, i.clipPos);
+    return float4(c.rgb, alpha);
+}
+
+// Add - SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
+// Use this technique when the tag adds its color to the framebuffer.
+// Luminance drives the alpha: dark pixels → alpha ≈ 0 → contribution ≈ 0.
+// Brightness scales the output RGB to match the in-game renderer intensity.
+float4 PS_Add(STG_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    c.rgb       *= FramebufferFade(i);
+    float  lum   = dot(c.rgb, float3(0.299, 0.587, 0.114));
+    float  alpha = ApplyOpacityControls(lum);
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(c.rgb * Brightness, alpha);
+}
+
+// Multiply - stochastic approximation via inverted luminance.
+// Bright pixels (lum ≈ 1) → alpha = 1 - lum ≈ 0 → discarded by DitherClip.
+// Dark pixels (lum ≈ 0)   → alpha = 1 - lum ≈ 1 → survive, drawn opaquely.
+// The fade pulls the color toward white, the blend-neutral value.
+float4 PS_Multiply(STG_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    c.rgb        = lerp(float3(1.0, 1.0, 1.0), c.rgb, FramebufferFade(i));
+    float3 rgb   = saturate(c.rgb * 1.2);
+    float  lum   = dot(c.rgb, float3(0.6, 0.6, 0.6));
+    float  alpha = 1.0 - lum;
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(rgb, 0.0);
+}
+
+// Double Multiply - tent function: clips both dark AND bright pixels,
+// only mid-tones (lum ≈ 0.5) survive.
+// The fade pulls the color toward mid grey, the blend-neutral value.
+float4 PS_DoubleMultiply(STG_PS_INPUT i) : SV_TARGET
+{
+    float4 c     = PS_Evaluate(i);
+    c.rgb        = lerp(float3(0.5, 0.5, 0.5), c.rgb, FramebufferFade(i));
+    float  lum   = dot(c.rgb, float3(0.5, 0.5, 0.5));
+    float  alpha = 0.75 - abs(lum * 2.0 - 1.1);
+    DitherClip(alpha, i.clipPos * i.clipPos.w);
+    return float4(c.rgb, alpha);
+}

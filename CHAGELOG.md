@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- ``shader_transparent_generic.fx`` fully re-implemented and tested. Not tested neither documented yet.
+- ``shader_transparent_generic.fx`` fully re-implemented and tested. Not documented yet.
 
 ## [0.5.0] - 2026-04-20
 

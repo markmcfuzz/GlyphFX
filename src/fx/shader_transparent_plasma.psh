@@ -1,0 +1,129 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_transparent_plasma.psh
+//
+// Pixel shader for shader_transparent_plasma.
+// Ported from shaders/fx/transparent_plasma.psh.
+//
+// ── NOISE VOLUME ATLAS ───────────────────────────────────────────────────────
+// The original samples two Texture3D noise volumes.  Halo CE's own tools
+// store 3D bitmaps as a 2D filmstrip instead - a single row of N square
+// slices separated by a solid-colour border of arbitrary width (see
+// shaders/resources/plasma shield noise.png).  SampleNoiseVolumeAtlas() below
+// reconstructs a pseudo-volume from that filmstrip and trilinearly samples it.
+// ----------------------------------------------------------------------------
+
+// Stochastic (dithered) discard for semi-transparent plasma in Nitrous.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither);
+}
+
+// Reconstructs one Z-trilinear-filtered sample of a 3D noise volume stored as
+// a horizontal filmstrip atlas: sliceCount square cells, each preceded by a
+// borderH-wide solid-colour divider, PLUS one closing divider of the same
+// width after the very last cell (N+1 dividers framing N content cells -
+// matches a real measured asset: 3px dividers before every cell including
+// the first, and one extra 3px divider at the far right edge).  That means
+// the true per-cell period is (texW - borderH) / sliceCount, NOT
+// texW / sliceCount - using the latter silently drops the closing divider's
+// width, understating the period, so cropping only ever moves the LEFT edge
+// of a cell (borderH is added there) while the RIGHT edge drifts back into
+// the following divider more and more as the slice index grows.  Vertically
+// there's no repeated cell (a single row, top+bottom margin only), so
+// borderV needs no equivalent correction.
+//
+// The sampled UV is also inset a bit on every edge so bilinear filtering
+// never blends in the neighbouring divider pixel.  This function always
+// samples mip 0 explicitly (no mipmap chain makes sense for a reconstructed
+// atlas - a coarser mip of the whole filmstrip would blend neighbouring
+// slices together), so there's no anisotropic/mip minification at grazing
+// view angles or on tightly curved geometry; a faint hint of the divider can
+// still show there. NOISE_ATLAS_INSET_TEXELS trades a little edge content
+// for a larger safety margin against that - raise it further if needed.
+#define NOISE_ATLAS_INSET_TEXELS 1.0
+
+float4 SampleNoiseVolumeAtlas(Texture2D tex, SamplerState smp, float3 uvw,
+                               int sliceCount, float borderH, float borderV)
+{
+    float texW, texH;
+    tex.GetDimensions(texW, texH);
+
+    float cellW    = (texW - borderH) / max(sliceCount, 1);
+    float contentW = max(cellW - borderH, 1.0);
+    float contentH = max(texH - borderV * 2.0, 1.0);
+
+    // Wrap U/V and the slice coordinate - the volume tiles seamlessly.
+    float2 uvRaw  = frac(uvw.xy);
+    float2 inset  = NOISE_ATLAS_INSET_TEXELS / float2(contentW, contentH);
+    float2 uv     = clamp(uvRaw, inset, 1.0 - inset);
+    float  w      = frac(uvw.z) * sliceCount;
+
+    // Trilinear blend between the two nearest Z slices (centred sampling).
+    float zf = w - 0.5;
+    int   z0i = (int)floor(zf);
+    float zt = zf - z0i;
+    z0i = z0i % sliceCount;
+    if (z0i < 0) z0i += sliceCount;
+    uint z0 = (uint)z0i;
+    uint z1 = (z0 + 1) % (uint)sliceCount;
+
+    float2 pxA = float2(z0 * cellW + borderH + uv.x * contentW, borderV + uv.y * contentH);
+    float2 pxB = float2(z1 * cellW + borderH + uv.x * contentW, borderV + uv.y * contentH);
+
+    float4 a = tex.SampleLevel(smp, pxA / float2(texW, texH), 0);
+    float4 b = tex.SampleLevel(smp, pxB / float2(texW, texH), 0);
+    return lerp(a, b, zt);
+}
+
+float4 PS_Main(TP_PS_INPUT i) : SV_TARGET
+{
+    // EnablePrimaryNoiseMap/EnableSecondaryNoiseMap simulate an unassigned
+    // texture (0.5/0.5/0.5/0.5 is neutral for the +-0.5 threshold math below).
+    float4 t0 = EnablePrimaryNoiseMap
+        ? SampleNoiseVolumeAtlas(PrimaryNoiseMapTexture, smpClamp, i.T0, PrimaryNoiseSliceCount, PrimaryNoiseBorderTexelsH, PrimaryNoiseBorderTexelsV)
+        : float4(0.5, 0.5, 0.5, 0.5);
+    float4 t1 = EnableSecondaryNoiseMap
+        ? SampleNoiseVolumeAtlas(SecondaryNoiseMapTexture, smpClamp, i.T1, SecondaryNoiseSliceCount, SecondaryNoiseBorderTexelsH, SecondaryNoiseBorderTexelsV)
+        : float4(0.5, 0.5, 0.5, 0.5);
+
+    // ------------------------------------------------------------------------
+    // transparent_plasma.psh: the two noise volumes cross-modulate their blue
+    // and alpha channels into a threshold mask, then a soft "hot core" term.
+    // ------------------------------------------------------------------------
+    float plasma_intermed_1 = saturate(t0.b + 0.5 - t1.b);
+    float plasma_intermed_2 = saturate(t1.a + 0.5 - t0.a);
+    float plasma = (plasma_intermed_1 < 0.5) ? plasma_intermed_1 : plasma_intermed_2;
+
+    // raw plasma
+    plasma = saturate(plasma * plasma * 4.0);
+
+    // attenuated plasma - hot core term
+    float attenuated_plasma = (plasma < 0.5) ? 0.0 : pow(2.0 * plasma - 1.0, 2.0);
+
+    float3 plasma_color = saturate(plasma * i.D0.rgb + attenuated_plasma * 0.5);
+    plasma_color *= pow(plasma, 2.0);
+
+    // Diff.a: view-angle brightness (see .vsh) - independent of the plasma
+    // mask, exactly like the original (final_color.a = Diff.a).
+    float alpha = i.D0.a;
+
+    // ------------------------------------------------------------------------
+    // Debug visualisation
+    // ------------------------------------------------------------------------
+    if      (DebugMode == 1) return float4(t0.rgb,             1.0);
+    else if (DebugMode == 2) return float4(t1.rgb,             1.0);
+    else if (DebugMode == 3) return float4((float3)plasma,     1.0);
+    else if (DebugMode == 4) return float4(i.D0.rgb,           1.0);
+
+    // Boost surviving pixel colour to compensate for dither-discarded
+    // neighbours (see shader_transparent_water.psh) - true alpha blending
+    // isn't available under Nitrous's BlendEnable=FALSE constraint.
+    float3 color = saturate(plasma_color / max(alpha, 0.15));
+
+    // Dithered transparency for Nitrous viewport
+    DitherClip(alpha, i.clipPos);
+
+    return float4(color, 1.0);
+}

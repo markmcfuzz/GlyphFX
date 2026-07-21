@@ -7,7 +7,8 @@
 //   c1 = meter_gradient_max_color   → GradientMaxColor.rgba  (a = sensitivity)
 //   c2 = meter_gradient_min_color   → GradientMinColor.rgb + MeterValue (c2.a)
 //   c3 = meter_background_color     → BackgroundColor.rgb, a = 1-BackgroundTransparency
-//   c4 = meter_tint_color           → TintColor.rgb  (c4.a = 1-MeterTransparency)
+//   c4 = meter_tint_color           → MeterTintColor.rgb  (c4.a = 1-MeterTransparency)
+//        (not currently applied to the output; see params file)
 //   c5 = meter_flash_color_variable → FlashColor.rgb * FlashBrightness
 // The FlashColorIsNegative flag inverts the flash contribution sign.
 // The Unfiltered flag switches to a point sampler.

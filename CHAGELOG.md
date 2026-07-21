@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `shader_transparent_plasma.fx` fully re-implemented and tested. Not documented yet.
 
+### Changed
+
+- Updated parameters for transparent shaders to represent the real tag fields.
+
 ## [0.6.0] - 2026-07-16
 
 ### Added

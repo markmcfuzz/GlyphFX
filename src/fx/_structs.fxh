@@ -144,4 +144,24 @@ struct STG_VS_OUTPUT
 
 typedef STG_VS_OUTPUT STG_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_transparent_plasma - position + normal only.  No mesh UV is used:
+// the two noise volumes are sampled procedurally from world-space position.
+// ----------------------------------------------------------------------------
+struct TP_VS_INPUT
+{
+    float4 position : POSITION;
+    float3 normal   : NORMAL;
+};
+
+struct TP_VS_OUTPUT
+{
+    float4 clipPos : SV_POSITION;
+    float4 D0      : TEXCOORD0;   // view-angle tint (rgb) + view-angle brightness (a)
+    float3 T0      : TEXCOORD1;   // primary noise volume UVW (world-space)
+    float3 T1      : TEXCOORD2;   // secondary noise volume UVW (world-space)
+};
+
+typedef TP_VS_OUTPUT TP_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

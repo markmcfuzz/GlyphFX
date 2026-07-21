@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Documentation of all developed shaders and parameters.
+- Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
+
+## [0.7.0] - 2026-07-21
+
+### Added
+
+- `shader_transparent_plasma.fx` fully re-implemented and tested. Not documented yet.
 
 ## [0.6.0] - 2026-07-16
 

@@ -301,7 +301,7 @@ int FlashExtensionSource
 // ----------------------------------------------------------------------------
 float MeterValue
 <
-    string UIName   = "Meter Value  [0=Empty 1=Full]  (replaces value source)";
+    string UIName   = "Meter Value (Only 3ds Max)";
     string UIGroup  = "Viewport Function Overrides";
     string UIWidget = "slider";
     int    UIOrder = 26;
@@ -310,7 +310,7 @@ float MeterValue
 
 float FlashBrightness
 <
-    string UIName   = "Flash Brightness  (replaces flash brightness source)";
+    string UIName   = "Flash Value  (Only 3ds Max)";
     string UIGroup  = "Viewport Function Overrides";
     string UIWidget = "slider";
     int    UIOrder = 27;
@@ -322,7 +322,7 @@ float FlashBrightness
 // ----------------------------------------------------------------------------
 float DitherScale
 <
-    string UIName   = "Dither Scale  (1 = full range)";
+    //string UIName   = "Dither Scale  (1 = full range)";
     string UIGroup  = "Opacity Controls";
     string UIWidget = "slider";
     int    UIOrder = 28;

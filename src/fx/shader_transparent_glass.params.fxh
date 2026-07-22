@@ -279,7 +279,7 @@ bool EnableReflectionCube
     string UIName  = "Enable Reflection Map";
     string UIGroup = "Reflection Properties";
     int    UIOrder = 21;
-> = true;
+> = false;
 
 // IMPORTANT: HCE reflection maps are 2D cross-layout atlases, NOT DX11 cubemaps.
 Texture2D ReflectionCubeTexture

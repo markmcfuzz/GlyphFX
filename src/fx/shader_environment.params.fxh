@@ -49,26 +49,7 @@ float LampIntensity
     float  UIMin = 0.0; float UIMax = 2.0; float UIStep = 0.01;
 > = 0.6;
 
-// ----------------------------------------------------------------------------
-// Debug Parameters
-// ----------------------------------------------------------------------------
-//  0 = normal render
-//  1 = base map (unlit)
-//  2 = primary detail map
-//  3 = secondary detail map
-//  4 = micro detail map
-//  5 = bump map normal
-//  6 = self-illumination map
-//  7 = specular mask
-//  8 = reflection only
-//  9 = blend factor (base.a for BLENDED, secondary.a for NORMAL)
-int DebugMode
-<
-    string UIName   = "Debug Mode  [0=Normal  1=Base Map  2=Primary Detail Map  3=Secondary Detail Map  4=Micro Detail Map  5=Bump Map Normal  6=Self-Illumination Map  7=Specular Mask  8=Reflection Only  9=Blend Factor]";
-    string UIWidget = "Spinner";
-    float  UIMin = 0; float UIMax = 9; float UIStep = 1;
-> = 0;
-
+// Disabled by default
 float ReflectionIntensityScale
 <
     string UIWidget = "slider";
@@ -249,6 +230,13 @@ bool RescaleBumpMap
     int    UIOrder = 16;
 > = false;
 
+bool EnableBaseMap
+<
+    string UIName  = "Enable Base Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 17;
+> = false;
+
 Texture2D BaseMapTexture
 <
     string UIName       = "Base Map";
@@ -265,6 +253,13 @@ int DetailMapFunction
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
     int    UIOrder = 18;
 > = 0;
+
+bool EnablePrimaryDetailMap
+<
+    string UIName  = "Enable Primary Detail Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 19;
+> = false;
 
 float PrimaryDetailMapScale
 <
@@ -283,6 +278,13 @@ Texture2D PrimaryDetailMapTexture
     int    UIOrder = 20;
 >;
 
+bool EnableSecondaryDetailMap
+<
+    string UIName  = "Enable Secondary Detail Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 21;
+> = false;
+
 float SecondaryDetailMapScale
 <
     string UIName   = "Secondary Detail Map Scale";
@@ -299,6 +301,13 @@ Texture2D SecondaryDetailMapTexture
     string ResourceType = "2D";
     int    UIOrder = 22;
 >;
+
+bool EnableMicroDetailMap
+<
+    string UIName  = "Enable Micro Detail Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 23;
+> = false;
 
 int MicroDetailMapFunction
 <
@@ -337,6 +346,13 @@ float4 MaterialColor
 // ----------------------------------------------------------------------------
 // Bump Properties
 // ----------------------------------------------------------------------------
+bool EnableBumpMap
+<
+    string UIName  = "Enable Bump Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 27;
+> = false;
+
 float BumpMapScale
 <
     string UIName   = "Bump Map Scale";
@@ -594,6 +610,13 @@ float SelfIlluminationMapScale
     int    UIOrder = 53;
 > = 0.0;
 
+bool EnableSelfIlluminationMap
+<
+    string UIName  = "Enable Self-Illumination Map";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 54;
+> = false;
+
 Texture2D SelfIlluminationMapTexture
 <
     string UIName       = "Self-Illumination Map";
@@ -700,68 +723,42 @@ float ReflParallelBrightness
     int    UIOrder = 65;
 > = 0.0;
 
+bool EnableReflectionCube
+<
+    string UIName  = "Enable Reflection Cube";
+    string UIGroup = "Environment Shader Flags";
+    int    UIOrder = 66;
+> = false;
+
 // IMPORTANT: HCE reflection maps are 2D cross-layout atlases, NOT DX11 cubemaps.
 Texture2D ReflectionCubeTexture
 <
     string UIName       = "Reflection Cube Map";
     string UIGroup      = "Reflection Properties";
     string ResourceType = "2D";
-    int    UIOrder = 66;
+    int    UIOrder = 67;
 >;
 
 // ----------------------------------------------------------------------------
-// Texture-connected flags
-// DX11 samples unbound textures as black (0,0,0,0), which breaks blend modes
-// that expect a neutral value.  Set each flag only when the texture is assigned.
+// Debug Parameters
 // ----------------------------------------------------------------------------
-bool EnableBaseMap
+//  0 = normal render
+//  1 = base map (unlit)
+//  2 = primary detail map
+//  3 = secondary detail map
+//  4 = micro detail map
+//  5 = bump map normal
+//  6 = self-illumination map
+//  7 = specular mask
+//  8 = reflection only
+//  9 = blend factor (base.a for BLENDED, secondary.a for NORMAL)
+int DebugMode
 <
-    string UIName  = "Enable Base Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 67;
-> = true;
-
-bool EnablePrimaryDetailMap
-<
-    string UIName  = "Enable Primary Detail Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 68;
-> = true;
-
-bool EnableSecondaryDetailMap
-<
-    string UIName  = "Enable Secondary Detail Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 69;
-> = true;
-
-bool EnableMicroDetailMap
-<
-    string UIName  = "Enable Micro Detail Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 70;
-> = true;
-
-bool EnableBumpMap
-<
-    string UIName  = "Enable Bump Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 71;
-> = true;
-
-bool EnableSelfIlluminationMap
-<
-    string UIName  = "Enable Self-Illumination Map";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 72;
-> = false;
-
-bool EnableReflectionCube
-<
-    string UIName  = "Enable Reflection Cube";
-    string UIGroup = "Environment Shader Flags";
-    int    UIOrder = 73;
-> = true;
+    string UIName   = "Debug Mode  [0=Normal  1=Base Map  2=Primary Detail Map  3=Secondary Detail Map  4=Micro Detail Map  5=Bump Map Normal  6=Self-Illumination Map  7=Specular Mask  8=Reflection Only  9=Blend Factor]";
+    string UIWidget = "Spinner";
+    float  UIMin = 0; float UIMax = 9; float UIStep = 1;
+    int UIOrder = 68;
+> = 0;
 
 // ----------------------------------------------------------------------------
 // Other Properties

@@ -193,7 +193,7 @@ bool EnableBaseMap
     string UIName  = "Enable Base Map";
     string UIGroup = "Base Map";
     int    UIOrder = 12;
-> = true;
+> = false;
 
 Texture2D BaseMapTexture
 <
@@ -248,7 +248,7 @@ bool EnableReflectionMap
     string UIName  = "Enable Reflection Map";
     string UIGroup = "Reflection Properties";
     int    UIOrder = 18;
-> = true;
+> = false;
 
 // IMPORTANT: HCE reflection maps are 2D cross-layout atlases, NOT DX11 cubemaps.
 Texture2D ReflectionMapTexture

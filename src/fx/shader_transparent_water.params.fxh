@@ -208,6 +208,12 @@ Texture2D BaseMapTexture
 //
 // View perpendicular = looking straight at the surface (NdotV ≈ 1).
 // View parallel      = looking at a glancing angle   (NdotV ≈ 0).
+//
+// The two BRIGHTNESS values only exist inside the pass that writes the
+// destination alpha, so they do nothing unless <base map alpha modulates
+// reflection> is set - with the flag clear the reflection is always added at
+// full strength.  The two TINT COLORS belong to the reflection pass itself and
+// always apply.
 // ----------------------------------------------------------------------------
 float ViewPerpendicularBrightness
 <
@@ -661,21 +667,110 @@ float4 c_fog_color_correction_1
 //  1 = base map
 //  2 = ripple normal
 //  3 = reflection only
+//  4 = base map alpha  (the reflection mask)
+//  5 = background multiply  (what the background gets multiplied by)
 // ----------------------------------------------------------------------------
 int DebugMode
 <
-    string UIName   = "Debug Mode  [0=Normal 1=Base Map 2=Ripple Normal 3=Reflection Only]";
+    string UIName   = "Debug Mode  [0=Normal 1=Base Map 2=Ripple Normal 3=Reflection Only 4=Base Map Alpha 5=Background Multiply]";
     string UIGroup  = "Debug Parameters";
     string UIWidget = "Spinner";
     int    UIOrder = 64;
-    float  UIMin = 0; float UIMax = 3; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
 
-float ReflectionIntensityScale
+// How much of the base map colour reaches the background multiply.  1 is the
+// engine's behaviour; lower it to make the water read as more transparent
+// without touching the tag's own fields.
+float BaseMapColorStrength
 <
+    string UIName   = "Base Map Color Strength  [0,1]  (lower = more transparent)";
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
     int    UIOrder = 65;
+    float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
+> = 1.0;
+
+// The engine multiplies the background by the base map colour, and the
+// viewport has no way to read what is behind the surface, so the shader works
+// against this estimate of it instead.  Set it to roughly the brightness of
+// the terrain under the water: too low and the water reads too dark, too high
+// and it reads washed out.  See the compositing note at the top of
+// shader_transparent_water.psh.
+float BackgroundBrightness
+<
+    string UIName   = "Background Brightness  [0,1]  (brightness under the water)";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    int    UIOrder = 66;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.5;
+
+// Nitrous honours no blending, so transparency is a 1-bit dither, and a dither
+// is at its noisiest around half coverage - which is where a water surface
+// tends to sit across its whole area.  This trades that grain against how much
+// of the real background shows through:
+//   1.0 = the least coverage the surface can be drawn with.  Every pixel that
+//         is dropped shows the terrain behind it with all of its detail, and
+//         the grain is at its strongest.
+//   0.0 = fully covered wherever the water contributes anything.  No grain at
+//         all, but what shows "through" the water is Background Brightness
+//         rather than the terrain itself.
+// The edges fade out at every setting - pixels with nothing to contribute stay
+// at zero coverage regardless.
+float DitherAmount
+<
+    string UIName   = "Dither Amount  [0,1]  (0 = smooth, 1 = most see-through)";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    int    UIOrder = 67;
+    float  UIMin = 0; float UIMax = 5; float UIStep = 0.01;
+> = 1.0;
+
+// Hard ceiling on how much of a pixel the water may cover, i.e. how opaque the
+// most reflective spots are allowed to get.  In the engine the reflection is
+// ADDED and never occludes the riverbed; a coverage dither can only show the
+// bed by dropping pixels, so a bright reflection would otherwise have to cover
+// them all and read as a solid patch.  Capping coverage forces the terrain to
+// keep showing through even there - the capped reflection just loses a little
+// brightness in exchange.
+//   1.0 = the brightest reflections may become fully opaque (engine-accurate
+//         brightness, least see-through).
+//   lower = the terrain always shows through by at least (1 - this), at the
+//         cost of some reflection brightness in the brightest spots.
+float MaxOpacity
+<
+    string UIName   = "Max Opacity  [0,1]  (lower = terrain always shows through)";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    int    UIOrder = 68;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 1.0;
+
+// The dither represents the ADDITIVE reflection by covering pixels brighter
+// than the background (colour + Background Brightness), which washes the water
+// toward white and clamps the brightest channel - the reflection cube map is
+// actually a dark, saturated blue.  This pushes the covered colour's chroma
+// back up so the water reads with the reflection's true hue, "more marked" like
+// the game, without darkening the see-through the way lowering Background
+// Brightness would.
+//   1.0 = exact / engine-faithful brightness (the washed look).
+//   >1  = richer, more saturated water colour.
+float ColorSaturation
+<
+    string UIName   = "Color Saturation  [1=faithful, >1=richer]";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    int    UIOrder = 69;
+    float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
+> = 1.0;
+
+float ReflectionIntensityScale
+<
+    string UIName = "Reflection Intensity Scale";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    int    UIOrder = 70;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
 > = 1.0;
 
@@ -683,7 +778,7 @@ float ReflectionBlur
 <
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
-    int    UIOrder = 66;
+    int    UIOrder = 71;
     float  UIMin = 0; float UIMax = 8; float UIStep = 0.5;
 > = 0.0;
 
@@ -691,7 +786,7 @@ float CubemapVOffset
 <
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
-    int    UIOrder = 67;
+    int    UIOrder = 72;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -699,7 +794,7 @@ float CubemapUOffset
 <
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
-    int    UIOrder = 68;
+    int    UIOrder = 73;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -707,7 +802,7 @@ float CubemapPitch
 <
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
-    int    UIOrder = 69;
+    int    UIOrder = 74;
     float  UIMin = -1.57; float UIMax = 1.57; float UIStep = 0.01;
 > = -0.0;
 

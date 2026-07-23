@@ -769,7 +769,7 @@ float BumpStrength
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 0.01;
     int UIOrder = 69;
-> = 1.0;
+> = 0.8;
 
 // ----------------------------------------------------------------------------
 // Other Properties

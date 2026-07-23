@@ -24,12 +24,74 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
 
     // ========================================================================
     // Compute all UV coordinates from the single base UV
+    //
+    // The "rescale detail maps" / "rescale bump map" tag flags do two things at
+    // once, both keyed off the BASE map's real pixel dimensions:
+    //   1. zoom the map 2x larger (halve the tiling frequency) - the "rescale",
+    //   2. un-stretch it so its texels stay square under a non-square base map.
+    // Net per-axis multiplier is 0.5 * (sqrt(aspect), 1/sqrt(aspect)), aspect =
+    // base width / height.  Verified in-game against two cases:
+    //   · base 1024x256 (aspect 4): long axis 0.5*sqrt(4)=1 (UNTOUCHED), short
+    //     axis 0.5/sqrt(4)=0.25  -> a detail scale of 8 becomes 8 x 2.
+    //   · square base (aspect 1): 0.5 on both -> a detail scale of 8 becomes 4.
+    // The per-axis product is always 0.25 (a fixed 2x linear zoom), split by the
+    // aspect to square up the texels.
+    //
+    // The engine bakes these dimensions in at compile time (bump map scale xy);
+    // the viewport reads them at runtime via GetDimensions.
     // ========================================================================
+    
+    //Old code
+    //float2 detailRescale = float2(1.0, 1.0);
+    //float2 bumpRescale   = float2(1.0, 1.0);
+    //if ((RescaleDetailMaps || RescaleBumpMap) && EnableBaseMap)
+    //{
+    //    float bw, bh;
+    //    BaseMapTexture.GetDimensions(bw, bh);
+    //    float aspect = (bw > 0.0 && bh > 0.0) ? (bw / bh) : 1.0;
+    //    float2 r = 0.5 * float2(sqrt(aspect), rsqrt(aspect));  // (long axis, short axis)
+    //    if (RescaleDetailMaps) detailRescale = r;
+    //    if (RescaleBumpMap)    bumpRescale   = r;
+    //}
+
+    //float2 baseUV           = i.uv0;
+    //float2 primaryDetailUV  = i.uv0 * PrimaryDetailMapScale   * detailRescale;
+    //float2 secondaryDetailUV= i.uv0 * SecondaryDetailMapScale * detailRescale;
+    //float2 microDetailUV    = i.uv0 * MicroDetailMapScale     * detailRescale;
+    //float2 bumpUV           = i.uv0 * BumpMapScale            * bumpRescale;
+    //float2 selfIllumUV      = i.uv0 * SelfIlluminationMapScale;
+
+    // This is the correct code:
+    float2 detailRescale = float2(1.0, 1.0);
+    float2 bumpRescale   = float2(1.0, 1.0);
+    float detailScaleFactor = 1.0;
+    float bumpScaleFactor   = 1.0;
+
+    if ((RescaleDetailMaps || RescaleBumpMap) && EnableBaseMap)
+    {
+        float bw, bh;
+        BaseMapTexture.GetDimensions(bw, bh);
+        float aspect = (bw > 0.0 && bh > 0.0) ? (bw / bh) : 1.0;
+        float2 r = float2(sqrt(aspect), rsqrt(aspect));
+        aspect = max(aspect, 1.0 / aspect);
+        float factor = (aspect > 1.0) ? (aspect * 0.5) : 0.5;
+        if (RescaleDetailMaps)
+        {
+            detailRescale = r;
+            detailScaleFactor = factor;
+        }
+        if (RescaleBumpMap)
+        {
+            bumpRescale = r;
+            bumpScaleFactor = factor;
+        }
+    }
+
     float2 baseUV           = i.uv0;
-    float2 primaryDetailUV  = i.uv0 * PrimaryDetailMapScale;
-    float2 secondaryDetailUV= i.uv0 * SecondaryDetailMapScale;
-    float2 microDetailUV    = i.uv0 * MicroDetailMapScale;
-    float2 bumpUV           = i.uv0 * BumpMapScale;
+    float2 primaryDetailUV   = i.uv0 * PrimaryDetailMapScale   * detailScaleFactor * detailRescale;
+    float2 secondaryDetailUV = i.uv0 * SecondaryDetailMapScale * detailScaleFactor * detailRescale;
+    float2 microDetailUV     = i.uv0 * MicroDetailMapScale     * detailScaleFactor * detailRescale;
+    float2 bumpUV            = i.uv0 * BumpMapScale            * bumpScaleFactor   * bumpRescale;
     float2 selfIllumUV      = i.uv0 * SelfIlluminationMapScale;
 
     // ========================================================================
@@ -65,7 +127,11 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
     float3 bumpN;
     if (EnableBumpMap)
     {
-        float3 bump_ts = normalize(bump_map.rgb * 2.0 - 1.0);
+        float3 bump_ts = bump_map.rgb * 2.0 - 1.0;
+        // Scale the tangent-space slope to control how pronounced the relief is.
+        // 0 flattens the bump entirely, 1 = engine-faithful, >1 exaggerates it.
+        bump_ts.xy *= BumpStrength;
+        bump_ts = normalize(bump_ts);
         bumpN = normalize(bump_ts.x * T + bump_ts.y * B + bump_ts.z * N);
     }
     else
@@ -80,9 +146,12 @@ float4 PS_Main(SE_PS_INPUT i) : SV_TARGET
 
     if (EnvironmentType == 0)          // NORMAL
     {
-        // Secondary detail alpha controls blend between primary and secondary
+        // Secondary detail alpha controls blend between primary and secondary.
+        // Matches env_tex_normal_*.psh: lerp(secondary, primary, secondary.a) -
+        // secondary.a == 1 resolves to primary (so a disabled secondary map,
+        // whose fallback alpha is 1, leaves pure primary detail showing).
         float bf = secondary_detail.a;
-        blended_detail = lerp(primary_detail, secondary_detail, bf);
+        blended_detail = lerp(secondary_detail, primary_detail, bf);
     }
     else                                // BLENDED / BLENDED BASE SPECULAR
     {

@@ -3,60 +3,180 @@
 //
 // Pixel shader for shader_transparent_water.
 //
-// Consolidates the original multi-pass water rendering into a single pass
-// for the 3ds Max viewport:
-//   · Ripple bump convolution - up to 4 ripple layers blended into one normal
-//   · Reflection - bump-perturbed cube-map with fresnel perpendicular/parallel
-//                  tint and brightness
-//   · Opacity - base map alpha modulates reflection, base map color modulates
-//               background
+// ----------------------------------------------------------------------------
+// HOW THE ENGINE DRAWS WATER
+//   (rasterizer_shader_transparent_water.c + transparent_water_*.psh)
 //
-// Original passes reproduced:
-//   transparent_water_bumpmap_convolution.psh  (ripple blending)
-//   transparent_water_reflection.psh           (reflection)
-//   transparent_water_opacity.psh              (base map modulation)
+// Water NEVER replaces the framebuffer.  It only modulates what is already
+// there and adds the reflection on top.  Three draws over the same geometry:
+//
+//   1. transparent_water_opacity.psh : main_T0_P0   <base map alpha modulates
+//      reflection>.  COLORWRITEENABLE = ALPHA only, blending off:
+//
+//          dest.a = lerp(parallel_brightness, perpendicular_brightness, N·V)
+//                 * base_map.a
+//
+//      This pass writes NOTHING to the colour channels - it only stores, per
+//      pixel, how strong the reflection is allowed to be.
+//
+//   2. transparent_water_opacity.psh : main_T0_P1   <base map color modulates
+//      background>.  SRCBLEND = ZERO, DESTBLEND = SRCCOLOR:
+//
+//          dest.rgb = dest.rgb * base_map.rgb
+//
+//      A pure multiply - this is where the water's transparency comes from.
+//
+//   3. transparent_water_reflection.psh.  SRCBLEND = DESTALPHA (or ONE when
+//      the alpha flag is clear), DESTBLEND = ONE:
+//
+//          dest.rgb = dest.rgb + lerp(pow(cube, 8), cube, tint) * dest.a
+//
+// so the complete shader is just:
+//
+//      framebuffer = background * Cmul + Cadd
+//
+//      Cmul = <base map color modulates background> ? base_map.rgb : 1
+//      Cadd = reflection * ( <base map alpha modulates reflection>
+//                            ? brightness(N·V) * base_map.a : 1 )
+//
+// Consequences this port has to honour:
+//   · Transparency is ALWAYS present.  With both flags clear the water is a
+//     pure additive glow over the background - it still never covers it.
+//   · base_map.a is only a reflection mask (white = reflect the cube map and
+//     the ripples here, black = don't, grey = partially).  It is NOT the
+//     surface opacity.
+//   · perpendicular/parallel BRIGHTNESS only exists inside pass 1, so it does
+//     nothing at all unless <base map alpha modulates reflection> is set -
+//     Guerrilla documents this.  The TINT colours belong to pass 3 and always
+//     apply.
+//   · both flags set + both brightnesses at 0  =>  Cadd = 0  =>  only the base
+//     map colour multiplied over the background is left, still transparent.
+//
+// ----------------------------------------------------------------------------
+// HOW THAT IS REPRODUCED IN THE VIEWPORT
+//
+// Nitrous honours no blending whatsoever - not the ZERO/SRCCOLOR multiply, not
+// the ONE/ONE add, and not the plain SRC_ALPHA/INV_SRC_ALPHA blend either
+// (all three were tried in the viewport and all three landed opaque).  The
+// pixel shader cannot reach the background through the blender at all.
+//
+// What it can do is decide, per pixel, whether the surface covers it: a dither
+// threshold writes the pixel opaque or drops it entirely, and a dropped pixel
+// writes no colour and no depth, so the background survives untouched.  Over a
+// neighbourhood the framebuffer resolves to
+//
+//      out = coverage * written + (1 - coverage) * background
+//
+// and over TIME it resolves further: Nitrous refines a still image across
+// several jittered frames, so a per-frame-varying threshold (see
+// DitherThreshold) averages the stipple away once the camera stops, exactly
+// like the other transparent shaders.
+//
+// Given an estimate E of the background brightness (BackgroundBrightness), the
+// target `background * Cmul + Cadd` is reached exactly, for ANY coverage, by
+//
+//      written = residual / coverage + E,   residual = E * (Cmul - 1) + Cadd
+//
+//      check:  coverage * written + (1 - coverage) * E
+//            = residual + coverage * E + E - coverage * E
+//            = E * Cmul + Cadd                                            ✓
+//
+// Coverage is therefore FREE, and that freedom is the only quality knob this
+// shader has.  The floor is the smallest value that keeps the written colour
+// inside [0,1]:
+//
+//      coverage >= -min(residual) / E        to be able to darken
+//      coverage >=  max(residual) / (1 - E)  to be able to brighten
+//
+// Sitting on that floor preserves the most real background - it is dropped,
+// not overwritten, so it keeps every bit of its detail.  But coverage is
+// realised with a 1-bit dither here, and a dither is noisiest exactly at half
+// coverage, which is where a water surface tends to sit across its whole area.
+// (Water is the worst case in this project: the other transparent shaders
+// carry an alpha that is near 0 or near 1 over most of the surface, so their
+// grain only shows in narrow bands.)
+//
+// Raising coverage above the floor trades that real background for smoothness
+// - the result stays correct, it just leans on E instead of on what is
+// actually behind the surface - and at full coverage the grain is gone
+// entirely.  DitherAmount picks a point on that trade.  It scales the floor
+// rather than blending towards 1, so pixels with nothing to contribute
+// (residual = 0, outside the alpha mask) still resolve to zero coverage and
+// disappear, at every setting.  MaxOpacity caps the coverage from above so a
+// bright reflection cannot fully occlude the terrain.
+//
+// E cannot be derived here - the viewport gives the shader no access to what is
+// behind the surface.  Set it to roughly the terrain brightness under the water.
+//
+// ----------------------------------------------------------------------------
+// BASE MAP ALPHA ALSO MASKS THE MULTIPLY  (deliberate deviation)
+//
+// Real base maps only paint the water body; the RGB outside the alpha mask is
+// whatever was left in the file.  levels\test\beavercreek\bitmaps\
+// beavercreek_flow is typical: of its 24468 texels with alpha < 8, 14182 are
+// pure black and 10286 pure white, nothing in between.  Multiplying the
+// background by that garbage puts a dark, noisy ring around the water, which
+// the game does not show.  So the multiply is faded out with the same alpha
+// that masks the reflection:
+//
+//      Cmul = lerp(1, base_map.rgb, base_map.a)
+//
+// alpha 0 leaves the background completely untouched, which is what the alpha
+// channel is there to express in the first place.
 // ----------------------------------------------------------------------------
 
-// Stochastic (dithered) discard for semi-transparent water in Nitrous.
-void DitherClip(float alpha, float4 clipPos)
+// ----------------------------------------------------------------------------
+// Ripple mipmap fade
+//
+// The engine convolves the ripple maps into an off-screen bump map once per
+// frame, rendering <ripple mipmap levels> mip levels of it and blending each
+// successive level further towards flat by <ripple mipmap fade factor>
+// (rasterizer_shader_transparent_water_render_bumpmap).  Distant water
+// therefore loses its ripples.  We have no off-screen bump map here, so the
+// same fade is derived per pixel from the mip level the ripple map is being
+// sampled at.
+// ----------------------------------------------------------------------------
+float ComputeRippleFade(float2 rippleUV)
 {
-    float2 screenUV = clipPos.xy / clipPos.w;
-    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-    clip(alpha - dither);
+    if (RippleMipmapLevels < 2 || RippleMipmapFadeFactor <= 0)
+        return 0.0;
+
+    float lod = RippleMapsTexture.CalculateLevelOfDetail(smpWrap, rippleUV);
+    return saturate(lod / (RippleMipmapLevels - 1)) * RippleMipmapFadeFactor;
 }
 
 // ----------------------------------------------------------------------------
 // Ripple bump convolution
 //
-// Samples the ripple maps texture at up to 4 UV locations (one per ripple
-// layer), weighted by each ripple's contribution factor.
+// transparent_water_bumpmap_convolution.psh blends the 4 ripple layers with
+//   r0 = lerp(ripple0, ripple1, c0.a)      c0.a = k0 / (k0 + k1)
+//   r1 = lerp(ripple2, ripple3, c1.a)      c1.a = k2 / (k2 + k3)
+//   r  = lerp(r0, r1, c2.a)                c2.a = (k0+k1) / (k0+k1+k2+k3)
+// which is algebraically the contribution-factor weighted average below.
 //
-// Mirrors the hierarchical lerp structure of the original
-// transparent_water_bumpmap_convolution.psh:
-//   r0 = lerp(ripple0, ripple1, c0.a)
-//   r1 = lerp(ripple2, ripple3, c1.a)
-//   result = (lerp(r0, r1, c2.a) + 1) * 0.5
-// We approximate this with a weighted average of all active layers.
+// UVs match the engine's two-step scaling: the surface samples the convolved
+// bump map with (uv * ripple scale), and the convolution itself sampled each
+// ripple map with (uv * map repeats + map offset).
 // ----------------------------------------------------------------------------
 float3 ComputeRippleNormal(float2 baseUV)
 {
-    float3 blended = float3(0, 0, 0);
-    float  totalWeight = 0;
-
     // Default flat normal in tangent space (points straight up)
     float3 flatN = float3(0, 0, 1);
 
     if (!EnableRippleMaps)
         return flatN;
 
-    float scale = max(RippleScale, 0.001);
+    float2 uv = baseUV * max(RippleScale, 0.001);
+
+    float3 blended     = float3(0, 0, 0);
+    float  totalWeight = 0;
 
     // ---- Ripple 0 ----
     [branch] if (EnableRipple0 && Ripple0_ContributionFactor > 0)
     {
-        float2 ruv = baseUV * scale * max(Ripple0_MapRepeats, 0.001)
+        float2 ruv = uv * max(Ripple0_MapRepeats, 0.001)
                     + float2(Ripple0_MapOffsetU, Ripple0_MapOffsetV);
-        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+        float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple0_ContributionFactor;
         totalWeight += Ripple0_ContributionFactor;
@@ -65,9 +185,9 @@ float3 ComputeRippleNormal(float2 baseUV)
     // ---- Ripple 1 ----
     [branch] if (EnableRipple1 && Ripple1_ContributionFactor > 0)
     {
-        float2 ruv = baseUV * scale * max(Ripple1_MapRepeats, 0.001)
+        float2 ruv = uv * max(Ripple1_MapRepeats, 0.001)
                     + float2(Ripple1_MapOffsetU, Ripple1_MapOffsetV);
-        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+        float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple1_ContributionFactor;
         totalWeight += Ripple1_ContributionFactor;
@@ -76,9 +196,9 @@ float3 ComputeRippleNormal(float2 baseUV)
     // ---- Ripple 2 ----
     [branch] if (EnableRipple2 && Ripple2_ContributionFactor > 0)
     {
-        float2 ruv = baseUV * scale * max(Ripple2_MapRepeats, 0.001)
+        float2 ruv = uv * max(Ripple2_MapRepeats, 0.001)
                     + float2(Ripple2_MapOffsetU, Ripple2_MapOffsetV);
-        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+        float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple2_ContributionFactor;
         totalWeight += Ripple2_ContributionFactor;
@@ -87,58 +207,89 @@ float3 ComputeRippleNormal(float2 baseUV)
     // ---- Ripple 3 ----
     [branch] if (EnableRipple3 && Ripple3_ContributionFactor > 0)
     {
-        float2 ruv = baseUV * scale * max(Ripple3_MapRepeats, 0.001)
+        float2 ruv = uv * max(Ripple3_MapRepeats, 0.001)
                     + float2(Ripple3_MapOffsetU, Ripple3_MapOffsetV);
-        float3 n = RippleMapsTexture.SampleLevel(smpWrap, ruv, RippleMipmapDetailBias).rgb
+        float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple3_ContributionFactor;
         totalWeight += Ripple3_ContributionFactor;
     }
 
-    if (totalWeight > 0)
-        return normalize(blended / totalWeight);
+    if (totalWeight <= 0)
+        return flatN;
 
-    return flatN;
+    float3 n = normalize(blended / totalWeight);
+
+    // Flatten with distance, as the engine's mipmap fade does
+    return normalize(lerp(n, flatN, ComputeRippleFade(uv)));
 }
 
 // ----------------------------------------------------------------------------
-// Main pixel shader
+// Everything both colour passes need.  Shared so the multiply pass and the
+// additive pass can never disagree about the surface.
 // ----------------------------------------------------------------------------
-float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
+struct WaterShading
 {
+    float4 base_map;
+    float3 bumpTS;      // tangent-space ripple normal
+    float3 reflection;  // tinted cube map reflection, before alpha gating
+    float3 Cmul;        // what the background gets multiplied by
+    float3 Cadd;        // what gets added on top
+};
+
+WaterShading ShadeWater(TW_PS_INPUT i)
+{
+    WaterShading s;
+
     // ------------------------------------------------------------------------
-    // Lighting / view vectors
+    // View vectors
     // ------------------------------------------------------------------------
-    float3 N  = normalize(i.wNormal);
-    float3 T  = normalize(i.wTangent);
-    float3 B  = normalize(i.wBinormal);
-    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+    float3 N = normalize(i.wNormal);
+    float3 T = normalize(i.wTangent);
+    float3 B = normalize(i.wBinormal);
+    float3 V = normalize(ViewIXf[3].xyz - i.wPos);
+
+    // Fresnel term.  The opacity pass feeds the *unbumped* tangent-space eye
+    // vector through the vector normalization cube map, so the ripples do not
+    // perturb it - only the reflection vector below is bumped.
+    //   N·V = 1 : looking straight down at the surface (view perpendicular)
+    //   N·V = 0 : grazing angle                        (view parallel)
+    float ndotv = saturate(dot(N, V));
 
     // ------------------------------------------------------------------------
     // Base map
+    //
+    // Sampled clamped: the engine sets D3DTADDRESS_CLAMP on the base map in
+    // both opacity passes, which is what lets a single flow map delimit the
+    // pond/river outline through its alpha channel.
     // ------------------------------------------------------------------------
-    float4 base_map = EnableBaseMap
-        ? BaseMapTexture.Sample(smpWrap, i.uv0)
+    s.base_map = EnableBaseMap
+        ? BaseMapTexture.Sample(smpClamp, i.uv0)
         : float4(1, 1, 1, 1);
 
     // ------------------------------------------------------------------------
     // Ripple normal - tangent-space blended normal from up to 4 ripple layers
     // ------------------------------------------------------------------------
-    float3 bumpTS = ComputeRippleNormal(i.uv0);
+    s.bumpTS = ComputeRippleNormal(i.uv0);
 
     // Transform tangent-space normal to world space
-    float3 bumpN = normalize(bumpTS.x * T + bumpTS.y * B + bumpTS.z * N);
-
-    // Fresnel: perpendicular vs parallel viewing angle
-    float NdotV = saturate(dot(bumpN, V));
+    float3 bumpN = normalize(s.bumpTS.x * T + s.bumpTS.y * B + s.bumpTS.z * N);
 
     // ------------------------------------------------------------------------
-    // Reflection
-    //   transparent_water_reflection.psh:
-    //     reflected = 2 * (N·E / N·N) * N - E
-    //     result    = lerp(pow(cubemap, 8), cubemap, tint_color) * brightness
+    // Reflection  (transparent_water_reflection.psh)
+    //   reflected = 2 * (N·E / N·N) * N - E
+    //   result    = lerp(pow(cubemap, 8), cubemap, tint_color)
+    //
+    // The tint colour lerps the raw cube map against its 8th power per channel:
+    // channels where the tint is low keep only the brightest highlights, so a
+    // blue tint leaves a blue reflection with dark red/green.
+    //
+    // In the engine the tint is resolved on the CPU per geometry group (from
+    // the surface plane vs. the camera) and is therefore constant across the
+    // surface; here it is resolved per pixel from the same unbumped N·V, which
+    // is smooth and reduces to the engine's behaviour on a flat water plane.
     // ------------------------------------------------------------------------
-    float3 final_reflection = float3(0, 0, 0);
+    s.reflection = float3(0, 0, 0);
     if (EnableReflectionMap)
     {
         float3 reflVec = reflect(-V, bumpN);
@@ -156,95 +307,149 @@ float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
             ReflectionMapTexture, smpClamp,
             reflVec, ReflectionBlur);
 
-        // Specular highlight from reflection (pow 8) - matches original
         float3 specular_color = pow(abs(reflection.rgb), 8.0);
 
-        // Fresnel-driven perpendicular/parallel interpolation
-        float diffuse_refl = pow(NdotV, 2.0);
-
-        // Brightness attenuation
-        float brightness = lerp(ViewParallelBrightness,
-                                ViewPerpendicularBrightness, diffuse_refl);
-
-        // Tint colour
         float3 tint_color = lerp(ViewParallelTintColor.rgb,
-                                 ViewPerpendicularTintColor.rgb, diffuse_refl);
+                                 ViewPerpendicularTintColor.rgb, ndotv);
 
-        // Blend specular highlight with raw reflection via tint
-        float3 tinted_refl = lerp(specular_color, reflection.rgb, tint_color);
-
-        final_reflection = tinted_refl * brightness * ReflectionIntensityScale;
+        // The original pass runs on a fixed-point target, so its output is
+        // clamped before it reaches the blender.
+        s.reflection = saturate(lerp(specular_color, reflection.rgb, tint_color)
+                                * ReflectionIntensityScale);
     }
 
     // ------------------------------------------------------------------------
-    // Base map modulation
-    //   transparent_water_opacity.psh:
-    //     alpha modulates reflection: reflection *= base_map.a * fresnel_brightness
-    //     color modulates background: background = base_map.rgb
+    // Pass 1 - base map alpha modulates reflection
+    //
+    // Produces the destination alpha the reflection pass multiplies itself by.
+    // When the flag is clear the reflection pass uses SRCBLEND = ONE instead,
+    // so the reflection is added at full strength and both brightness values
+    // are ignored - exactly as documented in Guerrilla.
     // ------------------------------------------------------------------------
+    float reflection_amount = 1.0;
     if (BaseMapAlphaModulatesReflection)
     {
-        float diffuse_refl = pow(NdotV, 2.0);
-        float alpha_atten = lerp(ViewParallelBrightness,
-                                 ViewPerpendicularBrightness, diffuse_refl);
-        final_reflection *= base_map.a * alpha_atten;
+        float brightness = lerp(ViewParallelBrightness,
+                                ViewPerpendicularBrightness, ndotv);
+        reflection_amount = brightness * s.base_map.a;
     }
 
-    float3 background = float3(0, 0, 0);
+    s.Cadd = s.reflection * reflection_amount;
+
+    // ------------------------------------------------------------------------
+    // Pass 2 - base map colour modulates background, masked by the base map
+    // alpha (see the header) and scaled by the viewport strength knob.
+    // ------------------------------------------------------------------------
+    s.Cmul = (float3)1.0;
     if (BaseMapColorModulatesBackground)
-        background = base_map.rgb;
+    {
+        float mask = s.base_map.a * saturate(BaseMapColorStrength);
+        s.Cmul = lerp((float3)1.0, s.base_map.rgb, mask);
+    }
 
-    // ------------------------------------------------------------------------
-    // Combine - reflection added on top of background tint
-    //
-    // In the original engine water uses real additive + multiply blending
-    // passes.  Nitrous cannot do true additive compositing, so we use
-    // dithered discard for transparency.  To keep the surface looking solid
-    // we boost the colour on surviving pixels to compensate for the ones
-    // that are discarded.
-    // ------------------------------------------------------------------------
-    float3 color = background + final_reflection;
+    return s;
+}
 
-    // ------------------------------------------------------------------------
-    // Overall water opacity
-    //
-    // Fresnel drives the surface visibility: glancing angles are more
-    // opaque, head-on can be more transparent.  We use the colour luminance
-    // boosted by a base floor so the surface always remains largely visible
-    // (water in the original engine is never invisible - the reflection
-    // pass always draws every pixel).
-    // ------------------------------------------------------------------------
-    float fresnel_factor = pow(NdotV, 2.0);
-    float fresnel_opacity = lerp(ViewParallelBrightness,
-                                 ViewPerpendicularBrightness, fresnel_factor);
+// ----------------------------------------------------------------------------
+// Coverage solve.  See the compositing note in the header for the derivation.
+// ----------------------------------------------------------------------------
+struct WaterCoverage
+{
+    float3 color;      // what to write where the surface covers
+    float  coverage;   // how much of the pixel it covers
+};
 
-    float color_lum = dot(color, float3(0.299, 0.587, 0.114));
+WaterCoverage ResolveCoverage(WaterShading s)
+{
+    WaterCoverage c;
 
-    // Remap: scale the colour luminance so even dim reflections produce
-    // high alpha, and use fresnel_opacity as a floor.  This keeps the
-    // surface solid while still allowing some see-through in the darkest
-    // areas.
-    float water_alpha = saturate(fresnel_opacity + color_lum * 3.0);
+    // What this surface has to contribute on top of an average background
+    float  E = clamp(BackgroundBrightness, 0.05, 0.95);
+    float3 residual = E * (s.Cmul - 1.0) + s.Cadd;
 
-    // Base map alpha acts as a shape mask - where it's black (0) the water
-    // surface is not rendered at all (e.g. pond / river outlines).
-    if (BaseMapAlphaModulatesReflection)
-        water_alpha *= base_map.a;
+    // Smallest coverage whose written colour still fits in [0,1]
+    float need_dark   = max(-min(min(residual.r, residual.g), residual.b), 0.0) / E;
+    float need_bright = max( max(max(residual.r, residual.g), residual.b), 0.0) / (1.0 - E);
+    float floor_cov   = max(need_dark, need_bright);
 
-    // Boost surviving pixel colour to compensate for discarded neighbours.
-    // Without this, dithering makes the surface appear half as bright.
-    color = color / max(water_alpha, 0.15);
-    color = saturate(color);
+    // Trade real background for smoothness.  Scaling the floor (rather than
+    // blending it towards 1) keeps zero-contribution pixels at zero coverage,
+    // so the edges still disappear no matter how smooth this is set.
+    float cov = floor_cov / max(DitherAmount, 0.125);
 
-    // ------------------------------------------------------------------------
-    // Debug visualisation
-    // ------------------------------------------------------------------------
-    if      (DebugMode == 1) return float4(base_map.rgb,                   1.0);
-    else if (DebugMode == 2) return float4(bumpTS * 0.5 + 0.5,            1.0);
-    else if (DebugMode == 3) return float4(final_reflection,               1.0);
+    // Cap it so bright reflections can never fully occlude the terrain (see
+    // MaxOpacity).  Above the cap the written colour saturates instead: the
+    // reflection loses a little brightness, the riverbed keeps showing through.
+    // Pixels with nothing to contribute (floor_cov = 0) still cap to 0, so the
+    // edges are unaffected.
+    cov = min(cov, MaxOpacity);
 
-    // Dithered transparency for Nitrous viewport
-    DitherClip(water_alpha, i.clipPos);
+    c.coverage = saturate(cov);
+    float3 col = residual / max(c.coverage, 0.0001) + E;
 
-    return float4(color, 1.0);
+    // Additive-via-coverage lifts every channel by E, washing the reflection's
+    // true (dark, saturated) hue toward white.  Push the chroma back up around
+    // the pixel's own luminance so the water can read with its real colour.
+    // ColorSaturation = 1 leaves the exact, engine-faithful value untouched.
+    float lum = dot(col, float3(0.299, 0.587, 0.114));
+    col = lum + (col - lum) * ColorSaturation;
+
+    c.color = saturate(col);
+
+    return c;
+}
+
+// Debug visualisations are drawn solid, at full coverage.
+bool DebugOverride(WaterShading s, out float3 color)
+{
+    color = (float3)0;
+
+    if      (DebugMode == 1) color = s.base_map.rgb;
+    else if (DebugMode == 2) color = s.bumpTS * 0.5 + 0.5;
+    else if (DebugMode == 3) color = s.Cadd;
+    else if (DebugMode == 4) color = (float3)s.base_map.a;
+    else if (DebugMode == 5) color = s.Cmul;
+    else                     return false;
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+// Screen-space hash dither threshold, identical to the rest of this project's
+// transparent shaders (see DitherClip in shader_transparent_generic.psh).
+//
+// The threshold is taken from clipPos.xy / clipPos.w, NOT from the raw pixel
+// coordinate, and the division by w is the whole point.  Nitrous refines a
+// still image over several frames with a sub-pixel jitter on the projection;
+// the pixel coordinate is locked to the screen grid and does not move under
+// that jitter, but the surface depth w behind a given pixel does, so dividing
+// by it makes the threshold shift frame-to-frame.  The clip decision then
+// flickers and the grain averages out to smooth once the camera stops - the
+// way generic/chicago/glass resolve.  A threshold built from the bare pixel
+// coordinate is frame-invariant and leaves the permanent, coarse stipple this
+// shader had before.
+// ----------------------------------------------------------------------------
+float DitherThreshold(float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    return frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+// ----------------------------------------------------------------------------
+// Main pixel shader - resolves the engine's multiply and add into a coverage
+// and a colour, then realises that coverage by dropping pixels.
+// ----------------------------------------------------------------------------
+float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
+{
+    WaterShading s = ShadeWater(i);
+
+    float3 debug;
+    if (DebugOverride(s, debug))
+        return float4(debug, 1.0);
+
+    WaterCoverage c = ResolveCoverage(s);
+
+    clip(c.coverage - DitherThreshold(i.clipPos));
+
+    return float4(c.color, 1.0);
 }

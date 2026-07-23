@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.7.2] - 2026-07-22
+
+### Fixed
+
+- **Shader Transparent Water:**
+    - Fixed some transparency issues.
+- **Shader Environment:**
+    - Fixed rescaled details and bump map flags like the game does based in the ratio scale from base map.
+
 ## [0.7.1] - 2026-07-21
 
 ### Changed

@@ -760,6 +760,17 @@ int DebugMode
     int UIOrder = 68;
 > = 0;
 
+// GlyphFX-only viewport control (not a tag field).  The ported bump map tends
+// to read too strong in Nitrous; this scales the tangent-space slope so the
+// relief can be softened (0 = flat) or exaggerated (>1).  1.0 = engine-faithful.
+float BumpStrength
+<
+    string UIName   = "Bump Strength";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 2; float UIStep = 0.01;
+    int UIOrder = 69;
+> = 1.0;
+
 // ----------------------------------------------------------------------------
 // Other Properties
 // ----------------------------------------------------------------------------

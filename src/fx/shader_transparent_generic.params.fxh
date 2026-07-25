@@ -3684,6 +3684,103 @@ int Stage7_AlphaOutputMapping
 #endif // GX_GENERIC_STAGES >= 7
 
 // ----------------------------------------------------------------------------
+// Numeric Counter Plate  (GlyphFX-only - none of this is tag data)
+//
+// Active only while the "Numeric" flag above is set.  In-engine the flag makes
+// the shader bind one element of Map 1's bitmap SEQUENCE, picked from the ammo
+// count; a Max material holds a single bitmap per map, so Map 1 takes the
+// source plate that holds all ten digits and the crop happens in the shader.
+// See _numeric_counter.fxh for the layout maths.
+//
+// Values for the two reference plates in
+// shaders/resources/numbers_sequence_examples:
+//
+//                            Layout      Margin  Separator  Side Margin
+//   numbers_horizontal (673x80)   Horizontal    3       3            8
+//   numbers_vertical    (34x660)  Vertical      1       2            1
+//
+// Auto layout gets the axis right for both, so usually only the three texel
+// counts need touching when swapping plates.
+// ----------------------------------------------------------------------------
+int NumericDigit
+<
+    string UIName   = "Numeric Digit  [0-9]  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 406;
+    float  UIMin = 0; float UIMax = 9; float UIStep = 1;
+> = 0;
+
+int NumericPlateLayout
+<
+    string UIName   = "Plate Layout  [0=Auto  1=Horizontal  2=Vertical]  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 407;
+    float  UIMin = 0; float UIMax = 2; float UIStep = 1;
+> = 0;
+
+// Plate size in texels.  Leave both at 0 to read it off the bound texture.
+// Set them by hand if the digit does not show up: 3ds Max does not always
+// report a texture's dimensions to the effect, and with no size the crop
+// cannot run at all (the shader then falls back to showing the whole plate).
+float NumericPlateWidth
+<
+    string UIName   = "Plate Width  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 408;
+    float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
+> = 0.0;
+
+float NumericPlateHeight
+<
+    string UIName   = "Plate Height  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 409;
+    float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
+> = 0.0;
+
+float NumericPlateMargin
+<
+    string UIName   = "Plate Margin - Before First / After Last Digit  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 410;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 3.0;
+
+float NumericPlateSeparator
+<
+    string UIName   = "Plate Separator - Between Digits  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 411;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 3.0;
+
+float NumericPlateSideMargin
+<
+    string UIName   = "Plate Side Margin - Across The Strip  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 412;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 8.0;
+
+// Trimmed off every cell edge so bilinear filtering cannot reach the plate's
+// blue / magenta border.  Raise it if a coloured fringe shows around the digit.
+float NumericPlateEdgeInset
+<
+    string UIName   = "Plate Cell Edge Inset  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 413;
+    float  UIMin = 0; float UIMax = 4; float UIStep = 0.1;
+> = 0.5;
+
+// ----------------------------------------------------------------------------
 // Opacity Controls
 // Applied to the alpha channel (AlphaBlend) or luminance (Add) before output.
 // Match the controls from the opacity example shader.

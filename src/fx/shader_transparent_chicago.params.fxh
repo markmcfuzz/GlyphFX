@@ -8,9 +8,17 @@
 //   - per-map: flags, color/alpha blend function, UV transform, texture
 //   - extra flags at the bottom
 //
-// Color/alpha function enum (applies to Maps 2-4):
-//   0=current  1=next map  2=multiply  3=double multiply
-//   4=add  5=add-signed current  6=add-signed next map  7=subtract
+// A map's color/alpha function says how the result accumulated so far
+// ("current") combines with the map AFTER it ("next map") - so Map 1's function
+// drives the Map 1 -> Map 2 blend, and Map 4's is inert.  The enum:
+//   0=current  1=next map  2=multiply  3=double multiply  4=add
+//   5=add signed current  6=add signed next map
+//   7=subtract current  8=subtract next map
+//   9=blend current alpha   10=blend current alpha inverse
+//   11=blend next map alpha 12=blend next map alpha inverse
+//
+// Chicago has no colour parameter of its own, so this is also how a map gets
+// tinted: put the colour in Map 2 and set Map 1's function to Multiply.
 //
 // Framebuffer blend function is informational only; select the matching
 // technique in the DirectX Shader material to activate the correct blend mode.
@@ -213,7 +221,8 @@ Texture2D LensFlareReference
 
 // ----------------------------------------------------------------------------
 // Map 1  (always active - the base stage)
-// Color/alpha function is tag-visible but has no effect on the base stage.
+// Its color/alpha function is what blends Map 1 into Map 2, so on a two-map
+// tag this is the one that matters.
 // ----------------------------------------------------------------------------
 bool Map1_Unfiltered
 <
@@ -245,20 +254,20 @@ bool Map1_VClamped
 
 int Map1_ColorFunction
 <
-    string UIName   = "Color Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 1";
     string UIWidget = "Spinner";
     int    UIOrder = 27;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 int Map1_AlphaFunction
 <
-    string UIName   = "Alpha Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 1";
     string UIWidget = "Spinner";
     int    UIOrder = 28;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map1_UScale
@@ -519,20 +528,20 @@ bool Map2_VClamped
 
 int Map2_ColorFunction
 <
-    string UIName   = "Color Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 2";
     string UIWidget = "Spinner";
     int    UIOrder = 57;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 int Map2_AlphaFunction
 <
-    string UIName   = "Alpha Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 2";
     string UIWidget = "Spinner";
     int    UIOrder = 58;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map2_UScale
@@ -793,20 +802,20 @@ bool Map3_VClamped
 
 int Map3_ColorFunction
 <
-    string UIName   = "Color Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 3";
     string UIWidget = "Spinner";
     int    UIOrder = 87;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 int Map3_AlphaFunction
 <
-    string UIName   = "Alpha Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 3";
     string UIWidget = "Spinner";
     int    UIOrder = 88;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map3_UScale
@@ -1029,6 +1038,8 @@ float AnimationCenterV3
 
 // ----------------------------------------------------------------------------
 // Map 4
+// Its color/alpha function is inert - the function describes the blend with the
+// following map and nothing follows Map 4.  Kept for tag fidelity.
 // ----------------------------------------------------------------------------
 bool EnableMap4
 <
@@ -1067,20 +1078,20 @@ bool Map4_VClamped
 
 int Map4_ColorFunction
 <
-    string UIName   = "Color Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 4";
     string UIWidget = "Spinner";
     int    UIOrder = 117;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 int Map4_AlphaFunction
 <
-    string UIName   = "Alpha Function  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Signed Add (cur)  6=Signed Add (next)  7=Subtract]";
+    string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 4";
     string UIWidget = "Spinner";
     int    UIOrder = 118;
-    float  UIMin = 0; float UIMax = 13; float UIStep = 1;
+    float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map4_UScale
@@ -1324,6 +1335,103 @@ bool CustomEditionBlending
     string UIGroup = "Extra Flags";
     int    UIOrder = 144;
 > = false;
+
+// ----------------------------------------------------------------------------
+// Numeric Counter Plate  (GlyphFX-only - none of this is tag data)
+//
+// Active only while the "Numeric" flag above is set.  In-engine the flag makes
+// the shader bind one element of Map 1's bitmap SEQUENCE, picked from the ammo
+// count; a Max material holds a single bitmap per stage, so Map 1 takes the
+// source plate that holds all ten digits and the crop happens in the shader.
+// See _numeric_counter.fxh for the layout maths.
+//
+// Values for the two reference plates in
+// shaders/resources/numbers_sequence_examples:
+//
+//                            Layout      Margin  Separator  Side Margin
+//   numbers_horizontal (673x80)   Horizontal    3       3            8
+//   numbers_vertical    (34x660)  Vertical      1       2            1
+//
+// Auto layout gets the axis right for both, so usually only the three texel
+// counts need touching when swapping plates.
+// ----------------------------------------------------------------------------
+int NumericDigit
+<
+    string UIName   = "Numeric Digit  [0-9]  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 145;
+    float  UIMin = 0; float UIMax = 9; float UIStep = 1;
+> = 0;
+
+int NumericPlateLayout
+<
+    string UIName   = "Plate Layout  [0=Auto  1=Horizontal  2=Vertical]  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 146;
+    float  UIMin = 0; float UIMax = 2; float UIStep = 1;
+> = 0;
+
+// Plate size in texels.  Leave both at 0 to read it off the bound texture.
+// Set them by hand if the digit does not show up: 3ds Max does not always
+// report a texture's dimensions to the effect, and with no size the crop
+// cannot run at all (the shader then falls back to showing the whole plate).
+float NumericPlateWidth
+<
+    string UIName   = "Plate Width  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 147;
+    float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
+> = 0.0;
+
+float NumericPlateHeight
+<
+    string UIName   = "Plate Height  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "Spinner";
+    int    UIOrder = 148;
+    float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
+> = 0.0;
+
+float NumericPlateMargin
+<
+    string UIName   = "Plate Margin - Before First / After Last Digit  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 149;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 3.0;
+
+float NumericPlateSeparator
+<
+    string UIName   = "Plate Separator - Between Digits  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 150;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 3.0;
+
+float NumericPlateSideMargin
+<
+    string UIName   = "Plate Side Margin - Across The Strip  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 151;
+    float  UIMin = 0; float UIMax = 32; float UIStep = 1;
+> = 8.0;
+
+// Trimmed off every cell edge so bilinear filtering cannot reach the plate's
+// blue / magenta border.  Raise it if a coloured fringe shows around the digit.
+float NumericPlateEdgeInset
+<
+    string UIName   = "Plate Cell Edge Inset  (Texels)  (GlyphFX-only, not tag data)";
+    string UIGroup  = "Numeric Counter Plate";
+    string UIWidget = "slider";
+    int    UIOrder = 152;
+    float  UIMin = 0; float UIMax = 4; float UIStep = 0.1;
+> = 0.5;
 
 // ----------------------------------------------------------------------------
 // Opacity Controls

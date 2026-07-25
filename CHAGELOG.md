@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.8.0] - 2026-07-25
+
+### Added
+
+- **Shader Transparent Chicago / Shader Transparent Generic:**
+    - Numeric Counter Plate parameters. With the `Numeric` flag on, Map 1 is treated as the digit plate the bitmap sequence was sliced from and a single digit (0-9) is cropped out of it, covering both horizontal and vertical plate layouts. See `docs/parameters/shader_transparent_chicago/numeric_counter.md`.
+
+### Fixed
+
+- **Shader Model:**
+    - `Detail Map V Scale` is now a multiplier on top of `Detail Map Scale` instead of an absolute V value, matching the tag. The `detail map scale` field drives both axes, and the v-scale field only rescales V: with a scale of 10, a v-scale of 0 or 1 gives V 10, and 0.5 gives V 5. Previously the v-scale replaced the scale outright, so any value other than 0 broke the detail map's tiling.
+- **Shader Transparent Chicago:**
+    - Map color/alpha functions now blend the map with the one that FOLLOWS it, matching the tag. Map 1's function was previously ignored and Map 4's was applied even though nothing follows it. This is what makes tinting a map through a second map work. See `docs/parameters/shader_transparent_chicago/map_color_alpha_functions.md`.
+    - Map color/alpha functions now implement all 13 tag values; subtract, and the four blend-by-alpha modes, were missing.
+
 ## [0.7.2] - 2026-07-22
 
 ### Fixed

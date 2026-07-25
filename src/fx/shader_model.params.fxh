@@ -394,9 +394,10 @@ Texture2D DetailMapTexture
     int    UIOrder = 34;
 >;
 
+// Multiplier on top of DetailMapScale for the V axis only (0 = 1x, square tiling).
 float DetailMapVScale
 <
-    string UIName   = "Detail Map V Scale";
+    string UIName   = "Detail Map V Scale  (multiplier of Detail Map Scale)";
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;

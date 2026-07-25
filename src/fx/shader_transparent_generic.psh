@@ -267,13 +267,50 @@ float4 SampleMap(Texture2D tex, float2 uv,
                       : tex.SampleBias(smpWrap,  uv, mipBias);
 }
 
+// With the Numeric flag set, Map 1 is the ammo counter's digit plate rather
+// than a plain texture: the engine would bind one bitmap of the map's sequence
+// per counter digit, the viewport crops the requested cell out of the plate
+// the sequence was sliced from.  The crop confines the lookup to a single cell,
+// so Map 1's U/V clamp flags stop mattering from here on.
+float2 NumericMap1UV(float2 uv)
+{
+    [branch]
+    if (Numeric)
+    {
+        // Plate size, either typed in or read off the bound texture.  Max does
+        // not always report a texture's dimensions to the effect, and there is
+        // no way to tell from inside the shader, so the manual values win when
+        // they are set and 0 falls back to asking the texture.
+        float tw = NumericPlateWidth;
+        float th = NumericPlateHeight;
+        if (tw < 1.0 || th < 1.0)
+        {
+            float aw, ah;
+            Map1Texture.GetDimensions(aw, ah);
+            tw = aw;
+            th = ah;
+        }
+        uv = NumericPlateUV(uv, float2(tw, th), NumericDigit, NumericPlateLayout,
+                            NumericPlateMargin, NumericPlateSeparator,
+                            NumericPlateSideMargin, NumericPlateEdgeInset);
+    }
+    return uv;
+}
+
 // ─── Combiner pipeline ───────────────────────────────────────────────────────
 // Samples the active maps and runs the active stages.  Returns the final
 // color/alpha from scratch register 0.
 
 float4 PS_Evaluate(STG_PS_INPUT i)
 {
-    regs[0] = SampleMap(Map1Texture, i.uv0, Map1_UClamped, Map1_VClamped,
+    // Map 1's clamp flags apply to the mesh UV, before the numeric crop remaps
+    // it into a digit cell, so they are applied here and SampleMap gets a UV
+    // that already has them baked in.
+    float2 uv0 = i.uv0;
+    if (Map1_UClamped) uv0.x = saturate(uv0.x);
+    if (Map1_VClamped) uv0.y = saturate(uv0.y);
+
+    regs[0] = SampleMap(Map1Texture, NumericMap1UV(uv0), false, false,
                         Map1_Unfiltered, Map1_MipmapBias);
     regs[1] = EnableMap2 ? SampleMap(Map2Texture, i.uv1, Map2_UClamped, Map2_VClamped,
                                      Map2_Unfiltered, Map2_MipmapBias)

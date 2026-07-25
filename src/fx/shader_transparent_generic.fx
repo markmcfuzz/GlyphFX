@@ -22,6 +22,7 @@ string ParamID = "0x003";
 #include "_constants.fxh"
 #include "_structs.fxh"
 #include "_samplers.fxh"
+#include "_numeric_counter.fxh"
 #include "shader_transparent_generic.params.fxh"
 #include "shader_transparent_generic.vsh"
 #include "shader_transparent_generic.psh"

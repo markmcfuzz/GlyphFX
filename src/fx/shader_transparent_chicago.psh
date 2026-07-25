@@ -8,16 +8,15 @@
 // Up to 4 texture maps are blended sequentially.  Map 1 is always the base.
 // Maps 2-4 are enabled with EnableMap2 / EnableMap3 / EnableMap4.
 //
-// Each active stage blends the accumulated value with the new map sample
-// using the per-stage ColorFunction / AlphaFunction enum:
-//   0  Current         pass through the accumulated value unchanged
-//   1  Next Map        replace with the incoming map value
-//   2  Multiply        A × B
-//   3  Double Mul      saturate( 2 × A × B )
-//   4  Add             saturate( A + B )
-//   5  Add-Signed      saturate( A + B − 0.5 )
-//   6  Add-Signed      (same formula; both enum values exist in the tag)
-//   7  Subtract        saturate( A − B )
+// The per-map ColorFunction / AlphaFunction says how the result accumulated so
+// far combines with the map that comes AFTER it, so four maps give three
+// blends: Map 1's function joins Map 1 to Map 2, Map 2's joins that result to
+// Map 3, Map 3's joins it to Map 4, and Map 4's is inert.  The full enum and
+// the reasoning behind it are documented above BlendColor below.
+//
+// This is the shader's only way to tint a map, since chicago has no color
+// parameter of its own: put the colour in a second map and set Map 1's
+// function to Multiply.
 //
 // AlphaReplicate spreads the sampled alpha across RGB before blending.
 // UClamped / VClamped clamp the UV to [0, 1] on each axis.
@@ -47,31 +46,110 @@
 // ----------------------------------------------------------------------------
 
 // ─── Per-stage blend helpers ─────────────────────────────────────────────────
+//
+// WHICH MAP'S FUNCTION DRIVES WHICH BLEND.  A map's color/alpha function does
+// not describe how that map joins the ones before it - it describes how the
+// result SO FAR ("current") combines with the map AFTER it ("next map").  That
+// is why the enum is spelled current / next map / subtract current / blend next
+// map alpha.  Four maps therefore give only THREE blends, which is exactly what
+// the reference shader does (shaders/fx/chicago_shader.psh):
+//
+//     c1 = calc_stage(c0, t1, stage 1)      Map 1's function
+//     c2 = calc_stage(c1, t2, stage 2)      Map 2's function
+//     c3 = calc_stage(c2, t3, stage 3)      Map 3's function
+//
+// So Map 1's function is the one that matters for a two-map tag, and Map 4's
+// function is inert - there is no map after it.
+//
+//   A = current (everything accumulated up to and including this map)
+//   B = next map
+//
+//   0  current                       A
+//   1  next map                      B
+//   2  multiply                      A * B
+//   3  double multiply               2 * A * B
+//   4  add                           A + B
+//   5  add signed current            A + B - 1/2
+//   6  add signed next map           A + B - 1/2   (see note)
+//   7  subtract current              B - A
+//   8  subtract next map             A - B
+//   9  blend current alpha           lerp(A, B, current alpha)
+//  10  blend current alpha inverse   lerp(A, B, 1 - current alpha)
+//  11  blend next map alpha          lerp(A, B, next map alpha)
+//  12  blend next map alpha inverse  lerp(A, B, 1 - next map alpha)
+//
+// Note on 5 / 6: the D3D9 fixed-function op these come from (ADDSIGNED) is
+// symmetric, so both tag values land on the same formula.  The two subtract
+// entries are genuinely different and are ordered the way the fixed-function
+// arguments run - the named operand is the one being subtracted.
 
-// Blends accumulated color A with incoming stage color B.
-float3 BlendColor(float3 A, float3 B, int func)
+// Blends accumulated color A with the next map's color B.  alphaA / alphaB are
+// the matching alphas, needed only by the blend-by-alpha functions.
+float3 BlendColor(float3 A, float3 B, float alphaA, float alphaB, int func)
 {
-    if      (func == 1) return B;
-    else if (func == 2) return A * B;
-    else if (func == 3) return saturate(2.0 * A * B);
-    else if (func == 4) return saturate(A + B);
-    else if (func == 5) return saturate(A + B - 0.5);
-    else if (func == 6) return saturate(A + B - 0.5);
-    else if (func == 7) return saturate(A - B);
+    if      (func ==  1) return B;
+    else if (func ==  2) return A * B;
+    else if (func ==  3) return saturate(2.0 * A * B);
+    else if (func ==  4) return saturate(A + B);
+    else if (func ==  5) return saturate(A + B - 0.5);
+    else if (func ==  6) return saturate(A + B - 0.5);
+    else if (func ==  7) return saturate(B - A);
+    else if (func ==  8) return saturate(A - B);
+    else if (func ==  9) return lerp(A, B, alphaA);
+    else if (func == 10) return lerp(A, B, 1.0 - alphaA);
+    else if (func == 11) return lerp(A, B, alphaB);
+    else if (func == 12) return lerp(A, B, 1.0 - alphaB);
     return A;   // 0 = Current - pass through
 }
 
-// Blends accumulated alpha A with incoming stage alpha B.
+// Blends accumulated alpha A with the next map's alpha B.  The blend-by-alpha
+// functions read the same two values they are combining.
 float BlendAlpha(float A, float B, int func)
 {
-    if      (func == 1) return B;
-    else if (func == 2) return A * B;
-    else if (func == 3) return saturate(2.0 * A * B);
-    else if (func == 4) return saturate(A + B);
-    else if (func == 5) return saturate(A + B - 0.5);
-    else if (func == 6) return saturate(A + B - 0.5);
-    else if (func == 7) return saturate(A - B);
+    if      (func ==  1) return B;
+    else if (func ==  2) return A * B;
+    else if (func ==  3) return saturate(2.0 * A * B);
+    else if (func ==  4) return saturate(A + B);
+    else if (func ==  5) return saturate(A + B - 0.5);
+    else if (func ==  6) return saturate(A + B - 0.5);
+    else if (func ==  7) return saturate(B - A);
+    else if (func ==  8) return saturate(A - B);
+    else if (func ==  9) return lerp(A, B, A);
+    else if (func == 10) return lerp(A, B, 1.0 - A);
+    else if (func == 11) return lerp(A, B, B);
+    else if (func == 12) return lerp(A, B, 1.0 - B);
     return A;
+}
+
+// ─── Numeric counter ─────────────────────────────────────────────────────────
+// With the Numeric flag set, Map 1 is the ammo counter's digit plate rather
+// than a plain texture: the engine would bind one bitmap of the map's sequence
+// per counter digit, the viewport crops the requested cell out of the plate
+// the sequence was sliced from.  The crop confines the lookup to a single cell,
+// so Map 1's U/V clamp flags stop mattering from here on.
+float2 NumericMap1UV(float2 uv)
+{
+    [branch]
+    if (Numeric)
+    {
+        // Plate size, either typed in or read off the bound texture.  Max does
+        // not always report a texture's dimensions to the effect, and there is
+        // no way to tell from inside the shader, so the manual values win when
+        // they are set and 0 falls back to asking the texture.
+        float tw = NumericPlateWidth;
+        float th = NumericPlateHeight;
+        if (tw < 1.0 || th < 1.0)
+        {
+            float aw, ah;
+            Map1Texture.GetDimensions(aw, ah);
+            tw = aw;
+            th = ah;
+        }
+        uv = NumericPlateUV(uv, float2(tw, th), NumericDigit, NumericPlateLayout,
+                            NumericPlateMargin, NumericPlateSeparator,
+                            NumericPlateSideMargin, NumericPlateEdgeInset);
+    }
+    return uv;
 }
 
 // ─── Map pipeline ────────────────────────────────────────────────────────────
@@ -83,6 +161,7 @@ float4 PS_Evaluate(TC_PS_INPUT i)
     float2 uv0 = i.uv0;
     if (Map1_UClamped) uv0.x = saturate(uv0.x);
     if (Map1_VClamped) uv0.y = saturate(uv0.y);
+    uv0 = NumericMap1UV(uv0);
 
     float4 t0 = Map1_Unfiltered
               ? Map1Texture.SampleBias(smpPoint, uv0, Map1_MipmapBias)
@@ -103,9 +182,10 @@ float4 PS_Evaluate(TC_PS_INPUT i)
                   ? Map2Texture.SampleBias(smpPoint, uv1, Map2_MipmapBias)
                   : Map2Texture.SampleBias(smpWrap,  uv1, Map2_MipmapBias);
 
+        // Map 1's function is what joins Map 1 to Map 2.
         float3 b = Map2_AlphaReplicate ? t1.aaa : t1.rgb;
-        accColor = BlendColor(accColor, b,    Map2_ColorFunction);
-        accAlpha = BlendAlpha(accAlpha, t1.a, Map2_AlphaFunction);
+        accColor = BlendColor(accColor, b, accAlpha, t1.a, Map1_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t1.a,         Map1_AlphaFunction);
     }
 
     [branch]
@@ -119,9 +199,10 @@ float4 PS_Evaluate(TC_PS_INPUT i)
                   ? Map3Texture.SampleBias(smpPoint, uv2, Map3_MipmapBias)
                   : Map3Texture.SampleBias(smpWrap,  uv2, Map3_MipmapBias);
 
+        // Map 2's function is what joins the result so far to Map 3.
         float3 b = Map3_AlphaReplicate ? t2.aaa : t2.rgb;
-        accColor = BlendColor(accColor, b,    Map3_ColorFunction);
-        accAlpha = BlendAlpha(accAlpha, t2.a, Map3_AlphaFunction);
+        accColor = BlendColor(accColor, b, accAlpha, t2.a, Map2_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t2.a,         Map2_AlphaFunction);
     }
 
     [branch]
@@ -135,9 +216,11 @@ float4 PS_Evaluate(TC_PS_INPUT i)
                   ? Map4Texture.SampleBias(smpPoint, uv3, Map4_MipmapBias)
                   : Map4Texture.SampleBias(smpWrap,  uv3, Map4_MipmapBias);
 
+        // Map 3's function is what joins the result so far to Map 4.  Map 4's
+        // own function is inert - nothing follows it.
         float3 b = Map4_AlphaReplicate ? t3.aaa : t3.rgb;
-        accColor = BlendColor(accColor, b,    Map4_ColorFunction);
-        accAlpha = BlendAlpha(accAlpha, t3.a, Map4_AlphaFunction);
+        accColor = BlendColor(accColor, b, accAlpha, t3.a, Map3_ColorFunction);
+        accAlpha = BlendAlpha(accAlpha, t3.a,         Map3_AlphaFunction);
     }
 
     return float4(saturate(accColor), saturate(accAlpha));

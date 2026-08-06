@@ -82,8 +82,8 @@ When importing a `.gbxmodel` tag, the Toolkit will detect the shader type and as
 
 This comparison shows the **cyborg** model rendered in 3ds Max.<br>
 
-- On the left side we have applied standard materials (only base map).
-- On the right side we have a **DirectX Shader** with `GlyphFX` using the `shader_model.fx` and `shader_transparent_chicago.fx` - the shading is very similar to the game, giving modders a much better preview of how their models will look in-game.<br>
+- On the right side we have applied standard materials (only base map).
+- On the left side we have a **DirectX Shader** with `GlyphFX` using the `shader_model.fx` and `shader_transparent_chicago.fx` - the shading is very similar to the game, giving modders a much better preview of how their models will look in-game.<br>
 <br>
 
 <div align="center">

@@ -80,8 +80,14 @@ float2 NumericPlateUV(float2 uv, float2 texSize, int digit, int layout,
                      / GX_NUMERIC_PLATE_CELLS;
     float acrossCell = acrossTotal - 2.0 * sideMargin;
 
-    alongCell  = max(alongCell,  1.0);
-    acrossCell = max(acrossCell, 1.0);
+    // If those numbers cannot describe a real cell - margins and separators
+    // that do not fit inside the plate, or a size the viewport reported wrongly
+    // - fall back to the uncropped UV.  Clamping to a 1-texel cell instead
+    // would magnify a couple of texels into blocky noise, which looks like a
+    // rendering bug rather than a configuration one.  Showing the whole plate
+    // is the same tell as a missing size above.
+    if (alongCell < 1.0 || acrossCell < 1.0)
+        return uv;
 
     float index      = clamp(digit, 0, GX_NUMERIC_PLATE_CELLS - 1);
     float alongStart = margin + index * (alongCell + separator);

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.9.0] - 2026-10-08
+
+### Added
+
+- **Shader Model Extended:**
+    - New `shader_model_extended.fx`: ringworld's extended `shader_model`, based on the OpenSauce model extension. Adds a base normal map whose alpha mixes two detail normal maps (0 = none, 85 = detail 1, 170 = detail 2, 255 = none), a specular color map that tints the reflection and highlight, specular lighting from the scene light, and a second detail map applied after the first. See `docs/parameters/shader_model_extended/bump_and_specular.md`.
+
 ## [0.8.0] - 2026-07-25
 
 ### Added

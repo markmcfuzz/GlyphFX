@@ -65,11 +65,16 @@ float3 DetailNeutral(int func)
 }
 
 // Detail function enum: [0=Double Biased Multiply 1=Multiply 2=Double Biased Add]
+float3 ApplyDetailUnclamped(float3 color, float3 detail, int func)
+{
+    if      (func == 0) return color * detail * 2.0;
+    else if (func == 1) return color * detail;
+    return color + 2.0 * detail - 1.0;
+}
+
 float3 ApplyDetail(float3 color, float3 detail, int func)
 {
-    if      (func == 0) return saturate(color * detail * 2.0);
-    else if (func == 1) return saturate(color * detail);
-    return saturate(color + 2.0 * detail - 1.0);
+    return saturate(ApplyDetailUnclamped(color, detail, func));
 }
 
 // Mirrored-UV fix for the viewport tangent frame.
@@ -204,7 +209,11 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
 
     float NdotL      = saturate(dot(N,  Ln));
     float NdotL_fill = saturate(dot(N, -Ln));
-    float NdotV      = saturate(dot(N,  V));
+    // The perpendicular/parallel reflection brightness and tint are computed per
+    // VERTEX in the stock shader (model.vsh, D1), i.e. from the mesh normal.
+    // Using the normal-mapped N here would darken the reflection on every bump;
+    // the normal map still bends the reflection vector below.
+    float NdotV      = saturate(dot(Nv, V));
 
     float3 lamp = LampColor * LampIntensity;
     float3 diffuse_light_base = AmbientColor.rgb
@@ -311,10 +320,16 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
     }
     else
     {
-        float3 lit_base = saturate(base_map.rgb * diffuse_light + specular);
+        // No clamp until the very end.  shader_model clamps the lit result to
+        // [0,1] before the detail (the stock ps_1_x registers did); the
+        // extended shader runs at float precision, and clamping here flattened
+        // a bright lit+reflection result to white BEFORE the detail multiply,
+        // wiping out all the normal-map relief (only the detail colours were
+        // left).
+        float3 lit_base = base_map.rgb * diffuse_light + specular;
 
-        lit = ApplyDetail(lit_base, detail,  DetailFunction);
-        lit = ApplyDetail(lit,      detail2, Detail2Function);
+        lit = ApplyDetailUnclamped(lit_base, detail,  DetailFunction);
+        lit = ApplyDetailUnclamped(lit,      detail2, Detail2Function);
     }
     lit = saturate(lit);
 

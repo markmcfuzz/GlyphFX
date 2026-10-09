@@ -46,4 +46,18 @@ SamplerState smpPoint
     AddressV  = Wrap;
 };
 
+// ----------------------------------------------------------------------------
+// Anisotropic wrap sampler - used for normal maps, whose fine relief turns
+// into noise under plain trilinear filtering at oblique angles.
+// Uses the D3D11 'Filter' state: the DX9 Min/Mag/MipFilter states above are
+// ignored by fx_5_0 (those samplers fall back to the default trilinear).
+// ----------------------------------------------------------------------------
+SamplerState smpAniso
+{
+    Filter        = ANISOTROPIC;
+    MaxAnisotropy = 16;
+    AddressU      = Wrap;
+    AddressV      = Wrap;
+};
+
 #endif // GLYPHFX_SAMPLERS_FXH

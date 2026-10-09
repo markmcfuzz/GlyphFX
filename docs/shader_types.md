@@ -54,6 +54,44 @@ Used for `gbxmodel` tags.
 
 ---
 
+## shader_model_extended
+
+ringworld's extended `shader_model`, based on the OpenSauce model extension: normal maps, specular color map, specular lighting and a second detail map. Everything from `shader_model` above applies unchanged.
+
+**File:** `fx/shader_model_extended.fx`  
+**Status:** In progress
+
+### Additional Texture Slots
+
+| Slot | Description |
+|---|---|
+| Detail 2 Map | RGB = second detail blend, applied after the detail map with its own function and mask |
+| Base Normal Map | RGB = tangent-space normal, A = interpolates between no detail normals, detail normal 1 and detail normal 2 |
+| Detail Normal 1 Map | RGB = tangent-space detail normal |
+| Detail Normal 2 Map | RGB = tangent-space detail normal (only used with a base normal map) |
+| Specular Color Map | RGB = tints the specular reflection, A = optional specular lighting exponent mask |
+
+### Key Parameters
+
+| Parameter | Description |
+|---|---|
+| [Bump Properties] | Base normal + detail normals, and how the base normal alpha mixes them |
+| [Specular Properties] | Specular color map and specular lighting |
+
+Coefficients, scales and exponents documented as `0 = 1` keep the raw tag value; the shader treats 0 as 1. The `Specular Lighting Exponent` is the exception: 0 turns specular lighting off.
+
+[Bump Properties]: parameters\shader_model_extended\bump_and_specular.md "Bump and specular properties"
+[Specular Properties]: parameters\shader_model_extended\bump_and_specular.md "Bump and specular properties"
+
+### Additional Debug Parameters
+
+| Parameter | Description |
+|---|---|
+| Debug Mode 9-15 | Base normal map, detail normal weights, final normal, detail 2 map, specular color, specular alpha, specular lighting only |
+| Bump Strength | Scales the combined normal map relief (1 = tag value) |
+
+---
+
 ## shader_environment
 
 Used for level geometry - floors, walls, ceilings and terrain.

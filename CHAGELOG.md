@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.9.1] - 2026-10-08
+
+### Fixed
+
+- **Shader Model Extended:**
+  - Fixed detail after reflection not working properly.
+
 ## [0.9.0] - 2026-10-08
 
 ### Added

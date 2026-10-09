@@ -277,12 +277,21 @@ int SelfIlluminationAnimationFunction
     int    UIOrder = 20;
 > = 0;
 
+float SelfIlluminationAnimationPeriod
+<
+    string UIName   = "Self Illum Animation Period................(Seconds)";
+    string UIGroup  = "Self Illumination Properties";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 21;
+> = 0.0;
+
 float4 AnimationColorLowerBound
 <
     string UIName = "Animation Color Lower Bound";
     string UIGroup = "Self Illumination Properties";
     string UIWidget = "Color";
-    int UIOrder = 21;
+    int UIOrder = 22;
 > = float4(0, 0, 0, 0);
 
 float4 AnimationColorUpperBound
@@ -290,7 +299,7 @@ float4 AnimationColorUpperBound
     string UIName = "Animation Color Upper Bound";
     string UIGroup = "Self Illumination Properties";
     string UIWidget = "Color";
-    int UIOrder = 22;
+    int UIOrder = 23;
 > = float4(0, 0, 0, 0);
 
 float4 SelfIlluminationColor
@@ -298,7 +307,7 @@ float4 SelfIlluminationColor
     string UIName   = "Self Illumination Color (Only for 3ds Max)";
     string UIGroup  = "Self Illumination Properties";
     string UIWidget = "Color";
-    int    UIOrder = 23;
+    int    UIOrder = 24;
 > = float4(0, 0, 0, 0);
 
 float MapUScale
@@ -307,7 +316,7 @@ float MapUScale
     string UIGroup  = "Base Map Properties";
     string UIWidget = "slider";
     float  UIMin = -64; float UIMax = 64; float UIStep = 0.01;
-    int    UIOrder = 24;
+    int    UIOrder = 25;
 > = 1.0;
 
 float MapVScale
@@ -316,14 +325,14 @@ float MapVScale
     string UIGroup  = "Base Map Properties";
     string UIWidget = "slider";
     float  UIMin = -64; float UIMax = 64; float UIStep = 0.01;
-    int    UIOrder = 25;
+    int    UIOrder = 26;
 > = 1.0;
 
 bool EnableBaseMap
 <
     string UIName  = "Enable Base Map..................(only for 3ds Max)";
     string UIGroup = "Shader Model Flags";
-    int    UIOrder =26;
+    int    UIOrder =27;
 > = true;
 
 Texture2D BaseMapTexture
@@ -331,7 +340,7 @@ Texture2D BaseMapTexture
     string UIName       = "Base Map";
     string UIGroup      = "Base Map Properties";
     string ResourceType = "2D";
-    int    UIOrder = 27;
+    int    UIOrder = 28;
 >;
 
 // ----------------------------------------------------------------------------
@@ -341,7 +350,7 @@ bool EnableMultipurposeMap
 <
     string UIName  = "Enable Multipurpose Map........(only for 3ds Max)";
     string UIGroup = "Shader Model Flags";
-    int    UIOrder = 28;
+    int    UIOrder = 29;
 > = true;
 
 Texture2D MultipurposeMapTexture
@@ -349,7 +358,7 @@ Texture2D MultipurposeMapTexture
     string UIName       = "Multipurpose Map";
     string UIGroup      = "Multipurpose Properties";
     string ResourceType = "2D";
-    int    UIOrder = 29;
+    int    UIOrder = 30;
 >;
 
 int DetailFunction
@@ -358,7 +367,7 @@ int DetailFunction
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
-    int    UIOrder = 30;
+    int    UIOrder = 31;
 > = 0;
 
 int DetailMask
@@ -367,7 +376,7 @@ int DetailMask
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
-    int    UIOrder = 31;
+    int    UIOrder = 32;
 > = 0;
 
 float DetailMapScale
@@ -376,14 +385,14 @@ float DetailMapScale
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;
-    int    UIOrder = 32;
+    int    UIOrder = 33;
 > = 1.0;
 
 bool EnableDetailMap
 <
     string UIName  = "Enable Detail Map.................(only for 3ds Max)";
     string UIGroup = "Shader Model Flags";
-    int    UIOrder = 33;
+    int    UIOrder = 34;
 > = true;
 
 Texture2D DetailMapTexture
@@ -391,7 +400,7 @@ Texture2D DetailMapTexture
     string UIName       = "Detail Map";
     string UIGroup      = "Multipurpose Properties";
     string ResourceType = "2D";
-    int    UIOrder = 34;
+    int    UIOrder = 35;
 >;
 
 // Multiplier on top of DetailMapScale for the V axis only (0 = 1x, square tiling).
@@ -401,7 +410,7 @@ float DetailMapVScale
     string UIGroup  = "Multipurpose Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 64; float UIStep = 0.01;
-    int    UIOrder = 35;
+    int    UIOrder = 36;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -413,7 +422,7 @@ int UAnimationSource
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 36;
+    int    UIOrder = 37;
 > = 0;
 
 int UAnimationFunction
@@ -422,7 +431,7 @@ int UAnimationFunction
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 37;
+    int    UIOrder = 38;
 > = 0;
 
 float UAnimationPeriod
@@ -431,7 +440,7 @@ float UAnimationPeriod
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 38;
+    int    UIOrder = 39;
 > = 0.0;
 
 float UAnimationPhase
@@ -440,7 +449,7 @@ float UAnimationPhase
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 39;
+    int    UIOrder = 40;
 > = 0.0;
 
 float UAnimationScale
@@ -449,7 +458,7 @@ float UAnimationScale
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 40;
+    int    UIOrder = 41;
 > = 0.0;
 
 float VAnimationSource
@@ -458,7 +467,7 @@ float VAnimationSource
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 41;
+    int    UIOrder = 42;
 > = 0;
 
 float VAnimationFunction
@@ -467,7 +476,7 @@ float VAnimationFunction
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 42;
+    int    UIOrder = 43;
 > = 0;
 
 float VAnimationPeriod
@@ -476,7 +485,7 @@ float VAnimationPeriod
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 43;
+    int    UIOrder = 44;
 > = 0.0;
 
 float VAnimationPhase
@@ -485,7 +494,7 @@ float VAnimationPhase
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 44;
+    int    UIOrder = 45;
 > = 0.0;
 
 float VAnimationScale
@@ -494,7 +503,7 @@ float VAnimationScale
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 45;
+    int    UIOrder = 46;
 > = 0.0;
 
 float RotationAnimationSource
@@ -503,7 +512,7 @@ float RotationAnimationSource
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 46;
+    int    UIOrder = 47;
 > = 0;
 
 float RotationAnimationFunction
@@ -512,7 +521,7 @@ float RotationAnimationFunction
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 47;
+    int    UIOrder = 48;
 > = 0;
 
 float RotationAnimationPeriod
@@ -521,7 +530,7 @@ float RotationAnimationPeriod
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 48;
+    int    UIOrder = 49;
 > = 0.0;
 
 float RotationAnimationPhase
@@ -530,7 +539,7 @@ float RotationAnimationPhase
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 49;
+    int    UIOrder = 50;
 > = 0.0;
 
 float RotationAnimationScale
@@ -539,7 +548,7 @@ float RotationAnimationScale
     string UIGroup  = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 50;
+    int    UIOrder = 51;
 > = 0.0;
 
 //Deprecated to split into 2 params
@@ -548,7 +557,7 @@ float RotationAnimationScale
 //    string UIName   = "Animation Center";
 //    string UIGroup  = "Texture Scrolling Animation";
 //    string UIWidget = "Vector2";
-//    int    UIOrder = 51;
+//    int    UIOrder = 52;
 //> = float2(0.000000, 0.000000);
 
 float RotationAnimationCenterX
@@ -557,7 +566,7 @@ float RotationAnimationCenterX
     string UIGroups = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.1;
-    int UIOrder = 51; 
+    int UIOrder = 52; 
 > = 0.0;
 
 float RotationAnimationCenterY
@@ -566,7 +575,7 @@ float RotationAnimationCenterY
     string UIGroups = "Texture Scrolling Animation";
     string UIWidget = "slider";
     float UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.1;
-    int UIOrder = 52; 
+    int UIOrder = 53; 
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -579,7 +588,7 @@ float PerpendicularBrightness
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 53;
+    int    UIOrder = 54;
 > = 0.0;
 
 float4 PerpendicularTintColor
@@ -587,7 +596,7 @@ float4 PerpendicularTintColor
     string UIName   = "Perpendicular Tint Color";
     string UIGroup  = "Reflection Properties";
     string UIWidget = "Color";
-    int    UIOrder = 54;
+    int    UIOrder = 55;
 > = float4(1, 1, 1, 1);
 
 float ParallelBrightness
@@ -596,7 +605,7 @@ float ParallelBrightness
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 55;
+    int    UIOrder = 56;
 > = 0.0;
 
 float4 ParallelTintColor
@@ -604,7 +613,7 @@ float4 ParallelTintColor
     string UIName   = "Parallel Tint Color";
     string UIGroup  = "Reflection Properties";
     string UIWidget = "Color";
-    int    UIOrder = 56;
+    int    UIOrder = 57;
 > = float4(1, 1, 1, 1);
 
 int ReflectionMask
@@ -612,14 +621,14 @@ int ReflectionMask
     string UIGroup  = "Reflection Properties";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
-    int    UIOrder = 57;
+    int    UIOrder = 58;
 > = 0;
 
 bool EnableReflectionCube
 <
     string UIName  = "Enable Reflection Cube..........(only for 3ds Max)";
     string UIGroup = "Shader Model Flags";
-    int    UIOrder = 58;
+    int    UIOrder = 59;
 > = true;
 
 // IMPORTANT: HCE reflection maps are 2D cross-layout atlases, NOT DX11 cubemaps.
@@ -628,7 +637,7 @@ Texture2D ReflectionCubeTexture
     string UIName       = "Reflection Cube Map";
     string UIGroup      = "Reflection Properties";
     string ResourceType = "2D";
-    int    UIOrder = 59;
+    int    UIOrder = 60;
 >;
 
 // ----------------------------------------------------------------------------
@@ -650,7 +659,7 @@ int DebugMode
     string UIName   = "Debug Mode  [0=Off  1=Base  2=MP.RGB  3=MP.R  4=MP.G  5=MP.B  6=MP.A  7=Detail  8=ReflOnly]";
     string UIWidget = "Spinner";
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
-    int UIOrder = 60;
+    int UIOrder = 61;
 > = 0;
 
 // ----------------------------------------------------------------------------

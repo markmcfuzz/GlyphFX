@@ -164,4 +164,28 @@ struct TP_VS_OUTPUT
 
 typedef TP_VS_OUTPUT TP_PS_INPUT;
 
+// ----------------------------------------------------------------------------
+// shader_model_extended - shader_model plus the OpenSauce model extension
+// (base/detail normal maps, specular color map, specular lighting) and a
+// second colour detail map.  Same vertex layout as shader_environment: the
+// tangent frame is needed to bring the normal maps into world space.
+// ----------------------------------------------------------------------------
+typedef SE_VS_INPUT SME_VS_INPUT;
+
+struct SME_VS_OUTPUT
+{
+    float4 clipPos        : SV_POSITION;
+    float3 wNormal        : TEXCOORD0;   // world-space normal
+    float3 wPos           : TEXCOORD1;   // world-space position
+    float3 lampVec        : TEXCOORD2;   // surface → lamp vector (world space)
+    float2 uv0            : TEXCOORD3;   // base / multipurpose / base normal / specular UV (scaled)
+    float4 uvDetail       : TEXCOORD4;   // detail map 1 (xy) + detail map 2 (zw)
+    float4 uvDetailNormal : TEXCOORD5;   // detail normal 1 (xy) + detail normal 2 (zw)
+    float3 oNormal        : TEXCOORD6;   // object-space normal for cubemap sampling
+    float3 wTangent       : TEXCOORD7;   // world-space tangent (for normal mapping)
+    float3 wBinormal      : TEXCOORD8;   // world-space binormal (for normal mapping)
+};
+
+typedef SME_VS_OUTPUT SME_PS_INPUT;
+
 #endif // GLYPHFX_STRUCTS_FXH

@@ -1,0 +1,360 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | fx/shader_model_extended.psh
+//
+// Pixel shader for shader_model_extended.
+//
+// shader_model (see shader_model.psh) plus:
+//   · Base normal map + two detail normal maps, mixed by the base normal alpha
+//   · Detail map 2, chained after detail map 1
+//   · Specular color map, tinting the cube map reflection and the highlight
+//   · Specular lighting (a highlight from the scene light)
+//
+// This is ringworld's shader_model_extended, which is based on the OpenSauce
+// model extension but differs from it (e.g. the second detail map).  Its
+// source is not available yet, so the rules below are taken from OpenSauce's
+// C++ (shader_model_extension.xml, TagPreprocess_ShaderExtension.inl,
+// ShaderExtension_Model.inl):
+//   · coefficients / scales / exponents of 0 mean 1,
+//   · base normal Z is multiplied by min(1 / coefficient, 1),
+//   · detail normal 2 only exists when there is a base normal map; without
+//     one, detail normal 1 is applied on its own at full strength,
+//   · specular lighting is only on when its exponent is non-zero,
+//   · "alpha as exponent mask" only acts with a specular map AND specular
+//     lighting.
+//
+// Neither ringworld's nor OpenSauce's pixel shader source is available
+// (OpenSauce ships them compiled and encrypted), so the following are
+// ASSUMPTIONS (each is a one-line change if the game disagrees):
+//   · base + detail normals are combined by adding their XY slopes (partial
+//     derivative blend), keeping the base Z,
+//   · "alpha as exponent mask" multiplies the lighting exponent by the
+//     specular map alpha (never below 1),
+//   · the highlight is masked by the multipurpose reflection mask, without the
+//     perpendicular/parallel brightness and tint,
+//   · detail map 2 uses the same functions/masks as detail map 1, applied
+//     right after it.
+// ----------------------------------------------------------------------------
+
+// Stochastic (dithered) discard - same technique as shader_transparent_chicago.
+// Fragments with alpha == 0 always discard; alpha == 1 always survive.
+void DitherClip(float alpha, float4 clipPos)
+{
+    float2 screenUV = clipPos.xy / clipPos.w;
+    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
+    clip(alpha - dither * DitherScale);
+}
+
+// Detail mask enum: [0=None 1=Refl_Inv 2=Refl 3=SI_Inv 4=SI 5=CC_Inv 6=CC 7=Aux_Inv 8=Aux]
+float DetailMaskValue(float4 mp, int mask)
+{
+    if      (mask == 1) return 1.0 - mp.b;
+    else if (mask == 2) return       mp.b;
+    else if (mask == 3) return 1.0 - mp.g;
+    else if (mask == 4) return       mp.g;
+    else if (mask == 5) return 1.0 - mp.a;
+    else if (mask == 6) return       mp.a;
+    else if (mask == 7) return 1.0 - mp.r;
+    else if (mask == 8) return       mp.r;
+    return 1.0;
+}
+
+// Detail value that leaves the colour untouched under each function.
+float3 DetailNeutral(int func)
+{
+    return (func == 1) ? (float3)1.0 : (float3)0.5;
+}
+
+// Detail function enum: [0=Double Biased Multiply 1=Multiply 2=Double Biased Add]
+float3 ApplyDetail(float3 color, float3 detail, int func)
+{
+    if      (func == 0) return saturate(color * detail * 2.0);
+    else if (func == 1) return saturate(color * detail);
+    return saturate(color + 2.0 * detail - 1.0);
+}
+
+// Mirrored-UV fix for the viewport tangent frame.
+//
+// In-game, tool.exe stores a per-vertex tangent/binormal computed from the UV
+// gradients, so mirrored UV islands get a mirrored frame and a mirrored normal
+// map bake reads correctly on both halves.  The TANGENT/BINORMAL 3ds Max hands
+// the shader do not always follow the UV mirroring, which shows up as a hard
+// seam down the middle of symmetric models, visible only when the light hits
+// from the side.
+//
+// Here the true direction of increasing U and V is taken per pixel from the
+// screen-space derivatives of position and UV (cotangent frame), and Max's
+// tangent/binormal are flipped wherever they point the other way.  Max's
+// smooth directions are kept; only the sign changes.  Max's binormal is taken
+// to point along -dV of the shader UV (Max's V runs opposite to D3D's); if
+// that convention were wrong it would invert the vertical relief uniformly,
+// never bring the seam back.
+//
+// flips.x / flips.y = 1 where the tangent / binormal was flipped (DebugMode 16).
+void FixMirroredTangentFrame(float3 wPos, float2 uv, float3 Nv,
+                             inout float3 T, inout float3 B, out float2 flips)
+{
+    float3 dp1  = ddx(wPos);
+    float3 dp2  = ddy(wPos);
+    float2 duv1 = ddx(uv);
+    float2 duv2 = ddy(uv);
+
+    float3 dp2perp = cross(dp2, Nv);
+    float3 dp1perp = cross(Nv, dp1);
+    float3 gradU   = dp2perp * duv1.x + dp1perp * duv2.x;   // direction of increasing U
+    float3 gradV   = dp2perp * duv1.y + dp1perp * duv2.y;   // direction of increasing V
+
+    // The UVs reaching the PS are scaled by Map U/V Scale; a negative scale
+    // mirrors the texture, not the mesh tangents.
+    gradU *= (MapUScale < 0.0) ? -1.0 : 1.0;
+    gradV *= (MapVScale < 0.0) ? -1.0 : 1.0;
+
+    flips = float2(dot(T, gradU) < 0.0 ? 1.0 : 0.0,
+                   dot(B, gradV) > 0.0 ? 1.0 : 0.0);
+    T *= 1.0 - 2.0 * flips.x;
+    B *= 1.0 - 2.0 * flips.y;
+}
+
+float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
+{
+    // --- Extended features ---
+    // With EnableExtended off the shader renders exactly like shader_model:
+    // no normal maps, no detail map 2, no specular map, no specular lighting.
+    bool useDetail2       = EnableExtended && EnableDetail2Map;
+    bool useBaseNormal    = EnableExtended && EnableBaseNormalMap;
+    bool useDetailNormal1 = EnableExtended && EnableDetailNormal1Map;
+    bool useDetailNormal2 = EnableExtended && EnableDetailNormal2Map;
+    bool useSpecular      = EnableExtended && EnableSpecularColorMap;
+    bool useSpecLighting  = EnableExtended && SpecularLightingExponent != 0.0;
+
+    // --- Texture samples ---
+    float4 base_map = EnableBaseMap
+                        ? BaseMapTexture.Sample(smpWrap, i.uv0)
+                        : float4(0.5, 0.5, 0.5, 1.0);
+
+    float4 detail_map = EnableDetailMap
+                        ? DetailMapTexture.Sample(smpWrap, i.uvDetail.xy)
+                        : float4(DetailNeutral(DetailFunction), 1.0);
+
+    float4 detail2_map = useDetail2
+                        ? Detail2MapTexture.Sample(smpWrap, i.uvDetail.zw)
+                        : float4(DetailNeutral(Detail2Function), 1.0);
+
+    float4 multipurpose_map = EnableMultipurposeMap
+                                ? MultipurposeMapTexture.Sample(smpWrap, i.uv0)
+                                : float4(0, 0, 0, 0);
+
+    // Normal maps use anisotropic filtering: their fine relief aliases into
+    // visible noise under plain trilinear filtering at oblique angles.
+    float4 base_normal_map = useBaseNormal
+                                ? BaseNormalMapTexture.Sample(smpAniso, i.uv0)
+                                : float4(0.5, 0.5, 1.0, 0.0);
+
+    float4 detail_normal1_map = useDetailNormal1
+                                ? DetailNormal1MapTexture.Sample(smpAniso, i.uvDetailNormal.xy)
+                                : float4(0.5, 0.5, 1.0, 1.0);
+
+    float4 detail_normal2_map = useDetailNormal2
+                                ? DetailNormal2MapTexture.Sample(smpAniso, i.uvDetailNormal.zw)
+                                : float4(0.5, 0.5, 1.0, 1.0);
+
+    float4 specular_map = useSpecular
+                                ? SpecularColorMapTexture.Sample(smpWrap, i.uv0)
+                                : float4(1, 1, 1, 1);
+
+    // --- Xbox channel swap ---
+    if (UseXboxChannelOrder)
+        multipurpose_map = multipurpose_map.agrb;
+
+    // --- Detail normal weights ---
+    // Base normal alpha: 0 = none, 85 = detail 1, 170 = detail 2, 255 = none,
+    // linear in between (85..170 crossfades detail 1 into detail 2).
+    float a  = base_normal_map.a;
+    float w1 = saturate(1.0 - abs(a * 3.0 - 1.0));
+    float w2 = saturate(1.0 - abs(a * 3.0 - 2.0));
+    if (!useBaseNormal)
+    {
+        w1 = 1.0;
+        w2 = 0.0;
+    }
+    w1 *= useDetailNormal1 ? 1.0 : 0.0;
+    w2 *= useDetailNormal2 ? 1.0 : 0.0;
+
+    // --- Combined tangent-space normal ---
+    float base_coef = OneIfZero(BaseNormalCoefficient);
+    float3 n_ts = useBaseNormal
+                    ? base_normal_map.rgb * 2.0 - 1.0
+                    : float3(0, 0, 1);
+    n_ts.xy *= base_coef;
+    n_ts.z  *= min(1.0 / base_coef, 1.0);
+    n_ts.xy += w1 * (detail_normal1_map.rg * 2.0 - 1.0) * OneIfZero(DetailNormal1Coefficient)
+             + w2 * (detail_normal2_map.rg * 2.0 - 1.0) * OneIfZero(DetailNormal2Coefficient);
+    n_ts.xy *= BumpStrength;
+    n_ts = normalize(n_ts);
+
+    // --- Lighting vectors ---
+    float3 Nv = normalize(i.wNormal);
+    float3 T  = normalize(i.wTangent);
+    float3 B  = normalize(i.wBinormal);
+    float2 frame_flips = float2(0.0, 0.0);
+    if (FixMirroredTangents)
+        FixMirroredTangentFrame(i.wPos, i.uv0, Nv, T, B, frame_flips);
+    float3 N  = normalize(n_ts.x * T + n_ts.y * B + n_ts.z * Nv);
+    float3 Ln = normalize(i.lampVec);
+    float3 V  = normalize(ViewIXf[3].xyz - i.wPos);
+
+    float NdotL      = saturate(dot(N,  Ln));
+    float NdotL_fill = saturate(dot(N, -Ln));
+    float NdotV      = saturate(dot(N,  V));
+
+    float3 lamp = LampColor * LampIntensity;
+    float3 diffuse_light_base = AmbientColor.rgb
+                              + lamp * NdotL
+                              + FillLightColor.rgb * NdotL_fill;
+
+    // --- Reflection ---
+    float4 reflection_map = float4(0, 0, 0, 0);
+    if (EnableReflectionCube)
+    {
+        // Use the (normal-mapped) normal as base, blend toward true reflection vector
+        float3 reflVec = normalize(lerp(N, reflect(-V, N), 0.7));
+
+        // Pitch rotation for vertical cubemap alignment
+        float cp = cos(CubemapPitch);
+        float sp = sin(CubemapPitch);
+        reflVec = normalize(float3(
+            reflVec.x,
+            reflVec.y * cp - reflVec.z * sp,
+            reflVec.y * sp + reflVec.z * cp
+        ));
+
+        reflection_map = SampleHaloCECubeMap(
+            ReflectionCubeTexture, smpClamp,
+            reflVec, ReflectionBlur);
+    }
+
+    // --- Diffuse light + self-illumination ---
+    float3 diffuse_light = saturate(diffuse_light_base
+                           + multipurpose_map.g * SelfIlluminationColor.rgb);
+
+    // --- Reflection mask and alpha ---
+    float SRCALPHA;
+    float reflection_mask_raw;
+
+    if (ReflectionMask == 1)
+    {
+        reflection_mask_raw = base_map.a * detail_map.a;
+        SRCALPHA = multipurpose_map.a;
+    }
+    else
+    {
+        reflection_mask_raw = multipurpose_map.b;
+        SRCALPHA = base_map.a;
+    }
+    // Matches D1.w from model.vsh: lerp(ParallelBrightness, PerpendicularBrightness, NdotV)
+    float specular_reflection_mask = reflection_mask_raw
+                                   * saturate(lerp(ParallelBrightness, PerpendicularBrightness, NdotV));
+
+    // --- Specular color map ---
+    // "The specular color map is multiplied by the stock specular result."
+    // Clamped to [0,1]: the coefficient brings a dark specular map UP TO full
+    // strength, it never pushes the reflection above the stock result.
+    // Measured on the helljumper infection form (coefficient 5, specular map
+    // RGB average ~0.57): unclamped, the cube map came out ~2.85x the stock
+    // reflection and read as chrome; in-game there is no such reflection.
+    float3 spec_color = useSpecular
+                        ? saturate(pow(saturate(specular_map.rgb), OneIfZero(SpecularColorExponent))
+                                   * OneIfZero(SpecularColorCoefficient))
+                        : (float3)1.0;
+
+    // --- Reflection tint ---
+    float3 reflTint = lerp(ParallelTintColor.rgb     * ParallelBrightness,
+                           PerpendicularTintColor.rgb * PerpendicularBrightness,
+                           NdotV);
+    float3 tinted_reflection = reflection_map.rgb * reflTint * 1.12 // Brightness boost to match shader_model.fx
+                             * spec_color * ReflectionIntensityScale;
+
+    // --- Specular lighting ---
+    float3 specular_lighting = (float3)0.0;
+    if (useSpecLighting)
+    {
+        float e = SpecularLightingExponent;
+        if (AlphaAsExponentMask && useSpecular)
+            e = max(e * specular_map.a, 1.0);
+
+        float3 H = normalize(Ln + V);
+        specular_lighting = pow(saturate(dot(N, H)), e)
+                          * OneIfZero(SpecularLightingCoefficient)
+                          * lamp * (NdotL > 0.0 ? 1.0 : 0.0)
+                          * spec_color * reflection_mask_raw;
+    }
+
+    float3 specular = tinted_reflection * specular_reflection_mask + specular_lighting;
+
+    // --- Change colour ---
+    float3 color_change = lerp((float3)1.0, ChangeColor.rgb, multipurpose_map.a);
+    diffuse_light *= color_change;
+
+    // --- Detail blend (map 1, then map 2) ---
+    float3 detail  = lerp(DetailNeutral(DetailFunction),  detail_map.rgb,
+                          DetailMaskValue(multipurpose_map, DetailMask));
+    float3 detail2 = lerp(DetailNeutral(Detail2Function), detail2_map.rgb,
+                          DetailMaskValue(multipurpose_map, Detail2Mask));
+
+    // --- Combine base + detail + light + reflection ---
+    float3 lit;
+    if (!DetailAfterReflection)
+    {
+        float3 detail_result = ApplyDetail(base_map.rgb,  detail,  DetailFunction);
+        detail_result        = ApplyDetail(detail_result, detail2, Detail2Function);
+
+        lit = detail_result * diffuse_light + specular;
+    }
+    else
+    {
+        float3 lit_base = saturate(base_map.rgb * diffuse_light + specular);
+
+        lit = ApplyDetail(lit_base, detail,  DetailFunction);
+        lit = ApplyDetail(lit,      detail2, Detail2Function);
+    }
+    lit = saturate(lit);
+
+    // --- Fog ---
+    // Fog weight is not available in the viewport; matches shader_model.fx behaviour.
+    float3 SRCCOLOR;
+    if (TrueAtmosphericFog)
+    {
+        float  fog_a = 0.0;
+        float3 fog   = saturate(c_fog_color_correction_1.rgb
+                                - fog_a * c_fog_color_correction_E.rgb);
+        SRCCOLOR = lerp(lit * c_fog_color_correction_0.a,
+                        c_fog_color_correction_0.rgb, fog_a) + fog;
+    }
+    else
+        SRCCOLOR = lit;
+
+    // --- Debug visualisation ---
+    if      (DebugMode == 1)  return float4(base_map.rgb,                                 1.0);
+    else if (DebugMode == 2)  return float4(multipurpose_map.rgb,                         1.0);
+    else if (DebugMode == 3)  return float4(multipurpose_map.rrr,                         1.0);
+    else if (DebugMode == 4)  return float4(multipurpose_map.ggg,                         1.0);
+    else if (DebugMode == 5)  return float4(multipurpose_map.bbb,                         1.0);
+    else if (DebugMode == 6)  return float4(multipurpose_map.aaa,                         1.0);
+    else if (DebugMode == 7)  return float4(detail_map.rgb,                               1.0);
+    else if (DebugMode == 8)  return float4(tinted_reflection * specular_reflection_mask, 1.0);
+    else if (DebugMode == 9)  return float4(base_normal_map.rgb,                          1.0);
+    else if (DebugMode == 10) return float4(w1, w2, 0.0,                                  1.0);
+    else if (DebugMode == 11) return float4(N * 0.5 + 0.5,                                1.0);
+    else if (DebugMode == 12) return float4(detail2_map.rgb,                              1.0);
+    else if (DebugMode == 13) return float4(spec_color,                                   1.0);
+    else if (DebugMode == 14) return float4(specular_map.aaa,                             1.0);
+    else if (DebugMode == 15) return float4(saturate(specular_lighting),                  1.0);
+    else if (DebugMode == 16) return float4(frame_flips, 0.0,                             1.0);
+
+    // --- Alpha blend / Alpha test ---
+    if (AlphaBlendedDecal)
+        DitherClip(SRCALPHA, i.clipPos);
+    else if (!NotAlphaTested)
+        clip(SRCALPHA - c_alpha_ref);
+
+    return float4(SRCCOLOR, 1.0);
+}

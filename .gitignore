@@ -2,6 +2,7 @@
 shaders/
 plasma_rifle/
 test/
+internal/
 
 # Custom Files
 *.af

@@ -913,13 +913,25 @@ float ReflectionIntensityScale
     int    UIOrder = 91;
 > = 1.0;
 
+// Multiplies the specular lighting exponent, viewport only.  The viewport's
+// single unattenuated scene light spreads a low-exponent highlight over most
+// of the model; a higher exponent narrows it.  2 is set by eye.
+float SpecularLightingTightness
+<
+    string UIName   = "Specular Lighting Tightness  (only for 3ds Max)";
+    string UIGroup  = "Debug Parameters";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 16; float UIStep = 0.1;
+    int    UIOrder = 92;
+> = 10.0;
+
 float ReflectionBlur
 <
     string UIName   = "Reflection Blur  (0=sharp)";
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 8; float UIStep = 0.5;
-    int    UIOrder = 92;
+    int    UIOrder = 93;
 > = 0.0;
 
 float CubemapUOffset
@@ -928,7 +940,7 @@ float CubemapUOffset
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 93;
+    int    UIOrder = 94;
 > = 0.0;
 
 float CubemapVOffset
@@ -937,7 +949,7 @@ float CubemapVOffset
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.01;
-    int    UIOrder = 94;
+    int    UIOrder = 95;
 > = 0.0;
 
 float CubemapPitch
@@ -946,7 +958,7 @@ float CubemapPitch
     string UIGroup  = "Debug Parameters";
     string UIWidget = "slider";
     float  UIMin = -1.57; float UIMax = 1.57; float UIStep = 0.01;
-    int    UIOrder = 95;
+    int    UIOrder = 96;
 > = -0.0;
 
 // Rebuilds the sign of Max's tangent/binormal from the UVs so normal maps on
@@ -955,7 +967,7 @@ bool FixMirroredTangents
 <
     string UIName  = "Fix Mirrored UV Tangents  (only for 3ds Max)";
     string UIGroup = "Debug Parameters";
-    int    UIOrder = 96;
+    int    UIOrder = 97;
 > = true;
 
 // ----------------------------------------------------------------------------

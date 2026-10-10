@@ -58,6 +58,7 @@ A Phong highlight from the scene light and the fill light, each weighted by how 
 |---|---|
 | Specular Lighting Exponent | Highlight tightness. **0 turns specular lighting off** |
 | Specular Lighting Coefficient (0 = 1) | Highlight intensity |
+| Specular Lighting Tightness (3ds Max only, debug parameters) | Multiplies the exponent in the viewport, so the highlight covers a smaller area. Default 2, set by eye against in-game captures |
 
 `Do Not Use DLMs (BSP)` disables the BSP's directional lightmaps in-game and has no effect in the viewport.
 

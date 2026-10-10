@@ -297,6 +297,7 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
         float e = SpecularLightingExponent;
         if (AlphaAsExponentMask && useSpecular)
             e = max(e * specular_map.a, 1.0);
+        e *= SpecularLightingTightness;   // viewport-only narrowing, see params
 
         float  coef       = OneIfZero(SpecularLightingCoefficient);
         float  phong_lamp = pow(saturate(dot(reflect(-Ln, N), V)), e) * coef * NdotL;

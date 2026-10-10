@@ -6,8 +6,8 @@
 // shader_model (see shader_model.psh) plus:
 //   · Base normal map + two detail normal maps, mixed by the base normal alpha
 //   · Detail map 2, chained after detail map 1
-//   · Specular color map, tinting the cube map reflection and the highlight
-//   · Specular lighting (a highlight from the scene light)
+//   · Specular color map, tinting the highlight
+//   · Specular lighting (a highlight from the scene and fill lights)
 //
 // This is ringworld's shader_model_extended, which is based on the OpenSauce
 // model extension but differs from it (e.g. the second detail map).  Its
@@ -29,8 +29,14 @@
 //     derivative blend), keeping the base Z,
 //   · "alpha as exponent mask" multiplies the lighting exponent by the
 //     specular map alpha (never below 1),
-//   · the highlight is masked by the multipurpose reflection mask, without the
-//     perpendicular/parallel brightness and tint,
+//   · the perpendicular/parallel brightness and tint follow the normal-mapped
+//     normal, so the reflection fades on the slopes of the relief,
+//   · the specular color map tints only the highlight; the cube map
+//     reflection is left at its stock strength,
+//   · the highlight is Phong (light reflected about the normal, against the
+//     eye), one per light, weighted by that light's N·L, tinted by the
+//     perpendicular/parallel tint and masked by the reflection mask,
+//   · the highlight is added last, after the details,
 //   · detail map 2 uses the same functions/masks as detail map 1, applied
 //     right after it.
 // ----------------------------------------------------------------------------
@@ -209,11 +215,11 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
 
     float NdotL      = saturate(dot(N,  Ln));
     float NdotL_fill = saturate(dot(N, -Ln));
-    // The perpendicular/parallel reflection brightness and tint are computed per
-    // VERTEX in the stock shader (model.vsh, D1), i.e. from the mesh normal.
-    // Using the normal-mapped N here would darken the reflection on every bump;
-    // the normal map still bends the reflection vector below.
-    float NdotV      = saturate(dot(Nv, V));
+    // The perpendicular/parallel brightness and tint follow the normal-mapped
+    // normal: the slopes of the relief face away from the eye and take the
+    // (usually darker) parallel side.  With the mesh normal instead, the
+    // reflection and highlight cover the whole surface evenly and wash it out.
+    float NdotV      = saturate(dot(N, V));
 
     float3 lamp = LampColor * LampIntensity;
     float3 diffuse_light_base = AmbientColor.rgb
@@ -224,8 +230,8 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
     float4 reflection_map = float4(0, 0, 0, 0);
     if (EnableReflectionCube)
     {
-        // Use the (normal-mapped) normal as base, blend toward true reflection vector
-        float3 reflVec = normalize(lerp(N, reflect(-V, N), 0.7));
+        // True mirror direction about the normal-mapped normal.
+        float3 reflVec = reflect(-V, N);
 
         // Pitch rotation for vertical cubemap alignment
         float cp = cos(CubemapPitch);
@@ -264,12 +270,10 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
                                    * saturate(lerp(ParallelBrightness, PerpendicularBrightness, NdotV));
 
     // --- Specular color map ---
-    // "The specular color map is multiplied by the stock specular result."
-    // Clamped to [0,1]: the coefficient brings a dark specular map UP TO full
-    // strength, it never pushes the reflection above the stock result.
-    // Measured on the helljumper infection form (coefficient 5, specular map
-    // RGB average ~0.57): unclamped, the cube map came out ~2.85x the stock
-    // reflection and read as chrome; in-game there is no such reflection.
+    // Tints the highlight only.  Clamped to [0,1]: the coefficient brings a
+    // dark specular map UP TO full strength, never above it.  Measured on the
+    // helljumper infection form (coefficient 5, specular map RGB average
+    // ~0.57): unclamped it read as chrome; in-game there is no such shine.
     float3 spec_color = useSpecular
                         ? saturate(pow(saturate(specular_map.rgb), OneIfZero(SpecularColorExponent))
                                    * OneIfZero(SpecularColorCoefficient))
@@ -279,10 +283,14 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
     float3 reflTint = lerp(ParallelTintColor.rgb     * ParallelBrightness,
                            PerpendicularTintColor.rgb * PerpendicularBrightness,
                            NdotV);
-    float3 tinted_reflection = reflection_map.rgb * reflTint * 1.12 // Brightness boost to match shader_model.fx
-                             * spec_color * ReflectionIntensityScale;
+    float3 tinted_reflection = reflection_map.rgb * reflTint * ReflectionIntensityScale;
+    float3 reflection        = tinted_reflection * specular_reflection_mask;
 
     // --- Specular lighting ---
+    // Phong: the light mirrored about the normal, compared with the eye
+    // direction.  Much tighter than a Blinn half-vector at the same exponent,
+    // which spread a broad pale sheen over the whole model.  Each light's
+    // highlight is weighted by its own N·L, so it never shows on the unlit side.
     float3 specular_lighting = (float3)0.0;
     if (useSpecLighting)
     {
@@ -290,14 +298,13 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
         if (AlphaAsExponentMask && useSpecular)
             e = max(e * specular_map.a, 1.0);
 
-        float3 H = normalize(Ln + V);
-        specular_lighting = pow(saturate(dot(N, H)), e)
-                          * OneIfZero(SpecularLightingCoefficient)
-                          * lamp * (NdotL > 0.0 ? 1.0 : 0.0)
-                          * spec_color * reflection_mask_raw;
-    }
+        float  coef       = OneIfZero(SpecularLightingCoefficient);
+        float  phong_lamp = pow(saturate(dot(reflect(-Ln, N), V)), e) * coef * NdotL;
+        float  phong_fill = pow(saturate(dot(reflect( Ln, N), V)), e) * coef * NdotL_fill;
+        float3 highlights = phong_lamp * lamp + phong_fill * FillLightColor.rgb;
 
-    float3 specular = tinted_reflection * specular_reflection_mask + specular_lighting;
+        specular_lighting = saturate(highlights * reflTint * spec_color) * reflection_mask_raw;
+    }
 
     // --- Change colour ---
     float3 color_change = lerp((float3)1.0, ChangeColor.rgb, multipurpose_map.a);
@@ -316,22 +323,23 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
         float3 detail_result = ApplyDetail(base_map.rgb,  detail,  DetailFunction);
         detail_result        = ApplyDetail(detail_result, detail2, Detail2Function);
 
-        lit = detail_result * diffuse_light + specular;
+        lit = detail_result * diffuse_light + reflection;
     }
     else
     {
-        // No clamp until the very end.  shader_model clamps the lit result to
-        // [0,1] before the detail (the stock ps_1_x registers did); the
-        // extended shader runs at float precision, and clamping here flattened
-        // a bright lit+reflection result to white BEFORE the detail multiply,
-        // wiping out all the normal-map relief (only the detail colours were
-        // left).
-        float3 lit_base = base_map.rgb * diffuse_light + specular;
+        // Clamped before the detail, as in shader_model.  Now that the
+        // highlight is added after the details (below) and the reflection
+        // fades on the slopes of the relief, the lit result rarely reaches
+        // white here, so the clamp keeps the relief.
+        float3 lit_base = saturate(base_map.rgb * diffuse_light + reflection);
 
         lit = ApplyDetailUnclamped(lit_base, detail,  DetailFunction);
-        lit = ApplyDetailUnclamped(lit,      detail2, Detail2Function);
+        lit = ApplyDetailUnclamped(saturate(lit), detail2, Detail2Function);
     }
-    lit = saturate(lit);
+
+    // The highlight goes on top of everything, so the details never darken
+    // or double it.
+    lit = saturate(saturate(lit) + specular_lighting);
 
     // --- Fog ---
     // Fog weight is not available in the viewport; matches shader_model.fx behaviour.
@@ -355,14 +363,14 @@ float4 PS_Main(SME_PS_INPUT i) : SV_TARGET
     else if (DebugMode == 5)  return float4(multipurpose_map.bbb,                         1.0);
     else if (DebugMode == 6)  return float4(multipurpose_map.aaa,                         1.0);
     else if (DebugMode == 7)  return float4(detail_map.rgb,                               1.0);
-    else if (DebugMode == 8)  return float4(tinted_reflection * specular_reflection_mask, 1.0);
+    else if (DebugMode == 8)  return float4(saturate(reflection),                         1.0);
     else if (DebugMode == 9)  return float4(base_normal_map.rgb,                          1.0);
     else if (DebugMode == 10) return float4(w1, w2, 0.0,                                  1.0);
     else if (DebugMode == 11) return float4(N * 0.5 + 0.5,                                1.0);
     else if (DebugMode == 12) return float4(detail2_map.rgb,                              1.0);
     else if (DebugMode == 13) return float4(spec_color,                                   1.0);
     else if (DebugMode == 14) return float4(specular_map.aaa,                             1.0);
-    else if (DebugMode == 15) return float4(saturate(specular_lighting),                  1.0);
+    else if (DebugMode == 15) return float4(specular_lighting,                            1.0);
     else if (DebugMode == 16) return float4(frame_flips, 0.0,                             1.0);
 
     // --- Alpha blend / Alpha test ---

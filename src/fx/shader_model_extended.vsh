@@ -31,14 +31,15 @@ SME_VS_OUTPUT VS_Main(SME_VS_INPUT v)
     // UV channel, scaled by tag values.
     o.uv0 = v.uv0 * float2(MapUScale, MapVScale);
 
-    // Detail maps tile independently. "detail map scale" covers BOTH axes;
+    // Detail maps tile on top of the base map's tiling (the scaled base UV,
+    // as in the stock vertex shader). "detail map scale" covers BOTH axes;
     // "detail map v-scale" is only a multiplier on top of it for V (0 = 1x).
     //   scale 10, v-scale 1   -> U 10, V 10
     //   scale 10, v-scale 0.5 -> U 10, V  5
     float d1v = DetailMapScale  * OneIfZero(DetailMapVScale);
     float d2v = Detail2MapScale * OneIfZero(Detail2MapVScale);
-    o.uvDetail = float4(v.uv0 * float2(DetailMapScale,  d1v),
-                        v.uv0 * float2(Detail2MapScale, d2v));
+    o.uvDetail = float4(o.uv0 * float2(DetailMapScale,  d1v),
+                        o.uv0 * float2(Detail2MapScale, d2v));
 
     // Detail normals: same scale / v-scale rule, but here a scale of 0 also
     // means 1 (as in OpenSauce: uv * (scale, scale * v_scale), both defaulted).

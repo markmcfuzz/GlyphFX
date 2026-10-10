@@ -35,7 +35,7 @@ Without a base normal map, detail normal 1 is applied on its own at full strengt
 | Detail Normal 1/2 Scale (0 = 1) | Tiling of the detail normal, on both axes |
 | Detail Normal 1/2 V Scale (0 = 1) | Multiplier on top of the scale, for V only |
 
-The final normal is used for the scene light, the fill light, the cube map reflection direction and specular lighting. The perpendicular/parallel reflection brightness and tint keep using the mesh normal, as in the stock shader where they are computed per vertex. That way the normal map bends the reflection without darkening it.
+The final normal is used for the scene light, the fill light, the cube map reflection direction, the perpendicular/parallel reflection brightness and tint, and specular lighting. Because the brightness and tint follow the final normal, the slopes of the relief take the parallel side and the reflection fades there, which keeps the surface from looking evenly glossy.
 
 **Mirrored UVs.** In-game, the tangent frame comes from the UVs, so a normal map baked on a mirrored (symmetric) model reads correctly on both halves. The tangents 3ds Max provides do not always follow the mirroring, which shows as a seam down the middle of the model when the light comes from the side. `Fix Mirrored UV Tangents` (debug parameters, on by default) rebuilds the direction of the tangent and binormal from the UVs per pixel. `Debug Mode 16` shows where it acts: red = tangent flipped, green = binormal flipped. On a mirrored model, only one half should be colored.
 
@@ -48,11 +48,11 @@ Turn off the `Enable` flag of any map slot left empty: an empty slot reads as bl
 ### Specular Color Map
 The specular color map uses the same UVs as the base map.
 
-- `RGB` = tints the specular result, per pixel. The tint applies to both the cube map reflection and specular lighting. Computed as `pow(rgb, Specular Color Exponent) × Specular Color Coefficient`, both `0 = 1`, then clamped to 0-1. The coefficient raises a dark specular map up to full strength; it never makes the reflection brighter than the stock `shader_model` one.
+- `RGB` = tints the specular lighting highlight, per pixel. The cube map reflection is not affected. Computed as `pow(rgb, Specular Color Exponent) × Specular Color Coefficient`, both `0 = 1`, then clamped to 0-1. The coefficient raises a dark specular map up to full strength, never above it.
 - `Alpha` = when **Alpha as Exponent Mask** is set, it scales the specular lighting exponent. Low alpha gives a broad, soft highlight; high alpha gives a tight one.
 
 ### Specular Lighting
-A highlight from the scene light, masked by the multipurpose reflection mask (`Blue` on PC) and tinted by the specular color map.
+A Phong highlight from the scene light and the fill light, each weighted by how much that light hits the surface. It is tinted by the perpendicular/parallel tint and the specular color map, masked by the multipurpose reflection mask (`Blue` on PC), and added last, on top of the details.
 
 | Parameter | Effect |
 |---|---|
@@ -66,7 +66,7 @@ A highlight from the scene light, masked by the multipurpose reflection mask (`B
 ### Detail Map 2
 Works like the detail map, with its own `Function`, `Mask`, `Scale` and `V Scale`. It is applied right after the detail map, both before and after reflection (`Detail After Reflection`).
 
-With `Detail After Reflection` on, the lit and reflected result is not clamped before the details are applied, only at the end. `shader_model` clamps it first; doing that here flattened bright surfaces to white and wiped out the normal-map relief.
+With `Detail After Reflection` on, the lit and reflected result is clamped to 0-1 before the details are applied, as in `shader_model`. Specular lighting is added after the details either way.
 
 ---
 
@@ -77,12 +77,15 @@ ringworld's source for this shader is not available yet, and OpenSauce ships its
 - the Z flattening of the base normal coefficient,
 - detail normal 2 needing a base normal map,
 - specular lighting being off when its exponent is 0,
-- the specular color map multiplying the specular result.
+- the specular color map multiplying the highlight.
 
 These parts are **assumptions**, each one line to change if the game looks different:
 
 - Base and detail normals are combined by adding their slopes (XY), keeping the base Z.
 - Alpha as Exponent Mask multiplies the exponent by alpha (never below 1).
 - The specular color is clamped to 0-1. Without the clamp, the helljumper infection form (coefficient 5) rendered as chrome, which the game does not show.
-- The highlight uses the multipurpose reflection mask, but not the perpendicular/parallel brightness and tint.
+- The specular color map tints only the highlight, not the cube map reflection.
+- The perpendicular/parallel brightness and tint use the normal-mapped normal.
+- The highlight is Phong, one per light (scene and fill), uses the perpendicular/parallel tint and the multipurpose reflection mask, and is added after the details.
+- The cube map is sampled along the true mirror direction about the normal-mapped normal.
 - Detail map 2 is applied after the detail map.

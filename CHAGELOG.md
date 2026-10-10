@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.9.2] - 2026-10-19
+
+### Changed
+
+- **Shader Model Extended:**
+  - Reworked the reflection and specular lighting so the model no longer looks washed out and glossy all over. The perpendicular/parallel brightness and tint now follow the normal-mapped normal, the cube map is sampled along the true mirror direction, the highlight is a tighter Phong highlight from both the scene and fill lights and is added after the details, and the specular color map tints only the highlight. With `Detail After Reflection` on, the lit result is clamped before the details again, as in `shader_model`.
+  - Detail maps 1 and 2 now tile on top of the base map's `Map U/V Scale`, as in the stock vertex shader.
+
 ## [0.9.1] - 2026-10-08
 
 ### Fixed

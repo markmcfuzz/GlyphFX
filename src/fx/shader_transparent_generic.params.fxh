@@ -40,8 +40,8 @@
 //                              Most stock tags use 4 or fewer; the jackal /
 //                              cyborg energy shields use all 7.
 //   GX_SHOW_TAG_ANIMATION_FIELDS  set to 1 to expose the tag's texture
-//                              animation, lens flare and color0 source/period
-//                              fields.  They are tag data the viewport never
+//                              animation and lens flare fields.  They are
+//                              tag data the viewport never
 //                              reads (no time source), hidden by default to
 //                              keep the parameter UI fast.
 // ----------------------------------------------------------------------------
@@ -1280,7 +1280,6 @@ bool Stage1_AOutControlsColor0Animation
     int    UIOrder = 136;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage1_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -1290,7 +1289,6 @@ int Stage1_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage1_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -1627,7 +1625,6 @@ bool Stage2_AOutControlsColor0Animation
     int    UIOrder = 175;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage2_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -1637,7 +1634,6 @@ int Stage2_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage2_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -1975,7 +1971,6 @@ bool Stage3_AOutControlsColor0Animation
     int    UIOrder = 214;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage3_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -1985,7 +1980,6 @@ int Stage3_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage3_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -2323,7 +2317,6 @@ bool Stage4_AOutControlsColor0Animation
     int    UIOrder = 253;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage4_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -2333,7 +2326,6 @@ int Stage4_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage4_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -2671,7 +2663,6 @@ bool Stage5_AOutControlsColor0Animation
     int    UIOrder = 292;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage5_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -2681,7 +2672,6 @@ int Stage5_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage5_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -3019,7 +3009,6 @@ bool Stage6_AOutControlsColor0Animation
     int    UIOrder = 331;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage6_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -3029,7 +3018,6 @@ int Stage6_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage6_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -3367,7 +3355,6 @@ bool Stage7_AOutControlsColor0Animation
     int    UIOrder = 370;
 > = false;
 
-//#if GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage7_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
@@ -3377,7 +3364,6 @@ int Stage7_Color0Source
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-//#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 int Stage7_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
@@ -3779,6 +3765,19 @@ float NumericPlateEdgeInset
     int    UIOrder = 413;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.1;
 > = 0.5;
+
+// ----------------------------------------------------------------------------
+// Change Color
+// The object's change color, filled in by the toolkit.  One per material:
+// every stage with Color0 Source > 0 multiplies its color0 RGB by it.
+// ----------------------------------------------------------------------------
+float4 ChangeColor
+<
+    string UIName   = "Change Color (Only for 3ds Max)";
+    string UIGroup  = "Change Color Properties";
+    string UIWidget = "Color";
+    int    UIOrder = 414;
+> = float4(1, 1, 1, 1);
 
 // ----------------------------------------------------------------------------
 // Opacity Controls

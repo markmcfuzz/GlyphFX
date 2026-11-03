@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.9.3] - 2026-11-02
+
+### Added
+
+- **Shader Transparent Generic:**
+  - New `Change Color (Only for 3ds Max)` parameter (`ChangeColor`, default white). Stages whose `Color0 Source` is A-D now multiply their color0 RGB by it, as the engine does with the object's change color (e.g. the jackal shield uses change color C). One color per material, shared by all such stages.
+
 ## [0.9.2] - 2026-10-19
 
 ### Changed

@@ -1434,8 +1434,60 @@ float NumericPlateEdgeInset
 > = 0.5;
 
 // ----------------------------------------------------------------------------
+// Viewport Blend (GlyphFX-only, not tag data)
+// Nitrous ignores blend states, so Add / Multiply / Double Multiply are drawn
+// with a coverage dither that reproduces the blend on average (same scheme as
+// shader_transparent_water - see _coverage.fxh).  Alpha Blend is exact and
+// does not use these.
+// ----------------------------------------------------------------------------
+
+// The shader cannot see what is behind the surface, so it assumes this
+// brightness.  Set it to roughly the scene behind the effect.
+float BackgroundBrightness
+<
+    string UIName   = "Background Brightness  [0,1]  (brightness behind the surface)";
+    string UIGroup  = "Viewport Blend";
+    string UIWidget = "slider";
+    int    UIOrder = 153;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+// 1 = exact brightness.  Above 1 = more background shows through, the
+// effect gets dimmer (hue is kept).  Below 1 = smoother, less see-through.
+float DitherAmount
+<
+    string UIName   = "Dither Amount  (1 = exact, >1 = more see-through, <1 = smoother)";
+    string UIGroup  = "Viewport Blend";
+    string UIWidget = "slider";
+    int    UIOrder = 154;
+    float  UIMin = 0; float UIMax = 5; float UIStep = 0.01;
+> = 1.5;
+
+// Ceiling on coverage, so the brightest spots never hide the background fully.
+float MaxOpacity
+<
+    string UIName   = "Max Opacity  [0,1]  (lower = background always shows through)";
+    string UIGroup  = "Viewport Blend";
+    string UIWidget = "slider";
+    int    UIOrder = 155;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 1.0;
+
+// Adding Background Brightness washes the colour toward grey; this pushes its
+// chroma back up.  1 = exact brightness.
+float ColorSaturation
+<
+    string UIName   = "Color Saturation  (1 = faithful, >1 = richer)";
+    string UIGroup  = "Viewport Blend";
+    string UIWidget = "slider";
+    int    UIOrder = 156;
+    float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
+> = 1.2;
+
+// ----------------------------------------------------------------------------
 // Opacity Controls
-// Applied to the alpha channel (AlphaBlend) or luminance (Add) before output.
+// Applied to the alpha channel (Alpha Blend only).  Brightness also scales
+// the color added by the Add technique.
 // Match the controls from the opacity example shader.
 // ----------------------------------------------------------------------------
 float OpacityGamma

@@ -33,16 +33,16 @@
 //
 //   Multiply        - polygon RGB multiplies the background.
 //                     White (1,1,1) = no effect; black (0,0,0) = full black.
-//                     GPU blend state (DEST_COLOR / ZERO) does the math.
 //
 //   Double Multiply - same as Multiply but 2× result.
 //                     Mid grey (0.5) leaves the background unchanged.
-//                     GPU blend state (DEST_COLOR / SRC_COLOR) does the math.
 //
-//   Add             - opacity from RGB luminance.
-//                     For textures WITHOUT an alpha channel.
-//                     Black = invisible; bright white = full glow added to bg.
-//                     GPU blend state (SRC_ALPHA / ONE) does the additive mix.
+//   Add             - polygon RGB is added to the background.
+//                     Black = invisible; bright white = full glow.
+//
+// Nitrous ignores blend states, so Multiply / Double Multiply / Add are
+// reproduced with the coverage solve in _coverage.fxh, tuned by the
+// "Viewport Blend" parameters.
 // ----------------------------------------------------------------------------
 
 // ─── Per-stage blend helpers ─────────────────────────────────────────────────
@@ -266,47 +266,36 @@ float4 PS_AlphaBlend(TC_PS_INPUT i) : SV_TARGET
     return float4(c.rgb, alpha);
 }
 
-// Add - SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
-// Use this technique when the texture has NO alpha channel.
-// Luminance drives the alpha: dark pixels → alpha ≈ 0 → additive contribution ≈ 0.
-// DitherClip DISCARDS dark pixels so they don't write to the depth buffer -
-// without this they produce a black polygon silhouette even when blending to zero.
-// Brightness scales the output RGB to match the in-game renderer intensity.
+// Add, Multiply and Double Multiply express the engine blend as
+// background * Cmul + Cadd and let the coverage solve in _coverage.fxh realise
+// it (same as shader_transparent_generic).  Drawing the colour opaque with
+// luminance as coverage lost most of a dim additive effect and replaced the
+// background instead of adding to it.
+float4 ResolveViewportBlend(float3 Cmul, float3 Cadd, float4 clipPos)
+{
+    BlendCoverage b = ResolveBlendCoverage(Cmul, Cadd, BackgroundBrightness,
+                                           DitherAmount, MaxOpacity, ColorSaturation);
+    clip(b.coverage - CoverageThreshold(clipPos));
+    return float4(b.color, 1.0);
+}
+
+// Add - background + color.  Brightness is a viewport gain on the added color.
 float4 PS_Add(TC_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    float  lum   = dot(c.rgb, float3(0.299, 0.587, 0.114));
-    float  alpha = ApplyOpacityControls(lum);
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(c.rgb * Brightness, alpha);
+    float4 c = PS_Evaluate(i);
+    return ResolveViewportBlend((float3)1.0, c.rgb * Brightness, i.clipPos);
 }
 
-// Multiply - stochastic approximation via inverted luminance.
-// Bright pixels (lum ≈ 1) → alpha = 1 - lum ≈ 0 → discarded by DitherClip.
-// Dark pixels (lum ≈ 0)   → alpha = 1 - lum ≈ 1 → survive, drawn opaquely.
-// White areas vanish → background (armour) shows through unchanged.
-// Dark areas draw their colour on top → approximates darkening the background.
+// Multiply - background * color.  White leaves the background unchanged.
 float4 PS_Multiply(TC_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    float3 rgb = saturate(c.rgb * 1.2);
-    float  lum   = dot(c.rgb, float3(0.6, 0.6, 0.6));
-    float  alpha = 1.0 - lum;
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(rgb, 0.0);
+    float4 c = PS_Evaluate(i);
+    return ResolveViewportBlend(c.rgb, (float3)0.0, i.clipPos);
 }
 
-// Double Multiply - tent function: clips both dark AND bright pixels,
-// only mid-tones (lum ≈ 0.5) survive.
-//   alpha = 1 - |lum * 2 - 1|
-//   lum = 0.0 → alpha = 0 → black clipped
-//   lum = 0.5 → alpha = 1 → mid-tone survives (soft blues, etc.)
-//   lum = 1.0 → alpha = 0 → white clipped
+// Double Multiply - background * color * 2.  Mid grey leaves it unchanged.
 float4 PS_DoubleMultiply(TC_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    float  lum   = dot(c.rgb, float3(0.5, 0.5, 0.5));
-    float  alpha = 0.75 - abs(lum * 2.0 - 1.1);
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(c.rgb, alpha);
+    float4 c = PS_Evaluate(i);
+    return ResolveViewportBlend(2.0 * c.rgb, (float3)0.0, i.clipPos);
 }

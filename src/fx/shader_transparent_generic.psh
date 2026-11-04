@@ -55,10 +55,12 @@
 // informational only.
 //
 // ── FRAMEBUFFER BLEND MODES ──────────────────────────────────────────────────
-// Same four-technique scheme as shader_transparent_chicago (see that file
-// for the full notes on each approximation).  Subtract, Component Min/Max
-// and Alpha-Multiply Add have no viewport equivalent - use the closest of
-// the four techniques.
+// Nitrous ignores blend states.  Alpha Blend dithers by the final alpha and
+// is exact.  Add / Multiply / Double Multiply use the coverage solve in
+// _coverage.fxh (the shader_transparent_water scheme), tuned by the
+// "Viewport Blend" parameters.  Subtract, Component Min/Max and
+// Alpha-Multiply Add have no viewport equivalent - use the closest of the
+// four techniques.
 // ----------------------------------------------------------------------------
 
 // ─── Combiner register file ──────────────────────────────────────────────────
@@ -161,14 +163,17 @@ float ApplyOutputMappingA(float v, int m)
 // 5-8=map 0-3) -> register file slot.  Discard routes to the dummy slot.
 static const int GX_OUT_SLOT[9] = { 10, 6, 7, 4, 5, 0, 1, 2, 3 };
 
+// Combiner registers hold [-1, 1] on the real hardware (Xbox NV2A and PC
+// ps_1_x), so a "scale by 2/4" output saturates there.  ringworld skips this
+// clamp; without it a later stage can read a value above 1.
 void WriteColorOutput(float3 v, int o)
 {
-    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].rgb = v;
+    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].rgb = clamp(v, -1.0, 1.0);
 }
 
 void WriteAlphaOutput(float v, int o)
 {
-    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].a = v;
+    regs[GX_OUT_SLOT[clamp(o, 0, 8)]].a = clamp(v, -1.0, 1.0);
 }
 
 // ─── Stage evaluation ────────────────────────────────────────────────────────
@@ -409,44 +414,41 @@ float4 PS_AlphaBlend(STG_PS_INPUT i) : SV_TARGET
     return float4(c.rgb, alpha);
 }
 
-// Add - SRC_ALPHA / ONE additive blend with luminance-derived alpha + dither clip.
-// Use this technique when the tag adds its color to the framebuffer.
-// Luminance drives the alpha: dark pixels → alpha ≈ 0 → contribution ≈ 0.
-// Brightness scales the output RGB to match the in-game renderer intensity.
+// Add, Multiply and Double Multiply express the engine blend as
+// background * Cmul + Cadd and let the coverage solve in _coverage.fxh realise
+// it.  The old approach (draw the colour opaque, luminance as coverage) lost
+// most of a dim additive effect: a colour of 0.2 only showed on 20% of the
+// pixels and REPLACED the background there instead of adding to it.
+float4 ResolveViewportBlend(float3 Cmul, float3 Cadd, float4 clipPos)
+{
+    BlendCoverage b = ResolveBlendCoverage(Cmul, Cadd, BackgroundBrightness,
+                                           DitherAmount, MaxOpacity, ColorSaturation);
+    clip(b.coverage - CoverageThreshold(clipPos));
+    return float4(b.color, 1.0);
+}
+
+// Add - background + color.  Brightness is a viewport gain on the added color.
 float4 PS_Add(STG_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    c.rgb       *= FramebufferFade(i);
-    float  lum   = dot(c.rgb, float3(0.299, 0.587, 0.114));
-    float  alpha = ApplyOpacityControls(lum);
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(c.rgb * Brightness, alpha);
+    float4 c = PS_Evaluate(i);
+    float3 add = c.rgb * FramebufferFade(i) * Brightness;
+    return ResolveViewportBlend((float3)1.0, add, i.clipPos);
 }
 
-// Multiply - stochastic approximation via inverted luminance.
-// Bright pixels (lum ≈ 1) → alpha = 1 - lum ≈ 0 → discarded by DitherClip.
-// Dark pixels (lum ≈ 0)   → alpha = 1 - lum ≈ 1 → survive, drawn opaquely.
-// The fade pulls the color toward white, the blend-neutral value.
+// Multiply - background * color.  The fade pulls the color toward white, the
+// blend-neutral value.
 float4 PS_Multiply(STG_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    c.rgb        = lerp(float3(1.0, 1.0, 1.0), c.rgb, FramebufferFade(i));
-    float3 rgb   = saturate(c.rgb * 1.2);
-    float  lum   = dot(c.rgb, float3(0.6, 0.6, 0.6));
-    float  alpha = 1.0 - lum;
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(rgb, 0.0);
+    float4 c = PS_Evaluate(i);
+    float3 mul = lerp((float3)1.0, c.rgb, FramebufferFade(i));
+    return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
 }
 
-// Double Multiply - tent function: clips both dark AND bright pixels,
-// only mid-tones (lum ≈ 0.5) survive.
-// The fade pulls the color toward mid grey, the blend-neutral value.
+// Double Multiply - background * color * 2.  The fade pulls the color toward
+// mid grey, the blend-neutral value.
 float4 PS_DoubleMultiply(STG_PS_INPUT i) : SV_TARGET
 {
-    float4 c     = PS_Evaluate(i);
-    c.rgb        = lerp(float3(0.5, 0.5, 0.5), c.rgb, FramebufferFade(i));
-    float  lum   = dot(c.rgb, float3(0.5, 0.5, 0.5));
-    float  alpha = 0.75 - abs(lum * 2.0 - 1.1);
-    DitherClip(alpha, i.clipPos * i.clipPos.w);
-    return float4(c.rgb, alpha);
+    float4 c = PS_Evaluate(i);
+    float3 mul = 2.0 * lerp((float3)0.5, c.rgb, FramebufferFade(i));
+    return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
 }

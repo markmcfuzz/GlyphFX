@@ -23,6 +23,7 @@ string ParamID = "0x003";
 #include "_structs.fxh"
 #include "_samplers.fxh"
 #include "_numeric_counter.fxh"
+#include "_coverage.fxh"
 #include "shader_transparent_generic.params.fxh"
 #include "shader_transparent_generic.vsh"
 #include "shader_transparent_generic.psh"
@@ -48,11 +49,9 @@ BlendState BS_AlphaBlend
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Add - result = src.a × src.rgb + dst.rgb
-//   Luminance is used as alpha in PS_Add: dark pixels get alpha ≈ 0 and
-//   contribute almost nothing; bright pixels add their full colour on top.
-//   No polygon silhouette / dark rectangle - the background shows through
-//   at dark pixels naturally without any discard or dithering.
+// Add / Multiply / Double Multiply - Nitrous ignores these blend states; the
+// pixel shaders reproduce the blend with a coverage dither (_coverage.fxh).
+// The states below only declare the material opaque to Nitrous.
 BlendState BS_Add
 {
     BlendEnable[0]           = FALSE;
@@ -65,11 +64,6 @@ BlendState BS_Add
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Multiply - stochastic approximation via inverted luminance dither.
-//   Bright pixels (high lum) are discarded → background shows through.
-//   Dark pixels survive and draw their colour opaquely → darkens the background.
-//   BlendEnable = FALSE so Nitrous composites surviving fragments as opaque
-//   geometry, landing correctly on top of the already-rendered scene.
 BlendState BS_Multiply
 {
     BlendEnable[0]           = FALSE;
@@ -82,9 +76,6 @@ BlendState BS_Multiply
     RenderTargetWriteMask[0] = 0x0F;
 };
 
-// Double Multiply - same stochastic approach as Multiply.
-//   Output RGB is pre-doubled (× 2) before the inverted-lum dither.
-//   Mid grey (0.5) × 2 = 1.0 → nearly always discarded → near-neutral effect.
 BlendState BS_DoubleMultiply
 {
     BlendEnable[0]           = FALSE;

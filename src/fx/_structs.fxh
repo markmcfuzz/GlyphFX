@@ -140,6 +140,10 @@ struct STG_VS_OUTPUT
     float2 uv3     : TEXCOORD3;   // Map 4 transformed UV
     float4 vColor0 : TEXCOORD4;   // vertex color 0 (see above)
     float4 vColor1 : TEXCOORD5;   // vertex color 1 (see above)
+    // Constant color 0 animation value of each stage (1-4, 5-7).  It only
+    // depends on material parameters, so the vertex shader evaluates it once.
+    nointerpolation float4 color0Anim0 : TEXCOORD6;
+    nointerpolation float4 color0Anim1 : TEXCOORD7;
 };
 
 typedef STG_VS_OUTPUT STG_PS_INPUT;

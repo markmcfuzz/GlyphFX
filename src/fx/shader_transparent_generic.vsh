@@ -22,77 +22,18 @@
 // the pixel shader flat (color0Anim0/1).
 // ----------------------------------------------------------------------------
 
+#include "_texture_animation.fxh"
+
 // ─── Animation Preview ──────────────────────────────────────────────────────
-// Every periodic function the shader needs goes in one slot and they are all
-// evaluated in a single loop, so the compiler emits PeriodicFunctionEvaluate
-// once instead of 19 times (it otherwise doubles the effect's compile time,
-// i.e. Max's Reload).
+// Every periodic function the shader needs goes in one slot, all evaluated
+// in one loop (see _texture_animation.fxh):
 //   slots 0-11   map 1-4 texture animation U / V / rotation (map N at 3N-3)
 //   slots 12-18  stage 1-7 constant color 0 (stage N at 11+N)
 #define GX_ANIM_SLOTS 19
 
-// The object's A-D Out value for an animation source (0 = none = 1).
-float AnimationSourceInput(int source)
-{
-    if (source == 1) return ObjectFunctionA;
-    if (source == 2) return ObjectFunctionB;
-    if (source == 3) return ObjectFunctionC;
-    if (source == 4) return ObjectFunctionD;
-    return 1.0;
-}
-
-// Slot K evaluates periodic(function, (phase + time) / period); period 0 = 1.
-#define GX_ANIM_SLOT(K, FUNCTION, PERIOD, PHASE)                               \
-    fn[K] = (FUNCTION);                                                        \
-    tm[K] = ((PHASE) + AnimationTime) / ((PERIOD) == 0.0 ? 1.0 : (PERIOD));
-
-#define GX_TEXANIM_SLOTS(N)                                                    \
-    GX_ANIM_SLOT(3 * N - 3, UAnimationFunction##N,                             \
-                 UAnimationPeriod##N, UAnimationPhase##N)                      \
-    GX_ANIM_SLOT(3 * N - 2, VAnimationFunction##N,                             \
-                 VAnimationPeriod##N, VAnimationPhase##N)                      \
-    GX_ANIM_SLOT(3 * N - 1, RotationAnimationFunction##N,                      \
-                 RotationAnimationPeriod##N, RotationAnimationPhase##N)
-
 #define GX_COLOR0_SLOT(N)                                                      \
     GX_ANIM_SLOT(11 + N, Stage##N##_Color0AnimationFunction,                   \
                  Stage##N##_Color0AnimationPeriod, 0.0)
-
-// ─── Map UV transform ───────────────────────────────────────────────────────
-// shader_texture_animation_evaluate (shaders.c): scale the UV, offset it by
-// the map offset plus the animated U/V, then rotate it by the map rotation
-// plus the animated rotation (degrees) around the animation center.
-// A map scale of 0 means 1 - the Halo tag convention (stock tag dumps store
-// 0), so values can be copied from Guerrilla verbatim.  The scale is also
-// multiplied by the model's base map scale, as the engine does.
-float2 MapUVTransform(float2 uv, float uScale, float vScale,
-                      float uOffset, float vOffset, float rotDeg,
-                      float uAnim, float vAnim, float rAnim, float2 center)
-{
-    float2 baseScale = float2(ModelBaseMapScaleU == 0.0 ? 1.0 : ModelBaseMapScaleU,
-                              ModelBaseMapScaleV == 0.0 ? 1.0 : ModelBaseMapScaleV);
-    float2 sc = float2(uScale == 0.0 ? 1.0 : uScale,
-                       vScale == 0.0 ? 1.0 : vScale) * baseScale;
-
-    float2 p = uv * sc + float2(uOffset, vOffset) - center + float2(uAnim, vAnim);
-
-    float s, c;
-    sincos(radians(rotDeg + rAnim), s, c);
-    return float2(c * p.x - s * p.y, s * p.x + c * p.y) + center;
-}
-
-// Map N's UV, with its 2D Texture Animation N: each animated value is
-// periodic * scale * source input (all 0 without Animation Preview).
-#define GX_MAP_UV(N, uv)                                                       \
-    MapUVTransform(uv, Map##N##_UScale, Map##N##_VScale,                       \
-                   Map##N##_UOffset, Map##N##_VOffset, Map##N##_Rotation,      \
-                   anim[3 * N - 3] * UAnimationScale##N *                      \
-                       AnimationSourceInput(UAnimationSource##N),              \
-                   anim[3 * N - 2] * VAnimationScale##N *                      \
-                       AnimationSourceInput(VAnimationSource##N),              \
-                   anim[3 * N - 1] * RotationAnimationScale##N *               \
-                       AnimationSourceInput(RotationAnimationSource##N),       \
-                   float2(AnimationCenterU##N, AnimationCenterV##N))
 
 // ─── Constant color 0 animation ─────────────────────────────────────────────
 // The stage's color0 = lower + f * (upper - lower).  With Animation Preview
@@ -153,8 +94,7 @@ STG_VS_OUTPUT VS_Main(STG_VS_INPUT v)
         GX_COLOR0_SLOT(7)
 #endif
 
-        [loop] for (int i = 0; i < GX_ANIM_SLOTS; i++)
-            anim[i] = PeriodicFunctionEvaluate(fn[i], tm[i]);
+        GX_EVALUATE_ANIM_SLOTS(GX_ANIM_SLOTS)
     }
 
     o.clipPos = mul(v.position, matWVP);

@@ -39,11 +39,13 @@
 //   GX_GENERIC_STAGES          how many combiner stages to expose (1-7).
 //                              Most stock tags use 4 or fewer; the jackal /
 //                              cyborg energy shields use all 7.
-//   GX_SHOW_TAG_ANIMATION_FIELDS  set to 1 to expose the tag's texture
-//                              animation and lens flare fields.  They are
-//                              tag data the viewport never
-//                              reads (no time source), hidden by default to
-//                              keep the parameter UI fast.
+//   GX_SHOW_TAG_ANIMATION_FIELDS  set to 1 to show the tag's texture
+//                              animation and lens flare fields in the UI.
+//                              The texture animation fields are always
+//                              compiled (the Animation Preview reads them,
+//                              the toolkit imports/exports them), just hidden
+//                              with UIWidget "None" to keep the UI fast.  The
+//                              lens flare fields only compile with this on.
 // ----------------------------------------------------------------------------
 #ifndef GX_GENERIC_STAGES
 #define GX_GENERIC_STAGES 7
@@ -344,12 +346,8 @@ Texture2D Map1Texture
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 1
-// Tag data only - the viewport has no time source and never reads these.
-//
-// TEST (animation preview, phase 1): the two fields below are always
-// compiled and hidden with UIWidget "None", to check that the Toolkit can
-// still read and write them from MAXScript.  If that works, the other 82
-// animation fields move out of the #if the same way.
+// Always compiled (the Animation Preview reads them and the toolkit imports
+// and exports them), hidden unless GX_SHOW_TAG_ANIMATION_FIELDS is 1.
 // ----------------------------------------------------------------------------
 int UAnimationSource1
 <
@@ -358,6 +356,15 @@ int UAnimationSource1
     string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 33;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
+> = 0;
+
+int UAnimationFunction1
+<
+    string UIName   = "U Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIGroup  = "2D Texture Animation 1";
+    string UIWidget = GX_ANIM_UIWIDGET;
+    int    UIOrder = 34;
+    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
 
 float UAnimationPeriod1
@@ -369,22 +376,11 @@ float UAnimationPeriod1
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
 
-#if GX_SHOW_TAG_ANIMATION_FIELDS
-
-int UAnimationFunction1
-<
-    string UIName   = "U Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
-    string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
-    int    UIOrder = 34;
-    float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-> = 0;
-
 float UAnimationPhase1
 <
     string UIName   = "U Animation Phase";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 36;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -393,7 +389,7 @@ float UAnimationScale1
 <
     string UIName   = "U Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 37;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -402,7 +398,7 @@ int VAnimationSource1
 <
     string UIName   = "V Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 38;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -411,7 +407,7 @@ int VAnimationFunction1
 <
     string UIName   = "V Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 39;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -420,7 +416,7 @@ float VAnimationPeriod1
 <
     string UIName   = "V Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 40;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -429,7 +425,7 @@ float VAnimationPhase1
 <
     string UIName   = "V Animation Phase";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 41;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -438,7 +434,7 @@ float VAnimationScale1
 <
     string UIName   = "V Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 42;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -447,7 +443,7 @@ int RotationAnimationSource1
 <
     string UIName   = "Rotation Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 43;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -456,7 +452,7 @@ int RotationAnimationFunction1
 <
     string UIName   = "Rotation Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 44;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -465,7 +461,7 @@ float RotationAnimationPeriod1
 <
     string UIName   = "Rotation Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 45;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -474,7 +470,7 @@ float RotationAnimationPhase1
 <
     string UIName   = "Rotation Animation Phase";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 46;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -483,7 +479,7 @@ float RotationAnimationScale1
 <
     string UIName   = "Rotation Animation Scale  (Degrees)";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 47;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -492,7 +488,7 @@ float AnimationCenterU1
 <
     string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 48;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
@@ -501,12 +497,10 @@ float AnimationCenterV1
 <
     string UIName   = "Animation Center V";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 49;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
-
-#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 
 // ----------------------------------------------------------------------------
 // Map 2
@@ -603,14 +597,14 @@ Texture2D Map2Texture
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 2
-// Tag data only - the viewport has no time source and never reads these.
+// Always compiled (the Animation Preview reads them and the toolkit imports
+// and exports them), hidden unless GX_SHOW_TAG_ANIMATION_FIELDS is 1.
 // ----------------------------------------------------------------------------
-#if GX_SHOW_TAG_ANIMATION_FIELDS
 int UAnimationSource2
 <
     string UIName   = "U Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 61;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -619,7 +613,7 @@ int UAnimationFunction2
 <
     string UIName   = "U Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 62;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -628,7 +622,7 @@ float UAnimationPeriod2
 <
     string UIName   = "U Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 63;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -637,7 +631,7 @@ float UAnimationPhase2
 <
     string UIName   = "U Animation Phase";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 64;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -646,7 +640,7 @@ float UAnimationScale2
 <
     string UIName   = "U Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 65;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -655,7 +649,7 @@ int VAnimationSource2
 <
     string UIName   = "V Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 66;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -664,7 +658,7 @@ int VAnimationFunction2
 <
     string UIName   = "V Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 67;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -673,7 +667,7 @@ float VAnimationPeriod2
 <
     string UIName   = "V Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 68;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -682,7 +676,7 @@ float VAnimationPhase2
 <
     string UIName   = "V Animation Phase";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 69;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -691,7 +685,7 @@ float VAnimationScale2
 <
     string UIName   = "V Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 70;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -700,7 +694,7 @@ int RotationAnimationSource2
 <
     string UIName   = "Rotation Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 71;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -709,7 +703,7 @@ int RotationAnimationFunction2
 <
     string UIName   = "Rotation Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 72;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -718,7 +712,7 @@ float RotationAnimationPeriod2
 <
     string UIName   = "Rotation Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 73;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -727,7 +721,7 @@ float RotationAnimationPhase2
 <
     string UIName   = "Rotation Animation Phase";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 74;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -736,7 +730,7 @@ float RotationAnimationScale2
 <
     string UIName   = "Rotation Animation Scale  (Degrees)";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 75;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -745,7 +739,7 @@ float AnimationCenterU2
 <
     string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 76;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
@@ -754,12 +748,10 @@ float AnimationCenterV2
 <
     string UIName   = "Animation Center V";
     string UIGroup  = "2D Texture Animation 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 77;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
-
-#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 
 // ----------------------------------------------------------------------------
 // Map 3
@@ -856,14 +848,14 @@ Texture2D Map3Texture
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 3
-// Tag data only - the viewport has no time source and never reads these.
+// Always compiled (the Animation Preview reads them and the toolkit imports
+// and exports them), hidden unless GX_SHOW_TAG_ANIMATION_FIELDS is 1.
 // ----------------------------------------------------------------------------
-#if GX_SHOW_TAG_ANIMATION_FIELDS
 int UAnimationSource3
 <
     string UIName   = "U Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 89;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -872,7 +864,7 @@ int UAnimationFunction3
 <
     string UIName   = "U Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 90;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -881,7 +873,7 @@ float UAnimationPeriod3
 <
     string UIName   = "U Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 91;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -890,7 +882,7 @@ float UAnimationPhase3
 <
     string UIName   = "U Animation Phase";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 92;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -899,7 +891,7 @@ float UAnimationScale3
 <
     string UIName   = "U Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 93;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -908,7 +900,7 @@ int VAnimationSource3
 <
     string UIName   = "V Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 94;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -917,7 +909,7 @@ int VAnimationFunction3
 <
     string UIName   = "V Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 95;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -926,7 +918,7 @@ float VAnimationPeriod3
 <
     string UIName   = "V Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 96;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -935,7 +927,7 @@ float VAnimationPhase3
 <
     string UIName   = "V Animation Phase";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 97;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -944,7 +936,7 @@ float VAnimationScale3
 <
     string UIName   = "V Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 98;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -953,7 +945,7 @@ int RotationAnimationSource3
 <
     string UIName   = "Rotation Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 99;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -962,7 +954,7 @@ int RotationAnimationFunction3
 <
     string UIName   = "Rotation Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 100;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -971,7 +963,7 @@ float RotationAnimationPeriod3
 <
     string UIName   = "Rotation Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 101;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -980,7 +972,7 @@ float RotationAnimationPhase3
 <
     string UIName   = "Rotation Animation Phase";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 102;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -989,7 +981,7 @@ float RotationAnimationScale3
 <
     string UIName   = "Rotation Animation Scale  (Degrees)";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 103;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -998,7 +990,7 @@ float AnimationCenterU3
 <
     string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 104;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
@@ -1007,12 +999,10 @@ float AnimationCenterV3
 <
     string UIName   = "Animation Center V";
     string UIGroup  = "2D Texture Animation 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 105;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
-
-#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 
 // ----------------------------------------------------------------------------
 // Map 4
@@ -1109,14 +1099,14 @@ Texture2D Map4Texture
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 4
-// Tag data only - the viewport has no time source and never reads these.
+// Always compiled (the Animation Preview reads them and the toolkit imports
+// and exports them), hidden unless GX_SHOW_TAG_ANIMATION_FIELDS is 1.
 // ----------------------------------------------------------------------------
-#if GX_SHOW_TAG_ANIMATION_FIELDS
 int UAnimationSource4
 <
     string UIName   = "U Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 117;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1125,7 +1115,7 @@ int UAnimationFunction4
 <
     string UIName   = "U Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 118;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1134,7 +1124,7 @@ float UAnimationPeriod4
 <
     string UIName   = "U Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 119;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1143,7 +1133,7 @@ float UAnimationPhase4
 <
     string UIName   = "U Animation Phase";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 120;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1152,7 +1142,7 @@ float UAnimationScale4
 <
     string UIName   = "U Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 121;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1161,7 +1151,7 @@ int VAnimationSource4
 <
     string UIName   = "V Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 122;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1170,7 +1160,7 @@ int VAnimationFunction4
 <
     string UIName   = "V Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 123;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1179,7 +1169,7 @@ float VAnimationPeriod4
 <
     string UIName   = "V Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 124;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1188,7 +1178,7 @@ float VAnimationPhase4
 <
     string UIName   = "V Animation Phase";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 125;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1197,7 +1187,7 @@ float VAnimationScale4
 <
     string UIName   = "V Animation Scale  (Repeats)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 126;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1206,7 +1196,7 @@ int RotationAnimationSource4
 <
     string UIName   = "Rotation Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 127;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1215,7 +1205,7 @@ int RotationAnimationFunction4
 <
     string UIName   = "Rotation Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 128;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1224,7 +1214,7 @@ float RotationAnimationPeriod4
 <
     string UIName   = "Rotation Animation Period  (Seconds)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 129;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1233,7 +1223,7 @@ float RotationAnimationPhase4
 <
     string UIName   = "Rotation Animation Phase";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 130;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1242,7 +1232,7 @@ float RotationAnimationScale4
 <
     string UIName   = "Rotation Animation Scale  (Degrees)";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 131;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1251,7 +1241,7 @@ float AnimationCenterU4
 <
     string UIName   = "Animation Center U";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 132;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
@@ -1260,12 +1250,10 @@ float AnimationCenterV4
 <
     string UIName   = "Animation Center V";
     string UIGroup  = "2D Texture Animation 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 133;
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
-
-#endif // GX_SHOW_TAG_ANIMATION_FIELDS
 
 // ----------------------------------------------------------------------------
 // Stage 1  (always active - the base stage)
@@ -3843,6 +3831,95 @@ float ColorSaturation
     int    UIOrder = 418;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
 > = 1.2;
+
+// ----------------------------------------------------------------------------
+// Animation Preview (Only for 3ds Max, not tag data)
+// Plays the tag's animations in the viewport: the 2D texture animation of
+// each map and the color0 animation of each stage, evaluated as the engine
+// does (_periodic.fxh).  The toolkit drives AnimationTime from the scene
+// time; the A-D Out sliders stand in for the object's function outputs,
+// which only exist in game (e.g. "recent shield damage").
+//
+// With Animation Preview off the shader shows the idle state, as before.
+// The viewport only redraws an animated material parameter by itself while
+// the Slate Material Editor is open.
+// ----------------------------------------------------------------------------
+bool AnimationPreview
+<
+    string UIName  = "Animation Preview";
+    string UIGroup = "Animation Preview (Only for 3ds Max)";
+    int    UIOrder = 419;
+> = false;
+
+// Game time in seconds.  A plain animatable float: key it, or wire it to the
+// scene time with an expression controller (S = seconds).
+float AnimationTime
+<
+    string UIName   = "Animation Time  (Seconds)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 420;
+    float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
+
+// The object's A-D Out function values.  An animation whose source is A-D
+// Out is multiplied by them; "A-Out Controls Color0 Animation" uses A Out
+// as its function value.  0 = idle.
+float ObjectFunctionA
+<
+    string UIName   = "A Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 421;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionB
+<
+    string UIName   = "B Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 422;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionC
+<
+    string UIName   = "C Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 423;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionD
+<
+    string UIName   = "D Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 424;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+// The gbxmodel's base map U/V scale.  The engine multiplies every map's
+// scale by it.  0 = 1, as in the tag.  Applies with Animation Preview off too.
+float ModelBaseMapScaleU
+<
+    string UIName   = "Model Base Map U Scale  (gbxmodel, 0 = 1)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 425;
+    float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
+> = 0.0;
+
+float ModelBaseMapScaleV
+<
+    string UIName   = "Model Base Map V Scale  (gbxmodel, 0 = 1)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 426;
+    float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Opacity Controls

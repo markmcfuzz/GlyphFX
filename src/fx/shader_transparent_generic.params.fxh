@@ -3928,9 +3928,13 @@ float ObjectFunctionD
 
 // The gbxmodel's base map U/V scale.  The engine multiplies every map's
 // scale by it.  0 = 1, as in the tag.  Applies with Animation Preview off too.
+// Leave it at 0 on models imported by the toolkit: the gbxmodel importer
+// already bakes the base map scale into the UVs, so setting it here would
+// apply it twice.  Only for models whose UVs are not scaled (built by hand or
+// imported from JMS); set it by hand there.  The toolkit never writes it.
 float ModelBaseMapScaleU
 <
-    string UIName   = "Model Base Map U Scale  (gbxmodel, 0 = 1)";
+    string UIName   = "Model Base Map U Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
     int    UIOrder = 428;
@@ -3939,7 +3943,7 @@ float ModelBaseMapScaleU
 
 float ModelBaseMapScaleV
 <
-    string UIName   = "Model Base Map V Scale  (gbxmodel, 0 = 1)";
+    string UIName   = "Model Base Map V Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
     int    UIOrder = 429;

@@ -53,6 +53,14 @@
 #define GX_SHOW_TAG_ANIMATION_FIELDS 0
 #endif
 
+// Widget for animation fields that are always compiled: hidden ("None")
+// unless the animation fields are shown.
+#if GX_SHOW_TAG_ANIMATION_FIELDS
+#define GX_ANIM_UIWIDGET "slider"
+#else
+#define GX_ANIM_UIWIDGET "None"
+#endif
+
 // ----------------------------------------------------------------------------
 // Radiosity Properties
 // ----------------------------------------------------------------------------
@@ -337,16 +345,31 @@ Texture2D Map1Texture
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 1
 // Tag data only - the viewport has no time source and never reads these.
+//
+// TEST (animation preview, phase 1): the two fields below are always
+// compiled and hidden with UIWidget "None", to check that the Toolkit can
+// still read and write them from MAXScript.  If that works, the other 82
+// animation fields move out of the #if the same way.
 // ----------------------------------------------------------------------------
-#if GX_SHOW_TAG_ANIMATION_FIELDS
 int UAnimationSource1
 <
     string UIName   = "U Animation Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_ANIM_UIWIDGET;
     int    UIOrder = 33;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
+
+float UAnimationPeriod1
+<
+    string UIName   = "U Animation Period  (Seconds)";
+    string UIGroup  = "2D Texture Animation 1";
+    string UIWidget = GX_ANIM_UIWIDGET;
+    int    UIOrder = 35;
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+> = 0.0;
+
+#if GX_SHOW_TAG_ANIMATION_FIELDS
 
 int UAnimationFunction1
 <
@@ -356,15 +379,6 @@ int UAnimationFunction1
     int    UIOrder = 34;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
-
-float UAnimationPeriod1
-<
-    string UIName   = "U Animation Period  (Seconds)";
-    string UIGroup  = "2D Texture Animation 1";
-    string UIWidget = "slider";
-    int    UIOrder = 35;
-    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-> = 0.0;
 
 float UAnimationPhase1
 <

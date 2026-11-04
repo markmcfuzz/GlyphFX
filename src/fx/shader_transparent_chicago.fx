@@ -21,6 +21,7 @@ string ParamID = "0x003";
 #include "_samplers.fxh"
 #include "_numeric_counter.fxh"
 #include "_coverage.fxh"
+#include "_periodic.fxh"
 #include "shader_transparent_chicago.params.fxh"
 #include "shader_transparent_chicago.vsh"
 #include "shader_transparent_chicago.psh"

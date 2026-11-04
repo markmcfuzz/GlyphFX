@@ -4,31 +4,43 @@
 // Vertex shader for shader_transparent_chicago.
 // Computes four independently-transformed UV channels from the single mesh UV,
 // one per map stage. No lighting - this is a purely textured transparent shader.
+//
+// With Animation Preview on, each map's UV also plays the tag's 2D texture
+// animation (_texture_animation.fxh).
 // ----------------------------------------------------------------------------
 
-// Applies per-map scale / offset / rotation (degrees) to the base UV.
-// Rotation is applied around the UV origin before scale and offset.
-float2 MapUVTransform(float2 uv, float uScale, float vScale,
-                      float uOffset, float vOffset, float rotDeg)
-{
-    float  a = radians(rotDeg);
-    float  s = sin(a);
-    float  c = cos(a);
-    float2 r = float2(uv.x * c - uv.y * s,
-                      uv.x * s + uv.y * c);
-    return r * float2(uScale, vScale) + float2(uOffset, vOffset);
-}
+#include "_texture_animation.fxh"
+
+// Slots 0-11: map 1-4 texture animation U / V / rotation (map N at 3N-3).
+#define GX_ANIM_SLOTS 12
 
 TC_VS_OUTPUT VS_Main(TC_VS_INPUT v)
 {
     TC_VS_OUTPUT o;
 
+    // Animation Preview: fill the slots, evaluate them all in one loop.
+    float anim[GX_ANIM_SLOTS];
+    [unroll] for (int k = 0; k < GX_ANIM_SLOTS; k++) anim[k] = 0.0;
+
+    [branch] if (AnimationPreview)
+    {
+        int   fn[GX_ANIM_SLOTS];
+        float tm[GX_ANIM_SLOTS];
+
+        GX_TEXANIM_SLOTS(1)
+        GX_TEXANIM_SLOTS(2)
+        GX_TEXANIM_SLOTS(3)
+        GX_TEXANIM_SLOTS(4)
+
+        GX_EVALUATE_ANIM_SLOTS(GX_ANIM_SLOTS)
+    }
+
     o.clipPos = mul(v.position, matWVP);
 
-    o.uv0 = MapUVTransform(v.uv0, Map1_UScale, Map1_VScale, Map1_UOffset, Map1_VOffset, Map1_Rotation);
-    o.uv1 = MapUVTransform(v.uv0, Map2_UScale, Map2_VScale, Map2_UOffset, Map2_VOffset, Map2_Rotation);
-    o.uv2 = MapUVTransform(v.uv0, Map3_UScale, Map3_VScale, Map3_UOffset, Map3_VOffset, Map3_Rotation);
-    o.uv3 = MapUVTransform(v.uv0, Map4_UScale, Map4_VScale, Map4_UOffset, Map4_VOffset, Map4_Rotation);
+    o.uv0 = GX_MAP_UV(1, v.uv0);
+    o.uv1 = GX_MAP_UV(2, v.uv0);
+    o.uv2 = GX_MAP_UV(3, v.uv0);
+    o.uv3 = GX_MAP_UV(4, v.uv0);
 
     return o;
 }

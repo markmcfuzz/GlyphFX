@@ -45,6 +45,18 @@
 #ifndef GLYPHFX_TRANSPARENT_PLASMA_PARAMS_FXH
 #define GLYPHFX_TRANSPARENT_PLASMA_PARAMS_FXH
 
+// ----------------------------------------------------------------------------
+// Tag fields in the material UI.  1 = shown, 0 = hidden (UIWidget "None").
+// The toolkit edits them from its tag editor, so they can be hidden once it
+// covers this shader; hidden fields still compile and keep their names and
+// values.  GlyphFX/3ds Max-only parameters and textures stay visible.
+// See _tag_fields.fxh.
+// ----------------------------------------------------------------------------
+#ifndef GX_SHOW_TAG_FIELDS
+#define GX_SHOW_TAG_FIELDS 1
+#endif
+#include "_tag_fields.fxh"
+
 #ifndef SHOW_TAG_FIELDS
 #define SHOW_TAG_FIELDS 0
 #endif
@@ -54,6 +66,7 @@
 // ----------------------------------------------------------------------------
 bool SimpleParameterization
 <
+    GX_TAG_HIDDEN
     string UIName  = "Simple Parameterization";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 0;
@@ -61,6 +74,7 @@ bool SimpleParameterization
 
 bool IgnoreNormals
 <
+    GX_TAG_HIDDEN
     string UIName  = "Ignore Normals";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 1;
@@ -68,6 +82,7 @@ bool IgnoreNormals
 
 bool TransparentLit
 <
+    GX_TAG_HIDDEN
     string UIName  = "Transparent Lit";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 2;
@@ -77,7 +92,7 @@ int DetailLevel
 <
     string UIName   = "Detail Level  [0=High 1=Medium 2=Low 3=Turd]";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 3;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -86,7 +101,7 @@ float Power
 <
     string UIName   = "Power";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 4;
     float  UIMin = 0; float UIMax = 9999; float UIStep = 1;
 > = 1;
@@ -95,7 +110,7 @@ float4 ColorOfEmittedLight
 <
     string UIName   = "Color of Emitted Light";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 5;
 > = float4(0, 0, 0, 0);
 
@@ -103,7 +118,7 @@ float4 TintColor
 <
     string UIName   = "Tint Color";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
@@ -111,7 +126,7 @@ float MaterialType
 <
     string UIName   = "Material Type";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 7;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 0.0;
@@ -126,7 +141,7 @@ int IntensitySource
 <
     string UIName   = "Intensity Source  [0=A Out 1=B Out 2=C Out 3=D Out]  (not implemented in viewport)";
     string UIGroup  = "Intensity";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 8;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -135,7 +150,7 @@ float IntensityExponent
 <
     string UIName   = "Intensity Exponent  (not implemented in viewport)";
     string UIGroup  = "Intensity";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 9;
     float  UIMin = 0; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -150,7 +165,7 @@ int OffsetSource
 <
     string UIName   = "Offset Source  [0=A Out 1=B Out 2=C Out 3=D Out]  (not implemented in viewport)";
     string UIGroup  = "Offset";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 10;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -159,7 +174,7 @@ float OffsetAmount
 <
     string UIName   = "Offset Amount  (World Units)";
     string UIGroup  = "Offset";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 11;
     float  UIMin = -2; float UIMax = 2; float UIStep = 0.01;
 > = 0.0;
@@ -168,7 +183,7 @@ float OffsetExponent
 <
     string UIName   = "Offset Exponent  (not implemented in viewport)";
     string UIGroup  = "Offset";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 12;
     float  UIMin = 0; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -180,7 +195,7 @@ float PerpendicularBrightness
 <
     string UIName   = "Perpendicular Brightness  [0,1]";
     string UIGroup  = "Color";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 13;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -189,7 +204,7 @@ float4 PerpendicularTintColor
 <
     string UIName   = "Perpendicular Tint Color";
     string UIGroup  = "Color";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 14;
 > = float4(0, 0, 0, 1);
 
@@ -197,7 +212,7 @@ float ParallelBrightness
 <
     string UIName   = "Parallel Brightness  [0,1]";
     string UIGroup  = "Color";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 15;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -206,7 +221,7 @@ float4 ParallelTintColor
 <
     string UIName   = "Parallel Tint Color";
     string UIGroup  = "Color";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 16;
 > = float4(0, 0, 0, 1);
 
@@ -214,7 +229,7 @@ int TintColorSource
 <
     string UIName   = "Tint Color Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (not implemented in viewport)";
     string UIGroup  = "Color";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 17;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -226,7 +241,7 @@ float PrimaryAnimationPeriod
 <
     string UIName   = "Primary Animation Period  (Seconds)  (not animated in viewport)";
     string UIGroup  = "Primary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 18;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 1.0;
@@ -235,7 +250,7 @@ float PrimaryAnimationDirectionI
 <
     string UIName   = "Primary Animation Direction (i)  (not animated in viewport)";
     string UIGroup  = "Primary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 19;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -244,7 +259,7 @@ float PrimaryAnimationDirectionJ
 <
     string UIName   = "Primary Animation Direction (j)  (not animated in viewport)";
     string UIGroup  = "Primary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 20;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -253,7 +268,7 @@ float PrimaryAnimationDirectionK
 <
     string UIName   = "Primary Animation Direction (k)  (not animated in viewport)";
     string UIGroup  = "Primary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 21;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -262,7 +277,7 @@ float PrimaryNoiseMapScale
 <
     string UIName   = "Primary Noise Map Scale  (World Units per Repeat)";
     string UIGroup  = "Primary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 22;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -319,7 +334,7 @@ float SecondaryAnimationPeriod
 <
     string UIName   = "Secondary Animation Period  (Seconds)  (not animated in viewport)";
     string UIGroup  = "Secondary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 28;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 1.0;
@@ -328,7 +343,7 @@ float SecondaryAnimationDirectionI
 <
     string UIName   = "Secondary Animation Direction (i)  (not animated in viewport)";
     string UIGroup  = "Secondary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 29;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -337,7 +352,7 @@ float SecondaryAnimationDirectionJ
 <
     string UIName   = "Secondary Animation Direction (j)  (not animated in viewport)";
     string UIGroup  = "Secondary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 30;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -346,7 +361,7 @@ float SecondaryAnimationDirectionK
 <
     string UIName   = "Secondary Animation Direction (k)  (not animated in viewport)";
     string UIGroup  = "Secondary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 31;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
@@ -355,7 +370,7 @@ float SecondaryNoiseMapScale
 <
     string UIName   = "Secondary Noise Map Scale  (World Units per Repeat)";
     string UIGroup  = "Secondary Noise Map";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 32;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;

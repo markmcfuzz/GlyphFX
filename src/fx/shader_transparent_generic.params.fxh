@@ -33,6 +33,18 @@
 #define GLYPHFX_TRANSPARENT_GENERIC_PARAMS_FXH
 
 // ----------------------------------------------------------------------------
+// Tag fields in the material UI.  1 = shown, 0 = hidden (UIWidget "None").
+// The toolkit edits them from its tag editor, so they can be hidden once it
+// covers this shader; hidden fields still compile and keep their names and
+// values.  GlyphFX/3ds Max-only parameters and textures stay visible.
+// See _tag_fields.fxh.
+// ----------------------------------------------------------------------------
+#ifndef GX_SHOW_TAG_FIELDS
+#define GX_SHOW_TAG_FIELDS 1
+#endif
+#include "_tag_fields.fxh"
+
+// ----------------------------------------------------------------------------
 // Configuration knobs - edit and reload the effect to trade tag completeness
 // for a faster parameter UI in 3ds Max.
 //
@@ -40,12 +52,11 @@
 //                              Most stock tags use 4 or fewer; the jackal /
 //                              cyborg energy shields use all 7.
 //   GX_SHOW_TAG_ANIMATION_FIELDS  set to 1 to show the tag's texture
-//                              animation and lens flare fields in the UI.
-//                              The texture animation fields are always
+//                              animation fields in the UI (with
+//                              GX_SHOW_TAG_FIELDS also 1).  They are always
 //                              compiled (the Animation Preview reads them,
 //                              the toolkit imports/exports them), just hidden
-//                              with UIWidget "None" to keep the UI fast.  The
-//                              lens flare fields only compile with this on.
+//                              with UIWidget "None" to keep the UI fast.
 // ----------------------------------------------------------------------------
 #ifndef GX_GENERIC_STAGES
 #define GX_GENERIC_STAGES 7
@@ -56,8 +67,8 @@
 #endif
 
 // Widget for animation fields that are always compiled: hidden ("None")
-// unless the animation fields are shown.
-#if GX_SHOW_TAG_ANIMATION_FIELDS
+// unless both the tag fields and the animation fields are shown.
+#if GX_SHOW_TAG_FIELDS && GX_SHOW_TAG_ANIMATION_FIELDS
 #define GX_ANIM_UIWIDGET "slider"
 #else
 #define GX_ANIM_UIWIDGET "None"
@@ -68,6 +79,7 @@
 // ----------------------------------------------------------------------------
 bool SimpleParameterization
 <
+    GX_TAG_HIDDEN
     string UIName  = "Simple Parameterization";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 0;
@@ -75,6 +87,7 @@ bool SimpleParameterization
 
 bool IgnoreNormals
 <
+    GX_TAG_HIDDEN
     string UIName  = "Ignore Normals";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 1;
@@ -82,6 +95,7 @@ bool IgnoreNormals
 
 bool TransparentLit
 <
+    GX_TAG_HIDDEN
     string UIName  = "Transparent Lit";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 2;
@@ -91,7 +105,7 @@ int DetailLevel
 <
     string UIName   = "Detail Level  [0=High 1=Medium 2=Low 3=Turd]";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 3;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -100,7 +114,7 @@ float Power
 <
     string UIName   = "Power";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 4;
     float  UIMin = 0; float UIMax = 9999; float UIStep = 1;
 > = 1;
@@ -109,7 +123,7 @@ float4 ColorOfEmittedLight
 <
     string UIName   = "Color of Emitted Light";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 5;
 > = float4(0, 0, 0, 0);
 
@@ -117,7 +131,7 @@ float4 TintColor
 <
     string UIName   = "Tint Color";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
@@ -128,7 +142,7 @@ float MaterialType
 <
     string UIName   = "Material Type";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 7;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 0.0;
@@ -140,13 +154,14 @@ int NumericCounterLimit
 <
     string UIName   = "Numeric Counter Limit";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 8;
     float  UIMin = 0; float UIMax = 255; float UIStep = 1;
 > = 0;
 
 bool AlphaTested
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Tested";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 9;
@@ -154,6 +169,7 @@ bool AlphaTested
 
 bool Decal
 <
+    GX_TAG_HIDDEN
     string UIName  = "Decal";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 10;
@@ -161,6 +177,7 @@ bool Decal
 
 bool TwoSided
 <
+    GX_TAG_HIDDEN
     string UIName  = "Two Sided";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 11;
@@ -168,6 +185,7 @@ bool TwoSided
 
 bool FirstMapIsScreenspace
 <
+    GX_TAG_HIDDEN
     string UIName  = "First Map Is In Screenspace";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 12;
@@ -175,6 +193,7 @@ bool FirstMapIsScreenspace
 
 bool DrawBeforeWater
 <
+    GX_TAG_HIDDEN
     string UIName  = "Draw Before Water";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 13;
@@ -182,6 +201,7 @@ bool DrawBeforeWater
 
 bool IgnoreEffect
 <
+    GX_TAG_HIDDEN
     string UIName  = "Ignore Effect";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 14;
@@ -189,6 +209,7 @@ bool IgnoreEffect
 
 bool ScaleFirstMapWithDistance
 <
+    GX_TAG_HIDDEN
     string UIName  = "Scale First Map With Distance";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 15;
@@ -196,6 +217,7 @@ bool ScaleFirstMapWithDistance
 
 bool Numeric
 <
+    GX_TAG_HIDDEN
     string UIName  = "Numeric";
     string UIGroup = "Shader Generic Attributes";
     int    UIOrder = 16;
@@ -206,7 +228,7 @@ int FirstMapType
 <
     string UIName   = "First Map Type  [0=2D Map 1=Reflection Cube 2=Object Center Cube 3=Viewer Center Cube]";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 17;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -215,7 +237,7 @@ int FramebufferBlendFunction
 <
     string UIName   = "Framebuffer Blend Function  [0=Alpha Blend 1=Multiply 2=Double Multiply 3=Add 4=Subtract 5=Comp Min 6=Comp Max 7=Alpha-Mul Add]";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 18;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -224,7 +246,7 @@ int FramebufferFadeMode
 <
     string UIName   = "Framebuffer Fade Mode  [0=None 1=Fade Perpendicular 2=Fade Parallel]";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 19;
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
 > = 0;
@@ -233,17 +255,16 @@ int FramebufferFadeSource
 <
     string UIName   = "Framebuffer Fade Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 20;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
 
-#if GX_SHOW_TAG_ANIMATION_FIELDS
 float LensFlareSpacing
 <
     string UIName   = "Lens Flare Spacing  (World Units)";
     string UIGroup  = "Shader Generic Attributes";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 21;
     float  UIMin = 0; float UIMax = 1000; float UIStep = 0.1;
 > = 0.0;
@@ -256,13 +277,12 @@ Texture2D LensFlareReference
     int    UIOrder = 22;
 >;
 
-#endif // GX_SHOW_TAG_ANIMATION_FIELDS
-
 // ----------------------------------------------------------------------------
 // Map 1  (always active - the base map)
 // ----------------------------------------------------------------------------
 bool Map1_Unfiltered
 <
+    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Map 1 - Flags";
     int    UIOrder = 23;
@@ -270,6 +290,7 @@ bool Map1_Unfiltered
 
 bool Map1_UClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "U Clamped";
     string UIGroup = "Map 1 - Flags";
     int    UIOrder = 24;
@@ -277,6 +298,7 @@ bool Map1_UClamped
 
 bool Map1_VClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "V Clamped";
     string UIGroup = "Map 1 - Flags";
     int    UIOrder = 25;
@@ -286,7 +308,7 @@ float Map1_UScale
 <
     string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 26;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -295,7 +317,7 @@ float Map1_VScale
 <
     string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 27;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -304,7 +326,7 @@ float Map1_UOffset
 <
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 28;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -313,7 +335,7 @@ float Map1_VOffset
 <
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 29;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -322,7 +344,7 @@ float Map1_Rotation
 <
     string UIName   = "Map Rotation  (Degrees)";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 30;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
@@ -331,7 +353,7 @@ float Map1_MipmapBias
 <
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 1";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 31;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -514,6 +536,7 @@ bool EnableMap2
 
 bool Map2_Unfiltered
 <
+    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Map 2 - Flags";
     int    UIOrder = 51;
@@ -521,6 +544,7 @@ bool Map2_Unfiltered
 
 bool Map2_UClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "U Clamped";
     string UIGroup = "Map 2 - Flags";
     int    UIOrder = 52;
@@ -528,6 +552,7 @@ bool Map2_UClamped
 
 bool Map2_VClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "V Clamped";
     string UIGroup = "Map 2 - Flags";
     int    UIOrder = 53;
@@ -537,7 +562,7 @@ float Map2_UScale
 <
     string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 54;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -546,7 +571,7 @@ float Map2_VScale
 <
     string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 55;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -555,7 +580,7 @@ float Map2_UOffset
 <
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 56;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -564,7 +589,7 @@ float Map2_VOffset
 <
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 57;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -573,7 +598,7 @@ float Map2_Rotation
 <
     string UIName   = "Map Rotation  (Degrees)";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 58;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
@@ -582,7 +607,7 @@ float Map2_MipmapBias
 <
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 2";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 59;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -765,6 +790,7 @@ bool EnableMap3
 
 bool Map3_Unfiltered
 <
+    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Map 3 - Flags";
     int    UIOrder = 79;
@@ -772,6 +798,7 @@ bool Map3_Unfiltered
 
 bool Map3_UClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "U Clamped";
     string UIGroup = "Map 3 - Flags";
     int    UIOrder = 80;
@@ -779,6 +806,7 @@ bool Map3_UClamped
 
 bool Map3_VClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "V Clamped";
     string UIGroup = "Map 3 - Flags";
     int    UIOrder = 81;
@@ -788,7 +816,7 @@ float Map3_UScale
 <
     string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 82;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -797,7 +825,7 @@ float Map3_VScale
 <
     string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 83;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -806,7 +834,7 @@ float Map3_UOffset
 <
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 84;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -815,7 +843,7 @@ float Map3_VOffset
 <
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 85;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -824,7 +852,7 @@ float Map3_Rotation
 <
     string UIName   = "Map Rotation  (Degrees)";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 86;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
@@ -833,7 +861,7 @@ float Map3_MipmapBias
 <
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 3";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 87;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -1016,6 +1044,7 @@ bool EnableMap4
 
 bool Map4_Unfiltered
 <
+    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Map 4 - Flags";
     int    UIOrder = 107;
@@ -1023,6 +1052,7 @@ bool Map4_Unfiltered
 
 bool Map4_UClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "U Clamped";
     string UIGroup = "Map 4 - Flags";
     int    UIOrder = 108;
@@ -1030,6 +1060,7 @@ bool Map4_UClamped
 
 bool Map4_VClamped
 <
+    GX_TAG_HIDDEN
     string UIName  = "V Clamped";
     string UIGroup = "Map 4 - Flags";
     int    UIOrder = 109;
@@ -1039,7 +1070,7 @@ float Map4_UScale
 <
     string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 110;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -1048,7 +1079,7 @@ float Map4_VScale
 <
     string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 111;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
@@ -1057,7 +1088,7 @@ float Map4_UOffset
 <
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 112;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -1066,7 +1097,7 @@ float Map4_VOffset
 <
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 113;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
@@ -1075,7 +1106,7 @@ float Map4_Rotation
 <
     string UIName   = "Map Rotation  (Degrees)";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 114;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
@@ -1084,7 +1115,7 @@ float Map4_MipmapBias
 <
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 4";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 115;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -1263,6 +1294,7 @@ float AnimationCenterV4
 // ----------------------------------------------------------------------------
 bool Stage1_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux Stage 1";
     string UIGroup = "Stage 1 - Flags";
     int    UIOrder = 134;
@@ -1270,6 +1302,7 @@ bool Stage1_ColorMux
 
 bool Stage1_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 1 - Flags";
     int    UIOrder = 135;
@@ -1277,6 +1310,7 @@ bool Stage1_AlphaMux
 
 bool Stage1_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 1 - Flags";
     int    UIOrder = 136;
@@ -1286,7 +1320,7 @@ int Stage1_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 137;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1295,7 +1329,7 @@ int Stage1_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 138;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1304,7 +1338,7 @@ float Stage1_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 139;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1313,7 +1347,7 @@ float4 Stage1_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 140;
 > = float4(0, 0, 0, 0);
 
@@ -1322,7 +1356,7 @@ float Stage1_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 141;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.5;
@@ -1331,7 +1365,7 @@ float4 Stage1_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 142;
 > = float4(1, 1, 1, 1);
 
@@ -1339,7 +1373,7 @@ float Stage1_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 143;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -1348,7 +1382,7 @@ float4 Stage1_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 144;
 > = float4(1, 1, 1, 1);
 
@@ -1356,7 +1390,7 @@ float Stage1_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 1 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 145;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -1365,7 +1399,7 @@ int Stage1_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 146;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 5;
@@ -1374,7 +1408,7 @@ int Stage1_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 147;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1383,7 +1417,7 @@ int Stage1_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 148;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 1;
@@ -1392,7 +1426,7 @@ int Stage1_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 149;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1401,7 +1435,7 @@ int Stage1_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 150;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1410,7 +1444,7 @@ int Stage1_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 151;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1419,7 +1453,7 @@ int Stage1_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 152;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1428,7 +1462,7 @@ int Stage1_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 153;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1437,7 +1471,7 @@ int Stage1_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 154;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 1;
@@ -1446,7 +1480,7 @@ int Stage1_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 155;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -1455,7 +1489,7 @@ int Stage1_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 156;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1464,7 +1498,7 @@ int Stage1_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 157;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -1473,7 +1507,7 @@ int Stage1_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 158;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1482,7 +1516,7 @@ int Stage1_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 1 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 159;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -1491,7 +1525,7 @@ int Stage1_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 160;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 5;
@@ -1500,7 +1534,7 @@ int Stage1_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 161;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1509,7 +1543,7 @@ int Stage1_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 162;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 1;
@@ -1518,7 +1552,7 @@ int Stage1_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 163;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1527,7 +1561,7 @@ int Stage1_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 164;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1536,7 +1570,7 @@ int Stage1_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 165;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1545,7 +1579,7 @@ int Stage1_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 166;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1554,7 +1588,7 @@ int Stage1_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 1 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 167;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1563,7 +1597,7 @@ int Stage1_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 1 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 168;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 1;
@@ -1572,7 +1606,7 @@ int Stage1_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 1 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 169;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1581,7 +1615,7 @@ int Stage1_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 1 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 170;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1590,7 +1624,7 @@ int Stage1_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 1 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 171;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -1608,6 +1642,7 @@ bool EnableStage2
 
 bool Stage2_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 2 - Flags";
     int    UIOrder = 173;
@@ -1615,6 +1650,7 @@ bool Stage2_ColorMux
 
 bool Stage2_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 2 - Flags";
     int    UIOrder = 174;
@@ -1622,6 +1658,7 @@ bool Stage2_AlphaMux
 
 bool Stage2_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 2 - Flags";
     int    UIOrder = 175;
@@ -1631,7 +1668,7 @@ int Stage2_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 176;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1640,7 +1677,7 @@ int Stage2_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 177;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1649,7 +1686,7 @@ float Stage2_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 178;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -1658,7 +1695,7 @@ float4 Stage2_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 179;
 > = float4(0, 0, 0, 0);
 
@@ -1666,7 +1703,7 @@ float Stage2_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 180;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -1675,7 +1712,7 @@ float4 Stage2_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 181;
 > = float4(1, 1, 1, 1);
 
@@ -1683,7 +1720,7 @@ float Stage2_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 182;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -1692,7 +1729,7 @@ float4 Stage2_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 183;
 > = float4(1, 1, 1, 1);
 
@@ -1700,7 +1737,7 @@ float Stage2_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 2 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 184;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -1709,7 +1746,7 @@ int Stage2_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 185;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1718,7 +1755,7 @@ int Stage2_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 186;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1727,7 +1764,7 @@ int Stage2_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 187;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1736,7 +1773,7 @@ int Stage2_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 188;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1745,7 +1782,7 @@ int Stage2_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 189;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1754,7 +1791,7 @@ int Stage2_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 190;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1763,7 +1800,7 @@ int Stage2_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 191;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1772,7 +1809,7 @@ int Stage2_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 192;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1781,7 +1818,7 @@ int Stage2_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 193;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1790,7 +1827,7 @@ int Stage2_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 194;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -1799,7 +1836,7 @@ int Stage2_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 195;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1808,7 +1845,7 @@ int Stage2_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 196;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -1817,7 +1854,7 @@ int Stage2_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 197;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1826,7 +1863,7 @@ int Stage2_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 2 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 198;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -1835,7 +1872,7 @@ int Stage2_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 199;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1844,7 +1881,7 @@ int Stage2_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 200;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1853,7 +1890,7 @@ int Stage2_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 201;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1862,7 +1899,7 @@ int Stage2_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 202;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1871,7 +1908,7 @@ int Stage2_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 203;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1880,7 +1917,7 @@ int Stage2_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 204;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1889,7 +1926,7 @@ int Stage2_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 205;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -1898,7 +1935,7 @@ int Stage2_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 2 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 206;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -1907,7 +1944,7 @@ int Stage2_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 2 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 207;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1916,7 +1953,7 @@ int Stage2_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 2 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 208;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1925,7 +1962,7 @@ int Stage2_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 2 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 209;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -1934,7 +1971,7 @@ int Stage2_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 2 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 210;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -1954,6 +1991,7 @@ bool EnableStage3
 
 bool Stage3_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 3 - Flags";
     int    UIOrder = 212;
@@ -1961,6 +1999,7 @@ bool Stage3_ColorMux
 
 bool Stage3_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 3 - Flags";
     int    UIOrder = 213;
@@ -1968,6 +2007,7 @@ bool Stage3_AlphaMux
 
 bool Stage3_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 3 - Flags";
     int    UIOrder = 214;
@@ -1977,7 +2017,7 @@ int Stage3_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 215;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -1986,7 +2026,7 @@ int Stage3_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 216;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -1995,7 +2035,7 @@ float Stage3_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 217;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -2004,7 +2044,7 @@ float4 Stage3_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 218;
 > = float4(0, 0, 0, 0);
 
@@ -2012,7 +2052,7 @@ float Stage3_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 219;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -2021,7 +2061,7 @@ float4 Stage3_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 220;
 > = float4(1, 1, 1, 1);
 
@@ -2029,7 +2069,7 @@ float Stage3_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 221;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2038,7 +2078,7 @@ float4 Stage3_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 222;
 > = float4(1, 1, 1, 1);
 
@@ -2046,7 +2086,7 @@ float Stage3_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 3 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 223;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2055,7 +2095,7 @@ int Stage3_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 224;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2064,7 +2104,7 @@ int Stage3_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 225;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2073,7 +2113,7 @@ int Stage3_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 226;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2082,7 +2122,7 @@ int Stage3_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 227;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2091,7 +2131,7 @@ int Stage3_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 228;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2100,7 +2140,7 @@ int Stage3_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 229;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2109,7 +2149,7 @@ int Stage3_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 230;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2118,7 +2158,7 @@ int Stage3_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 231;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2127,7 +2167,7 @@ int Stage3_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 232;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2136,7 +2176,7 @@ int Stage3_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 233;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2145,7 +2185,7 @@ int Stage3_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 234;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2154,7 +2194,7 @@ int Stage3_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 235;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2163,7 +2203,7 @@ int Stage3_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 236;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2172,7 +2212,7 @@ int Stage3_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 3 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 237;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2181,7 +2221,7 @@ int Stage3_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 238;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2190,7 +2230,7 @@ int Stage3_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 239;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2199,7 +2239,7 @@ int Stage3_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 240;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2208,7 +2248,7 @@ int Stage3_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 241;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2217,7 +2257,7 @@ int Stage3_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 242;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2226,7 +2266,7 @@ int Stage3_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 243;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2235,7 +2275,7 @@ int Stage3_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 244;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2244,7 +2284,7 @@ int Stage3_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 3 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 245;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2253,7 +2293,7 @@ int Stage3_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 3 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 246;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2262,7 +2302,7 @@ int Stage3_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 3 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 247;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2271,7 +2311,7 @@ int Stage3_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 3 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 248;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2280,7 +2320,7 @@ int Stage3_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 3 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 249;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2300,6 +2340,7 @@ bool EnableStage4
 
 bool Stage4_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 4 - Flags";
     int    UIOrder = 251;
@@ -2307,6 +2348,7 @@ bool Stage4_ColorMux
 
 bool Stage4_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 4 - Flags";
     int    UIOrder = 252;
@@ -2314,6 +2356,7 @@ bool Stage4_AlphaMux
 
 bool Stage4_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 4 - Flags";
     int    UIOrder = 253;
@@ -2323,7 +2366,7 @@ int Stage4_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 254;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -2332,7 +2375,7 @@ int Stage4_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 255;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -2341,7 +2384,7 @@ float Stage4_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 256;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -2350,7 +2393,7 @@ float4 Stage4_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 257;
 > = float4(0, 0, 0, 0);
 
@@ -2358,7 +2401,7 @@ float Stage4_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 258;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -2367,7 +2410,7 @@ float4 Stage4_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 259;
 > = float4(1, 1, 1, 1);
 
@@ -2375,7 +2418,7 @@ float Stage4_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 260;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2384,7 +2427,7 @@ float4 Stage4_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 261;
 > = float4(1, 1, 1, 1);
 
@@ -2392,7 +2435,7 @@ float Stage4_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 4 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 262;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2401,7 +2444,7 @@ int Stage4_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 263;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2410,7 +2453,7 @@ int Stage4_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 264;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2419,7 +2462,7 @@ int Stage4_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 265;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2428,7 +2471,7 @@ int Stage4_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 266;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2437,7 +2480,7 @@ int Stage4_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 267;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2446,7 +2489,7 @@ int Stage4_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 268;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2455,7 +2498,7 @@ int Stage4_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 269;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2464,7 +2507,7 @@ int Stage4_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 270;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2473,7 +2516,7 @@ int Stage4_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 271;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2482,7 +2525,7 @@ int Stage4_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 272;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2491,7 +2534,7 @@ int Stage4_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 273;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2500,7 +2543,7 @@ int Stage4_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 274;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2509,7 +2552,7 @@ int Stage4_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 275;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2518,7 +2561,7 @@ int Stage4_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 4 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 276;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2527,7 +2570,7 @@ int Stage4_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 277;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2536,7 +2579,7 @@ int Stage4_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 278;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2545,7 +2588,7 @@ int Stage4_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 279;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2554,7 +2597,7 @@ int Stage4_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 280;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2563,7 +2606,7 @@ int Stage4_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 281;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2572,7 +2615,7 @@ int Stage4_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 282;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2581,7 +2624,7 @@ int Stage4_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 283;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2590,7 +2633,7 @@ int Stage4_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 4 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 284;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2599,7 +2642,7 @@ int Stage4_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 4 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 285;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2608,7 +2651,7 @@ int Stage4_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 4 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 286;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2617,7 +2660,7 @@ int Stage4_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 4 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 287;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2626,7 +2669,7 @@ int Stage4_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 4 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 288;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2646,6 +2689,7 @@ bool EnableStage5
 
 bool Stage5_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 5 - Flags";
     int    UIOrder = 290;
@@ -2653,6 +2697,7 @@ bool Stage5_ColorMux
 
 bool Stage5_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 5 - Flags";
     int    UIOrder = 291;
@@ -2660,6 +2705,7 @@ bool Stage5_AlphaMux
 
 bool Stage5_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 5 - Flags";
     int    UIOrder = 292;
@@ -2669,7 +2715,7 @@ int Stage5_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 293;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -2678,7 +2724,7 @@ int Stage5_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 294;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -2687,7 +2733,7 @@ float Stage5_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 295;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -2696,7 +2742,7 @@ float4 Stage5_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 296;
 > = float4(0, 0, 0, 0);
 
@@ -2704,7 +2750,7 @@ float Stage5_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 297;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -2713,7 +2759,7 @@ float4 Stage5_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 298;
 > = float4(1, 1, 1, 1);
 
@@ -2721,7 +2767,7 @@ float Stage5_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 299;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2730,7 +2776,7 @@ float4 Stage5_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 300;
 > = float4(1, 1, 1, 1);
 
@@ -2738,7 +2784,7 @@ float Stage5_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 5 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 301;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -2747,7 +2793,7 @@ int Stage5_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 302;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2756,7 +2802,7 @@ int Stage5_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 303;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2765,7 +2811,7 @@ int Stage5_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 304;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2774,7 +2820,7 @@ int Stage5_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 305;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2783,7 +2829,7 @@ int Stage5_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 306;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2792,7 +2838,7 @@ int Stage5_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 307;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2801,7 +2847,7 @@ int Stage5_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 308;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2810,7 +2856,7 @@ int Stage5_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 309;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2819,7 +2865,7 @@ int Stage5_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 310;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2828,7 +2874,7 @@ int Stage5_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 311;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2837,7 +2883,7 @@ int Stage5_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 312;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2846,7 +2892,7 @@ int Stage5_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 313;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -2855,7 +2901,7 @@ int Stage5_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 314;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2864,7 +2910,7 @@ int Stage5_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 5 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 315;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2873,7 +2919,7 @@ int Stage5_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 316;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2882,7 +2928,7 @@ int Stage5_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 317;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2891,7 +2937,7 @@ int Stage5_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 318;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2900,7 +2946,7 @@ int Stage5_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 319;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2909,7 +2955,7 @@ int Stage5_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 320;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2918,7 +2964,7 @@ int Stage5_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 321;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2927,7 +2973,7 @@ int Stage5_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 322;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -2936,7 +2982,7 @@ int Stage5_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 5 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 323;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -2945,7 +2991,7 @@ int Stage5_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 5 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 324;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2954,7 +3000,7 @@ int Stage5_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 5 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 325;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2963,7 +3009,7 @@ int Stage5_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 5 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 326;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -2972,7 +3018,7 @@ int Stage5_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 5 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 327;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -2992,6 +3038,7 @@ bool EnableStage6
 
 bool Stage6_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 6 - Flags";
     int    UIOrder = 329;
@@ -2999,6 +3046,7 @@ bool Stage6_ColorMux
 
 bool Stage6_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 6 - Flags";
     int    UIOrder = 330;
@@ -3006,6 +3054,7 @@ bool Stage6_AlphaMux
 
 bool Stage6_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 6 - Flags";
     int    UIOrder = 331;
@@ -3015,7 +3064,7 @@ int Stage6_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 332;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -3024,7 +3073,7 @@ int Stage6_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 333;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -3033,7 +3082,7 @@ float Stage6_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 334;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -3042,7 +3091,7 @@ float4 Stage6_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 335;
 > = float4(0, 0, 0, 0);
 
@@ -3050,7 +3099,7 @@ float Stage6_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 336;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -3059,7 +3108,7 @@ float4 Stage6_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 337;
 > = float4(1, 1, 1, 1);
 
@@ -3067,7 +3116,7 @@ float Stage6_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 338;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -3076,7 +3125,7 @@ float4 Stage6_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 339;
 > = float4(1, 1, 1, 1);
 
@@ -3084,7 +3133,7 @@ float Stage6_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 6 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 340;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -3093,7 +3142,7 @@ int Stage6_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 341;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3102,7 +3151,7 @@ int Stage6_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 342;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3111,7 +3160,7 @@ int Stage6_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 343;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3120,7 +3169,7 @@ int Stage6_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 344;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3129,7 +3178,7 @@ int Stage6_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 345;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3138,7 +3187,7 @@ int Stage6_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 346;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3147,7 +3196,7 @@ int Stage6_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 347;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3156,7 +3205,7 @@ int Stage6_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 348;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3165,7 +3214,7 @@ int Stage6_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 349;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3174,7 +3223,7 @@ int Stage6_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 350;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -3183,7 +3232,7 @@ int Stage6_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 351;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3192,7 +3241,7 @@ int Stage6_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 352;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -3201,7 +3250,7 @@ int Stage6_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 353;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3210,7 +3259,7 @@ int Stage6_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 6 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 354;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -3219,7 +3268,7 @@ int Stage6_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 355;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3228,7 +3277,7 @@ int Stage6_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 356;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3237,7 +3286,7 @@ int Stage6_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 357;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3246,7 +3295,7 @@ int Stage6_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 358;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3255,7 +3304,7 @@ int Stage6_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 359;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3264,7 +3313,7 @@ int Stage6_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 360;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3273,7 +3322,7 @@ int Stage6_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 361;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3282,7 +3331,7 @@ int Stage6_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 6 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 362;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3291,7 +3340,7 @@ int Stage6_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 6 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 363;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3300,7 +3349,7 @@ int Stage6_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 6 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 364;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3309,7 +3358,7 @@ int Stage6_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 6 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 365;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3318,7 +3367,7 @@ int Stage6_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 6 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 366;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -3338,6 +3387,7 @@ bool EnableStage7
 
 bool Stage7_ColorMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Color Mux";
     string UIGroup = "Stage 7 - Flags";
     int    UIOrder = 368;
@@ -3345,6 +3395,7 @@ bool Stage7_ColorMux
 
 bool Stage7_AlphaMux
 <
+    GX_TAG_HIDDEN
     string UIName  = "Alpha Mux";
     string UIGroup = "Stage 7 - Flags";
     int    UIOrder = 369;
@@ -3352,6 +3403,7 @@ bool Stage7_AlphaMux
 
 bool Stage7_AOutControlsColor0Animation
 <
+    GX_TAG_HIDDEN
     string UIName  = "A-Out Controls Color0 Animation  (on = idle uses Lower Bound)";
     string UIGroup = "Stage 7 - Flags";
     int    UIOrder = 370;
@@ -3361,7 +3413,7 @@ int Stage7_Color0Source
 <
     string UIName   = "Color0 Source  [0=None 1=A 2=B 3=C 4=D]";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 371;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -3370,7 +3422,7 @@ int Stage7_Color0AnimationFunction
 <
     string UIName   = "Color0 Animation Function  [0=One 1=Zero 2=Cosine 3=Cosine VP 4=Diag Wave 5=Diag Wave VP 6=Slide 7=Slide VP 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 372;
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
 > = 0;
@@ -3379,7 +3431,7 @@ float Stage7_Color0AnimationPeriod
 <
     string UIName   = "Color0 Animation Period  (Seconds)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 373;
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
 > = 0.0;
@@ -3388,7 +3440,7 @@ float4 Stage7_Color0AnimationLowerBound
 <
     string UIName   = "Color0 Animation Lower Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 374;
 > = float4(0, 0, 0, 0);
 
@@ -3396,7 +3448,7 @@ float Stage7_Color0LowerAlpha
 <
     string UIName   = "Color0 Lower Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 375;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -3405,7 +3457,7 @@ float4 Stage7_Color0AnimationUpperBound
 <
     string UIName   = "Color0 Animation Upper Bound  (RGB of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 376;
 > = float4(1, 1, 1, 1);
 
@@ -3413,7 +3465,7 @@ float Stage7_Color0UpperAlpha
 <
     string UIName   = "Color0 Upper Bound Alpha  (A of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 377;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -3422,7 +3474,7 @@ float4 Stage7_Color1
 <
     string UIName   = "Color1  (RGB of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "Color";
+    string UIWidget = GX_TAG_WIDGET("Color");
     int    UIOrder = 378;
 > = float4(1, 1, 1, 1);
 
@@ -3430,7 +3482,7 @@ float Stage7_Color1Alpha
 <
     string UIName   = "Color1 Alpha  (A of ARGB)";
     string UIGroup  = "Stage 7 - Constants and Animation";
-    string UIWidget = "slider";
+    string UIWidget = GX_TAG_WIDGET("slider");
     int    UIOrder = 379;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
@@ -3439,7 +3491,7 @@ int Stage7_ColorInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 380;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3448,7 +3500,7 @@ int Stage7_ColorInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 381;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3457,7 +3509,7 @@ int Stage7_ColorInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 382;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3466,7 +3518,7 @@ int Stage7_ColorInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 383;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3475,7 +3527,7 @@ int Stage7_ColorInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 384;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3484,7 +3536,7 @@ int Stage7_ColorInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 385;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3493,7 +3545,7 @@ int Stage7_ColorInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Color 0-3 9=Vtx Color 0 10=Vtx Color 1 11-12=Scratch Color 0-1 13-14=Const Color 0-1 15-18=Map Alpha 0-3 19=Vtx Alpha 0 20=Vtx Alpha 1 21-22=Scratch Alpha 0-1 23-24=Const Alpha 0-1]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 386;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3502,7 +3554,7 @@ int Stage7_ColorInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Color Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 387;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3511,7 +3563,7 @@ int Stage7_ColorOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 388;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3520,7 +3572,7 @@ int Stage7_ColorOutputABFunction
 <
     string UIName   = "Output AB Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 389;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -3529,7 +3581,7 @@ int Stage7_ColorOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 390;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3538,7 +3590,7 @@ int Stage7_ColorOutputCDFunction
 <
     string UIName   = "Output CD Function  [0=Multiply 1=Dot Product]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 391;
     float  UIMin = 0; float UIMax = 1; float UIStep = 1;
 > = 0;
@@ -3547,7 +3599,7 @@ int Stage7_ColorOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch 0/Final 2=Scratch 1 3=Vtx Color 0 4=Vtx Color 1 5-8=Map Color 0-3]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 392;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3556,7 +3608,7 @@ int Stage7_ColorOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 7 - Color Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 393;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;
@@ -3565,7 +3617,7 @@ int Stage7_AlphaInputA
 <
     string UIName   = "Input A  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 394;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3574,7 +3626,7 @@ int Stage7_AlphaInputAMapping
 <
     string UIName   = "Input A Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 395;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3583,7 +3635,7 @@ int Stage7_AlphaInputB
 <
     string UIName   = "Input B  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 396;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3592,7 +3644,7 @@ int Stage7_AlphaInputBMapping
 <
     string UIName   = "Input B Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 397;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3601,7 +3653,7 @@ int Stage7_AlphaInputC
 <
     string UIName   = "Input C  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 398;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3610,7 +3662,7 @@ int Stage7_AlphaInputCMapping
 <
     string UIName   = "Input C Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 399;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3619,7 +3671,7 @@ int Stage7_AlphaInputD
 <
     string UIName   = "Input D  [0=Zero 1=One 2=1/2 3=-1 4=-1/2 5-8=Map Alpha 0-3 9=Vtx Alpha 0 10=Vtx Alpha 1 11-12=Scratch Alpha 0-1 13-14=Const Alpha 0-1 15-18=Map Blue 0-3 19=Vtx Blue 0 20=Vtx Blue 1 21-22=Scratch Blue 0-1 23-24=Const Blue 0-1]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 400;
     float  UIMin = 0; float UIMax = 24; float UIStep = 1;
 > = 0;
@@ -3628,7 +3680,7 @@ int Stage7_AlphaInputDMapping
 <
     string UIName   = "Input D Mapping  [0=Clamp(x) 1=1-Clamp(x) 2=2*Clamp(x)-1 3=1-2*Clamp(x) 4=Clamp(x)-1/2 5=1/2-Clamp(x) 6=x 7=-x]";
     string UIGroup  = "Stage 7 - Alpha Inputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 401;
     float  UIMin = 0; float UIMax = 7; float UIStep = 1;
 > = 0;
@@ -3637,7 +3689,7 @@ int Stage7_AlphaOutputAB
 <
     string UIName   = "Output AB  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 7 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 402;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3646,7 +3698,7 @@ int Stage7_AlphaOutputCD
 <
     string UIName   = "Output CD  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 7 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 403;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3655,7 +3707,7 @@ int Stage7_AlphaOutputABCDMuxSum
 <
     string UIName   = "Output AB CD Mux/Sum  [0=Discard 1=Scratch A0/Final 2=Scratch A1 3=Vtx A0/Fog 4=Vtx A1 5-8=Map Alpha 0-3]";
     string UIGroup  = "Stage 7 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 404;
     float  UIMin = 0; float UIMax = 8; float UIStep = 1;
 > = 0;
@@ -3664,7 +3716,7 @@ int Stage7_AlphaOutputMapping
 <
     string UIName   = "Output Mapping  [0=Identity 1=Scale 1/2 2=Scale 2 3=Scale 4 4=Bias -1/2 5=Expand Normal]";
     string UIGroup  = "Stage 7 - Alpha Outputs";
-    string UIWidget = "Spinner";
+    string UIWidget = GX_TAG_WIDGET("Spinner");
     int    UIOrder = 405;
     float  UIMin = 0; float UIMax = 5; float UIStep = 1;
 > = 0;

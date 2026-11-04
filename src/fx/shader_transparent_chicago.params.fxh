@@ -272,7 +272,7 @@ int Map1_AlphaFunction
 
 float Map1_UScale
 <
-    string UIName   = "Map U Scale";
+    string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 1";
     string UIWidget = "slider";
     int    UIOrder = 29;
@@ -281,7 +281,7 @@ float Map1_UScale
 
 float Map1_VScale
 <
-    string UIName   = "Map V Scale";
+    string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 1";
     string UIWidget = "slider";
     int    UIOrder = 30;
@@ -334,6 +334,7 @@ Texture2D Map1Texture
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 1
+// Read by the Animation Preview (see the end of this file).
 // ----------------------------------------------------------------------------
 int UAnimationSource1
 <
@@ -346,7 +347,7 @@ int UAnimationSource1
 
 int UAnimationFunction1
 <
-    string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "U Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 1";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
@@ -391,7 +392,7 @@ float VAnimationSource1
 
 float VAnimationFunction1
 <
-    string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "V Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 1";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
@@ -436,7 +437,7 @@ float RotationAnimationSource1
 
 float RotationAnimationFunction1
 <
-    string UIName   = "Rotation Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "Rotation Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 1";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
@@ -463,7 +464,7 @@ float RotationAnimationPhase1
 
 float RotationAnimationScale1
 <
-    string UIName   = "Rotation Animation Scale................(Repeats)";
+    string UIName   = "Rotation Animation Scale................(Degrees)";
     string UIGroup  = "2D Texture Animation 1";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
@@ -485,7 +486,7 @@ float AnimationCenterV1
     string UIGroup  = "2D Texture Animation 1";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 51;
+    int    UIOrder = 52;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -495,35 +496,35 @@ bool EnableMap2
 <
     string UIName  = "Enable Map 2";
     string UIGroup = "Map 2";
-    int    UIOrder = 52;
+    int    UIOrder = 53;
 > = false;
 
 bool Map2_Unfiltered
 <
     string UIName  = "Unfiltered";
     string UIGroup = "Map 2 - Flags";
-    int    UIOrder = 53;
+    int    UIOrder = 54;
 > = false;
 
 bool Map2_AlphaReplicate
 <
     string UIName  = "Alpha Replicate";
     string UIGroup = "Map 2 - Flags";
-    int    UIOrder = 54;
+    int    UIOrder = 55;
 > = false;
 
 bool Map2_UClamped
 <
     string UIName  = "U Clamped";
     string UIGroup = "Map 2 - Flags";
-    int    UIOrder = 55;
+    int    UIOrder = 56;
 > = false;
 
 bool Map2_VClamped
 <
     string UIName  = "V Clamped";
     string UIGroup = "Map 2 - Flags";
-    int    UIOrder = 56;
+    int    UIOrder = 57;
 > = false;
 
 int Map2_ColorFunction
@@ -531,7 +532,7 @@ int Map2_ColorFunction
     string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 2";
     string UIWidget = "Spinner";
-    int    UIOrder = 57;
+    int    UIOrder = 58;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
@@ -540,25 +541,25 @@ int Map2_AlphaFunction
     string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 2";
     string UIWidget = "Spinner";
-    int    UIOrder = 58;
+    int    UIOrder = 59;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map2_UScale
 <
-    string UIName   = "Map U Scale";
+    string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 59;
+    int    UIOrder = 60;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
 float Map2_VScale
 <
-    string UIName   = "Map V Scale";
+    string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 60;
+    int    UIOrder = 61;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
@@ -567,7 +568,7 @@ float Map2_UOffset
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 61;
+    int    UIOrder = 62;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -576,7 +577,7 @@ float Map2_VOffset
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 62;
+    int    UIOrder = 63;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -585,7 +586,7 @@ float Map2_Rotation
     string UIName   = "Map Rotation";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 63;
+    int    UIOrder = 64;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
 
@@ -594,7 +595,7 @@ float Map2_MipmapBias
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 2";
     string UIWidget = "slider";
-    int    UIOrder = 64;
+    int    UIOrder = 65;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -603,11 +604,12 @@ Texture2D Map2Texture
     string UIName       = "Map";
     string UIGroup      = "Map 2";
     string ResourceType = "2D";
-    int    UIOrder = 65;
+    int    UIOrder = 66;
 >;
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 2
+// Read by the Animation Preview (see the end of this file).
 // ----------------------------------------------------------------------------
 int UAnimationSource2
 <
@@ -615,16 +617,16 @@ int UAnimationSource2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 66;
+    int    UIOrder = 67;
 > = 0;
 
 int UAnimationFunction2
 <
-    string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "U Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 67;
+    int    UIOrder = 68;
 > = 0;
 
 float UAnimationPeriod2
@@ -633,7 +635,7 @@ float UAnimationPeriod2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 68;
+    int    UIOrder = 69;
 > = 0.0;
 
 float UAnimationPhase2
@@ -642,7 +644,7 @@ float UAnimationPhase2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 69;
+    int    UIOrder = 70;
 > = 0.0;
 
 float UAnimationScale2
@@ -651,7 +653,7 @@ float UAnimationScale2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 70;
+    int    UIOrder = 71;
 > = 0.0;
 
 float VAnimationSource2
@@ -660,16 +662,16 @@ float VAnimationSource2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 71;
+    int    UIOrder = 72;
 > = 0;
 
 float VAnimationFunction2
 <
-    string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "V Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 72;
+    int    UIOrder = 73;
 > = 0;
 
 float VAnimationPeriod2
@@ -678,7 +680,7 @@ float VAnimationPeriod2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 73;
+    int    UIOrder = 74;
 > = 0.0;
 
 float VAnimationPhase2
@@ -687,7 +689,7 @@ float VAnimationPhase2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 74;
+    int    UIOrder = 75;
 > = 0.0;
 
 float VAnimationScale2
@@ -696,7 +698,7 @@ float VAnimationScale2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 75;
+    int    UIOrder = 76;
 > = 0.0;
 
 float RotationAnimationSource2
@@ -705,16 +707,16 @@ float RotationAnimationSource2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 76;
+    int    UIOrder = 77;
 > = 0;
 
 float RotationAnimationFunction2
 <
-    string UIName   = "Rotation Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "Rotation Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 77;
+    int    UIOrder = 78;
 > = 0;
 
 float RotationAnimationPeriod2
@@ -723,25 +725,25 @@ float RotationAnimationPeriod2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 78;
+    int    UIOrder = 79;
 > = 0.0;
 
 float RotationAnimationPhase2
 <
     string UIName   = "Rotation Animation Phase";
-    string UIGroup  = "2D Texture Animation ";
-    string UIWidget = "slider";
-    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 79;
-> = 0.0;
-
-float RotationAnimationScale2
-<
-    string UIName   = "Rotation Animation Scale................(Repeats)";
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 80;
+> = 0.0;
+
+float RotationAnimationScale2
+<
+    string UIName   = "Rotation Animation Scale................(Degrees)";
+    string UIGroup  = "2D Texture Animation 2";
+    string UIWidget = "slider";
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
+    int    UIOrder = 81;
 > = 0.0;
 
 float AnimationCenterU2
@@ -750,7 +752,7 @@ float AnimationCenterU2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 81;
+    int    UIOrder = 82;
 > = 0.0;
 
 float AnimationCenterV2
@@ -759,7 +761,7 @@ float AnimationCenterV2
     string UIGroup  = "2D Texture Animation 2";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 81;
+    int    UIOrder = 83;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -769,35 +771,35 @@ bool EnableMap3
 <
     string UIName  = "Enable Map 3";
     string UIGroup = "Map 3 - Flags";
-    int    UIOrder = 82;
+    int    UIOrder = 84;
 > = false;
 
 bool Map3_Unfiltered
 <
     string UIName  = "Unfiltered";
     string UIGroup = "Map 3 - Flags";
-    int    UIOrder = 83;
+    int    UIOrder = 85;
 > = false;
 
 bool Map3_AlphaReplicate
 <
     string UIName  = "Alpha Replicate";
     string UIGroup = "Map 3 - Flags";
-    int    UIOrder = 84;
+    int    UIOrder = 86;
 > = false;
 
 bool Map3_UClamped
 <
     string UIName  = "U Clamped";
     string UIGroup = "Map 3 - Flags";
-    int    UIOrder = 85;
+    int    UIOrder = 87;
 > = false;
 
 bool Map3_VClamped
 <
     string UIName  = "V Clamped";
     string UIGroup = "Map 3 - Flags";
-    int    UIOrder = 86;
+    int    UIOrder = 88;
 > = false;
 
 int Map3_ColorFunction
@@ -805,7 +807,7 @@ int Map3_ColorFunction
     string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 3";
     string UIWidget = "Spinner";
-    int    UIOrder = 87;
+    int    UIOrder = 89;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
@@ -814,25 +816,25 @@ int Map3_AlphaFunction
     string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 3";
     string UIWidget = "Spinner";
-    int    UIOrder = 88;
+    int    UIOrder = 90;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map3_UScale
 <
-    string UIName   = "Map U Scale";
+    string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 89;
+    int    UIOrder = 91;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
 float Map3_VScale
 <
-    string UIName   = "Map V Scale";
+    string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 90;
+    int    UIOrder = 92;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
@@ -841,7 +843,7 @@ float Map3_UOffset
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 91;
+    int    UIOrder = 93;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -850,7 +852,7 @@ float Map3_VOffset
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 92;
+    int    UIOrder = 94;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -859,7 +861,7 @@ float Map3_Rotation
     string UIName   = "Map Rotation  (degrees)";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 93;
+    int    UIOrder = 95;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
 
@@ -868,7 +870,7 @@ float Map3_MipmapBias
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 3";
     string UIWidget = "slider";
-    int    UIOrder = 94;
+    int    UIOrder = 96;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -877,11 +879,12 @@ Texture2D Map3Texture
     string UIName       = "Map";
     string UIGroup      = "Map 3";
     string ResourceType = "2D";
-    int    UIOrder = 95;
+    int    UIOrder = 97;
 >;
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 3
+// Read by the Animation Preview (see the end of this file).
 // ----------------------------------------------------------------------------
 int UAnimationSource3
 <
@@ -889,16 +892,16 @@ int UAnimationSource3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 96;
+    int    UIOrder = 98;
 > = 0;
 
 int UAnimationFunction3
 <
-    string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "U Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 97;
+    int    UIOrder = 99;
 > = 0;
 
 float UAnimationPeriod3
@@ -907,7 +910,7 @@ float UAnimationPeriod3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 98;
+    int    UIOrder = 100;
 > = 0.0;
 
 float UAnimationPhase3
@@ -916,7 +919,7 @@ float UAnimationPhase3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 99;
+    int    UIOrder = 101;
 > = 0.0;
 
 float UAnimationScale3
@@ -925,7 +928,7 @@ float UAnimationScale3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 100;
+    int    UIOrder = 102;
 > = 0.0;
 
 float VAnimationSource3
@@ -934,16 +937,16 @@ float VAnimationSource3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 101;
+    int    UIOrder = 103;
 > = 0;
 
 float VAnimationFunction3
 <
-    string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "V Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 102;
+    int    UIOrder = 104;
 > = 0;
 
 float VAnimationPeriod3
@@ -952,7 +955,7 @@ float VAnimationPeriod3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 103;
+    int    UIOrder = 105;
 > = 0.0;
 
 float VAnimationPhase3
@@ -961,7 +964,7 @@ float VAnimationPhase3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 104;
+    int    UIOrder = 106;
 > = 0.0;
 
 float VAnimationScale3
@@ -970,7 +973,7 @@ float VAnimationScale3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 105;
+    int    UIOrder = 107;
 > = 0.0;
 
 float RotationAnimationSource3
@@ -979,16 +982,16 @@ float RotationAnimationSource3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 106;
+    int    UIOrder = 108;
 > = 0;
 
 float RotationAnimationFunction3
 <
-    string UIName   = "Rotation Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "Rotation Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 107;
+    int    UIOrder = 109;
 > = 0;
 
 float RotationAnimationPeriod3
@@ -997,7 +1000,7 @@ float RotationAnimationPeriod3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 108;
+    int    UIOrder = 110;
 > = 0.0;
 
 float RotationAnimationPhase3
@@ -1006,16 +1009,16 @@ float RotationAnimationPhase3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 109;
+    int    UIOrder = 111;
 > = 0.0;
 
 float RotationAnimationScale3
 <
-    string UIName   = "Rotation Animation Scale................(Repeats)";
+    string UIName   = "Rotation Animation Scale................(Degrees)";
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 110;
+    int    UIOrder = 112;
 > = 0.0;
 
 float AnimationCenterU3
@@ -1024,7 +1027,7 @@ float AnimationCenterU3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 111;
+    int    UIOrder = 113;
 > = 0.0;
 
 float AnimationCenterV3
@@ -1033,7 +1036,7 @@ float AnimationCenterV3
     string UIGroup  = "2D Texture Animation 3";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 111;
+    int    UIOrder = 114;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -1045,35 +1048,35 @@ bool EnableMap4
 <
     string UIName  = "Enable Map 4";
     string UIGroup = "Map 4 - Flags";
-    int    UIOrder = 112;
+    int    UIOrder = 115;
 > = false;
 
 bool Map4_Unfiltered
 <
     string UIName  = "Unfiltered";
     string UIGroup = "Map 4 - Flags";
-    int    UIOrder = 113;
+    int    UIOrder = 116;
 > = false;
 
 bool Map4_AlphaReplicate
 <
     string UIName  = "Alpha Replicate";
     string UIGroup = "Map 4 - Flags";
-    int    UIOrder = 114;
+    int    UIOrder = 117;
 > = false;
 
 bool Map4_UClamped
 <
     string UIName  = "U Clamped";
     string UIGroup = "Map 4 - Flags";
-    int    UIOrder = 115;
+    int    UIOrder = 118;
 > = false;
 
 bool Map4_VClamped
 <
     string UIName  = "V Clamped";
     string UIGroup = "Map 4 - Flags";
-    int    UIOrder = 116;
+    int    UIOrder = 119;
 > = false;
 
 int Map4_ColorFunction
@@ -1081,7 +1084,7 @@ int Map4_ColorFunction
     string UIName   = "Color Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 4";
     string UIWidget = "Spinner";
-    int    UIOrder = 117;
+    int    UIOrder = 120;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
@@ -1090,25 +1093,25 @@ int Map4_AlphaFunction
     string UIName   = "Alpha Function - Blends This Map With The NEXT One  [0=Current  1=Next Map  2=Multiply  3=Double Mul  4=Add  5=Add Signed Cur  6=Add Signed Next  7=Sub Cur  8=Sub Next  9=Blend Cur Alpha  10=Blend Cur Alpha Inv  11=Blend Next Alpha  12=Blend Next Alpha Inv]";
     string UIGroup  = "Map 4";
     string UIWidget = "Spinner";
-    int    UIOrder = 118;
+    int    UIOrder = 121;
     float  UIMin = 0; float UIMax = 12; float UIStep = 1;
 > = 0;
 
 float Map4_UScale
 <
-    string UIName   = "Map U Scale";
+    string UIName   = "Map U Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 119;
+    int    UIOrder = 122;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
 float Map4_VScale
 <
-    string UIName   = "Map V Scale";
+    string UIName   = "Map V Scale  (0 = 1, as in the tag)";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 120;
+    int    UIOrder = 123;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 1.0;
 
@@ -1117,7 +1120,7 @@ float Map4_UOffset
     string UIName   = "Map U Offset";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 121;
+    int    UIOrder = 124;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -1126,7 +1129,7 @@ float Map4_VOffset
     string UIName   = "Map V Offset";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 122;
+    int    UIOrder = 125;
     float  UIMin = -1; float UIMax = 1; float UIStep = 0.001;
 > = 0.0;
 
@@ -1135,7 +1138,7 @@ float Map4_Rotation
     string UIName   = "Map Rotation  (degrees)";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 123;
+    int    UIOrder = 126;
     float  UIMin = -360; float UIMax = 360; float UIStep = 0.1;
 > = 0.0;
 
@@ -1144,7 +1147,7 @@ float Map4_MipmapBias
     string UIName   = "Mipmap Bias";
     string UIGroup  = "Map 4";
     string UIWidget = "slider";
-    int    UIOrder = 124;
+    int    UIOrder = 127;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1153,11 +1156,12 @@ Texture2D Map4Texture
     string UIName       = "Map";
     string UIGroup      = "Map 4";
     string ResourceType = "2D";
-    int    UIOrder = 125;
+    int    UIOrder = 128;
 >;
 
 // ----------------------------------------------------------------------------
 // 2D Texture Animation 4
+// Read by the Animation Preview (see the end of this file).
 // ----------------------------------------------------------------------------
 int UAnimationSource4
 <
@@ -1165,16 +1169,16 @@ int UAnimationSource4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 126;
+    int    UIOrder = 129;
 > = 0;
 
 int UAnimationFunction4
 <
-    string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "U Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder =127;
+    int    UIOrder =130;
 > = 0;
 
 float UAnimationPeriod4
@@ -1183,7 +1187,7 @@ float UAnimationPeriod4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 128;
+    int    UIOrder = 131;
 > = 0.0;
 
 float UAnimationPhase4
@@ -1192,7 +1196,7 @@ float UAnimationPhase4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 129;
+    int    UIOrder = 132;
 > = 0.0;
 
 float UAnimationScale4
@@ -1201,7 +1205,7 @@ float UAnimationScale4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 130;
+    int    UIOrder = 133;
 > = 0.0;
 
 float VAnimationSource4
@@ -1210,16 +1214,16 @@ float VAnimationSource4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 131;
+    int    UIOrder = 134;
 > = 0;
 
 float VAnimationFunction4
 <
-    string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "V Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 132;
+    int    UIOrder = 135;
 > = 0;
 
 float VAnimationPeriod4
@@ -1228,7 +1232,7 @@ float VAnimationPeriod4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 133;
+    int    UIOrder = 136;
 > = 0.0;
 
 float VAnimationPhase4
@@ -1237,7 +1241,7 @@ float VAnimationPhase4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 134;
+    int    UIOrder = 137;
 > = 0.0;
 
 float VAnimationScale4
@@ -1246,7 +1250,7 @@ float VAnimationScale4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 135;
+    int    UIOrder = 138;
 > = 0.0;
 
 float RotationAnimationSource4
@@ -1255,16 +1259,16 @@ float RotationAnimationSource4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
-    int    UIOrder = 136;
+    int    UIOrder = 139;
 > = 0;
 
 float RotationAnimationFunction4
 <
-    string UIName   = "Rotation Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
+    string UIName   = "Rotation Animation Function  [0=One  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
-    int    UIOrder = 137;
+    int    UIOrder = 140;
 > = 0;
 
 float RotationAnimationPeriod4
@@ -1273,7 +1277,7 @@ float RotationAnimationPeriod4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 138;
+    int    UIOrder = 141;
 > = 0.0;
 
 float RotationAnimationPhase4
@@ -1282,16 +1286,16 @@ float RotationAnimationPhase4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 139;
+    int    UIOrder = 142;
 > = 0.0;
 
 float RotationAnimationScale4
 <
-    string UIName   = "Rotation Animation Scale................(Repeats)";
+    string UIName   = "Rotation Animation Scale................(Degrees)";
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
-    int    UIOrder = 140;
+    int    UIOrder = 143;
 > = 0.0;
 
 float AnimationCenterU4
@@ -1300,7 +1304,7 @@ float AnimationCenterU4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 141;
+    int    UIOrder = 144;
 > = 0.0;
 
 float AnimationCenterV4
@@ -1309,7 +1313,7 @@ float AnimationCenterV4
     string UIGroup  = "2D Texture Animation 4";
     string UIWidget = "slider";
     float  UIMin = -1; float UIMax = 1000000; float UIStep = 0.01;
-    int    UIOrder = 141;
+    int    UIOrder = 145;
 > = 0.0;
 
 // ----------------------------------------------------------------------------
@@ -1319,21 +1323,21 @@ bool DontFadeActiveCamouflage
 <
     string UIName  = "Don't Fade Active Camouflage";
     string UIGroup = "Extra Flags";
-    int    UIOrder = 142;
+    int    UIOrder = 146;
 > = false;
 
 bool NumericCountdownTimer
 <
     string UIName  = "Numeric Countdown Timer";
     string UIGroup = "Extra Flags";
-    int    UIOrder = 143;
+    int    UIOrder = 147;
 > = false;
 
 bool CustomEditionBlending
 <
     string UIName  = "Custom Edition Blending";
     string UIGroup = "Extra Flags";
-    int    UIOrder = 144;
+    int    UIOrder = 148;
 > = false;
 
 // ----------------------------------------------------------------------------
@@ -1360,7 +1364,7 @@ int NumericDigit
     string UIName   = "Numeric Digit  [0-9]  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "slider";
-    int    UIOrder = 145;
+    int    UIOrder = 149;
     float  UIMin = 0; float UIMax = 9; float UIStep = 1;
 > = 0;
 
@@ -1369,7 +1373,7 @@ int NumericPlateLayout
     string UIName   = "Plate Layout  [0=Auto  1=Horizontal  2=Vertical]  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "Spinner";
-    int    UIOrder = 146;
+    int    UIOrder = 150;
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
 > = 0;
 
@@ -1382,7 +1386,7 @@ float NumericPlateWidth
     string UIName   = "Plate Width  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "Spinner";
-    int    UIOrder = 147;
+    int    UIOrder = 151;
     float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
 > = 0.0;
 
@@ -1391,7 +1395,7 @@ float NumericPlateHeight
     string UIName   = "Plate Height  (Texels, 0 = From Texture)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "Spinner";
-    int    UIOrder = 148;
+    int    UIOrder = 152;
     float  UIMin = 0; float UIMax = 8192; float UIStep = 1;
 > = 0.0;
 
@@ -1400,7 +1404,7 @@ float NumericPlateMargin
     string UIName   = "Plate Margin - Before First / After Last Digit  (Texels)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "slider";
-    int    UIOrder = 149;
+    int    UIOrder = 153;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 3.0;
 
@@ -1409,7 +1413,7 @@ float NumericPlateSeparator
     string UIName   = "Plate Separator - Between Digits  (Texels)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "slider";
-    int    UIOrder = 150;
+    int    UIOrder = 154;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 3.0;
 
@@ -1418,7 +1422,7 @@ float NumericPlateSideMargin
     string UIName   = "Plate Side Margin - Across The Strip  (Texels)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "slider";
-    int    UIOrder = 151;
+    int    UIOrder = 155;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 8.0;
 
@@ -1429,7 +1433,7 @@ float NumericPlateEdgeInset
     string UIName   = "Plate Cell Edge Inset  (Texels)  (GlyphFX-only, not tag data)";
     string UIGroup  = "Numeric Counter Plate";
     string UIWidget = "slider";
-    int    UIOrder = 152;
+    int    UIOrder = 156;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.1;
 > = 0.5;
 
@@ -1448,7 +1452,7 @@ float BackgroundBrightness
     string UIName   = "Background Brightness  [0,1]  (brightness behind the surface)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 153;
+    int    UIOrder = 157;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1459,7 +1463,7 @@ float DitherAmount
     string UIName   = "Dither Amount  (1 = exact, >1 = more see-through, <1 = smoother)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 154;
+    int    UIOrder = 158;
     float  UIMin = 0; float UIMax = 5; float UIStep = 0.01;
 > = 1.5;
 
@@ -1469,7 +1473,7 @@ float MaxOpacity
     string UIName   = "Max Opacity  [0,1]  (lower = background always shows through)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 155;
+    int    UIOrder = 159;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
 
@@ -1480,9 +1484,100 @@ float ColorSaturation
     string UIName   = "Color Saturation  (1 = faithful, >1 = richer)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 156;
+    int    UIOrder = 160;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
 > = 1.2;
+
+// ----------------------------------------------------------------------------
+// Animation Preview (Only for 3ds Max, not tag data)
+// Plays the 2D texture animation of each map in the viewport, evaluated as
+// the engine does (_texture_animation.fxh, _periodic.fxh).  The toolkit
+// drives AnimationTime from the scene time; the A-D Out sliders stand in for
+// the object's function outputs, which only exist in game.
+//
+// With Animation Preview off the maps do not move, as before.  The viewport
+// only redraws an animated material parameter by itself while the Slate
+// Material Editor is open.
+// ----------------------------------------------------------------------------
+bool AnimationPreview
+<
+    string UIName  = "Animation Preview";
+    string UIGroup = "Animation Preview (Only for 3ds Max)";
+    int    UIOrder = 161;
+> = false;
+
+// Game time in seconds.  A plain animatable float: key it, or wire it to the
+// scene time with an expression controller (S = seconds).
+float AnimationTime
+<
+    string UIName   = "Animation Time  (Seconds)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 162;
+    float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
+
+// The object's A-D Out function values.  An animation whose source is A-D
+// Out is multiplied by them.  0 = idle.
+float ObjectFunctionA
+<
+    string UIName   = "A Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 163;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionB
+<
+    string UIName   = "B Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 164;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionC
+<
+    string UIName   = "C Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 165;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+float ObjectFunctionD
+<
+    string UIName   = "D Out  [0,1]  (preview of the object's function)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 166;
+    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
+> = 0.0;
+
+// The gbxmodel's base map U/V scale.  The engine multiplies every map's
+// scale by it.  0 = 1, as in the tag.  Applies with Animation Preview off too.
+// Leave it at 0 on models imported by the toolkit: the gbxmodel importer
+// already bakes the base map scale into the UVs, so setting it here would
+// apply it twice.  Only for models whose UVs are not scaled (built by hand or
+// imported from JMS); set it by hand there.  The toolkit never writes it.
+float ModelBaseMapScaleU
+<
+    string UIName   = "Model Base Map U Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 167;
+    float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
+> = 0.0;
+
+float ModelBaseMapScaleV
+<
+    string UIName   = "Model Base Map V Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "slider";
+    int    UIOrder = 168;
+    float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
+> = 0.0;
 
 // ----------------------------------------------------------------------------
 // Opacity Controls

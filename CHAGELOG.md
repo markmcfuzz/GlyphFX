@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [0.9.3] - 2026-11-03
+
+### Added
+
+- **Shader Transparent Generic / Chicago:**
+  - New `Viewport Blend` parameter group (GlyphFX-only, not tag data) for the Add, Multiply and Double Multiply techniques: `Background Brightness` (default 0), `Dither Amount` (default 1; above 1 shows more background, dimmer), `Max Opacity` (default 1) and `Color Saturation` (default 1). Alpha Blend does not use them.
+- **Docs:**
+  - `docs/proposals/animation_preview.md`: proposal for previewing tag animations in 3ds Max (GlyphFX evaluates the animation, the Toolkit feeds scene time, the object's A-D outputs and change colors).
+
+### Changed
+
+- **Shader Transparent Generic / Chicago:**
+  - Add, Multiply and Double Multiply now use the same coverage solve as `shader_transparent_water` (shared in `_coverage.fxh`), so the effect keeps its in-game brightness on average. Previously the color was drawn opaque with its luminance as coverage, which made dim additive effects (e.g. the jackal and field generator shields) show up only on a few scattered pixels and replace the background instead of adding to it.
+  - When `Dither Amount` above 1 or `Max Opacity` below 1 lowers the coverage, the color now dims evenly instead of clipping its brightest channel, so the hue is kept (an orange shield no longer turns yellow-green).
+
+### Fixed
+
+- **Shader Transparent Generic:**
+  - Combiner registers are now clamped to [-1, 1] after each stage's output mapping, as on the original hardware. A stage using `Scale by 2` or `Scale by 4` could previously pass values above 1 to the stages after it.
+
 ## [0.9.3] - 2026-11-02
 
 ### Added

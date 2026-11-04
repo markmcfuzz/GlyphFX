@@ -15,77 +15,24 @@
 // (t = 0..1, 25.6 entries) x covers 0.7: cosine and slide run 0.7 cycles per
 // period, not 1.  That is the engine's behaviour and is kept here.
 //
-// Each entry is computed here from its formula instead of stored.  The trig is
-// reduced to frac() of the exact table x, so the result matches the engine's
-// byte tables except for a few entries that land one step (1/255) apart.
-//
-// Exact:        one, zero, cosine, diagonal wave, slide, jitter, wander.
-// Approximated: the engine builds cosine/diagonal wave/slide (variable
-//               period), noise and spark from real_random() with a fixed seed.
-//               Until those tables are reproduced, the variable-period ones
-//               use their fixed-period shape, noise a hash per entry and spark
-//               slide squared (its shape over a fixed period).
+// The tables, including the random ones (variable period, noise, spark), are
+// rebuilt with the engine's random seed by tools/gen_periodic_tables.py into
+// _periodic_tables.fxh.
 // ----------------------------------------------------------------------------
 
 #ifndef GLYPHFX_PERIODIC_FXH
 #define GLYPHFX_PERIODIC_FXH
 
-// Function enum -> table shape.
-//   0 cosine  1 slide  2 diagonal wave  3 jitter/wander  4 noise  5 spark
-// "one" and "zero" never reach the table (entries 0 and 1 are unused).
-static const int GX_PERIODIC_SHAPE[12] = { 0, 0, 0, 0, 2, 2, 1, 1, 4, 3, 3, 5 };
+#include "_periodic_tables.fxh"
 
-// Normalisation the engine applies: (value - min) / (max - min), from the
-// min/max over the 1024 entries.  Range 0 = stored raw (slide).
-static const float2 GX_PERIODIC_NORM[6] =
+// Byte i (0-1023) of stored table `table`, as 0-1.
+float PeriodicTableEntry(int table, int i)
 {
-    float2(-1.0,        2.0),          // cosine
-    float2( 0.0,        0.0),          // slide (raw)
-    float2( 0.0,        0.99999952),   // diagonal wave
-    float2(-1.8535528,  3.6323037),    // jitter / wander
-    float2( 0.0,        1.0),          // noise (approximation)
-    float2( 0.0,        0.99999905)    // spark (approximation)
-};
-
-static const float GX_TWO_PI = 6.28318531;
-
-// Raw (un-normalised) value of table entry i.
-float PeriodicTableRaw(int shape, int i)
-{
-    float x = (float)i * 0.027343748;
-
-    [flatten] if (shape == 0)
-        return cos(GX_TWO_PI * frac(x));
-
-    float s = frac(x);
-    [flatten] if (shape == 1)
-        return s;
-    [flatten] if (shape == 2)
-        return s < 0.5 ? s * 2.0 : 1.0 - (s - 0.5) * 2.0;
-    [flatten] if (shape == 3)
-    {
-        // cos(25.13x) cos(0.898x) + cos(43.98x) sin(1.571x), halved,
-        // + sin(3.142x) cos(6.283x)  - every factor is a whole or simple
-        // fraction of a cycle per x, so it reduces exactly.
-        float fast = cos(GX_TWO_PI * frac(x * 4.0));
-        float slow = cos(GX_TWO_PI * frac(x / 7.0));
-        float c14  = cos(GX_TWO_PI * frac(x * 7.0));
-        float s05  = sin(GX_TWO_PI * frac(x * 0.25));
-        float s1   = sin(GX_TWO_PI * frac(x * 0.5));
-        return (slow * fast + c14 * s05) * 0.5 + s1 * cos(GX_TWO_PI * s);
-    }
-    [flatten] if (shape == 4)
-        return frac(sin((float)i * 12.9898) * 43758.5453);
-    return s * s;
-}
-
-// Normalised, byte-quantised table entry, wrapped to the table size.
-float PeriodicTableEntry(int shape, int i)
-{
-    float  raw = PeriodicTableRaw(shape, i & 1023);
-    float2 nr  = GX_PERIODIC_NORM[shape];
-    float  v   = nr.y != 0.0 ? (raw - nr.x) / nr.y : raw;
-    return clamp(floor(v * 255.0), 0.0, 255.0) / 255.0;
+    uint  word  = (uint)table * 256u + ((uint)i >> 2);
+    uint4 quad  = GX_PERIODIC_TABLES[word >> 2];
+    uint  slot  = word & 3u;
+    uint  bytes = slot == 0u ? quad.x : slot == 1u ? quad.y : slot == 2u ? quad.z : quad.w;
+    return (float)((bytes >> (((uint)i & 3u) * 8u)) & 0xFFu) / 255.0;
 }
 
 // periodic_function_evaluate(function, time).  `time` is already divided by
@@ -96,15 +43,15 @@ float PeriodicFunctionEvaluate(int function, float time)
     if (function <= 0 || function > 11) return 1.0;
     if (function == 1) return 0.0;   // zero
 
-    int   shape    = GX_PERIODIC_SHAPE[function];
+    int   table    = GX_PERIODIC_TABLE_OF[function];
     float t        = time * 25.6;
     float fraction = fmod(t, 1.0);
     int   index    = (int)(t - fraction);
 
-    float first  = PeriodicTableEntry(shape, index);
-    float second = PeriodicTableEntry(shape, index + 1);
+    float first  = PeriodicTableEntry(table, index & 1023);
+    float second = PeriodicTableEntry(table, (index + 1) & 1023);
 
-    if (shape == 1)
+    if (function == 6 || function == 7)
     {
         // slide wraps from 1 back to 0: interpolate across the seam
         if (first > 0.75 && second < 0.25) second += 1.0;

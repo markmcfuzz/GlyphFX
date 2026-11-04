@@ -3769,16 +3769,41 @@ float NumericPlateEdgeInset
 > = 0.5;
 
 // ----------------------------------------------------------------------------
-// Change Color
-// The object's change color, filled in by the toolkit.  One per material:
-// every stage with Color0 Source > 0 multiplies its color0 RGB by it.
+// Change Colors
+// The object's change colors A-D, filled in by the toolkit.  A stage whose
+// Color0 Source is 1-4 multiplies its color0 RGB by change color A-D; 0 = no
+// tint.
 // ----------------------------------------------------------------------------
-float4 ChangeColor
+float4 ChangeColorA
 <
-    string UIName   = "Change Color (Only for 3ds Max)";
+    string UIName   = "Change Color A (Only for 3ds Max)";
     string UIGroup  = "Change Color Properties";
     string UIWidget = "Color";
     int    UIOrder = 414;
+> = float4(1, 1, 1, 1);
+
+float4 ChangeColorB
+<
+    string UIName   = "Change Color B (Only for 3ds Max)";
+    string UIGroup  = "Change Color Properties";
+    string UIWidget = "Color";
+    int    UIOrder = 415;
+> = float4(1, 1, 1, 1);
+
+float4 ChangeColorC
+<
+    string UIName   = "Change Color C (Only for 3ds Max)";
+    string UIGroup  = "Change Color Properties";
+    string UIWidget = "Color";
+    int    UIOrder = 416;
+> = float4(1, 1, 1, 1);
+
+float4 ChangeColorD
+<
+    string UIName   = "Change Color D (Only for 3ds Max)";
+    string UIGroup  = "Change Color Properties";
+    string UIWidget = "Color";
+    int    UIOrder = 417;
 > = float4(1, 1, 1, 1);
 
 // ----------------------------------------------------------------------------
@@ -3796,7 +3821,7 @@ float BackgroundBrightness
     string UIName   = "Background Brightness  [0,1]  (brightness behind the surface)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 415;
+    int    UIOrder = 418;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3807,7 +3832,7 @@ float DitherAmount
     string UIName   = "Dither Amount  (1 = exact, >1 = more see-through, <1 = smoother)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 416;
+    int    UIOrder = 419;
     float  UIMin = 0; float UIMax = 5; float UIStep = 0.01;
 > = 1.5;
 
@@ -3817,7 +3842,7 @@ float MaxOpacity
     string UIName   = "Max Opacity  [0,1]  (lower = background always shows through)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 417;
+    int    UIOrder = 420;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 1.0;
 
@@ -3828,7 +3853,7 @@ float ColorSaturation
     string UIName   = "Color Saturation  (1 = faithful, >1 = richer)";
     string UIGroup  = "Viewport Blend";
     string UIWidget = "slider";
-    int    UIOrder = 418;
+    int    UIOrder = 421;
     float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
 > = 1.2;
 
@@ -3848,7 +3873,7 @@ bool AnimationPreview
 <
     string UIName  = "Animation Preview";
     string UIGroup = "Animation Preview (Only for 3ds Max)";
-    int    UIOrder = 419;
+    int    UIOrder = 422;
 > = false;
 
 // Game time in seconds.  A plain animatable float: key it, or wire it to the
@@ -3858,7 +3883,7 @@ float AnimationTime
     string UIName   = "Animation Time  (Seconds)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "Spinner";
-    int    UIOrder = 420;
+    int    UIOrder = 423;
     float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
 
@@ -3870,7 +3895,7 @@ float ObjectFunctionA
     string UIName   = "A Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 421;
+    int    UIOrder = 424;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3879,7 +3904,7 @@ float ObjectFunctionB
     string UIName   = "B Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 422;
+    int    UIOrder = 425;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3888,7 +3913,7 @@ float ObjectFunctionC
     string UIName   = "C Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 423;
+    int    UIOrder = 426;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3897,7 +3922,7 @@ float ObjectFunctionD
     string UIName   = "D Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 424;
+    int    UIOrder = 427;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3908,7 +3933,7 @@ float ModelBaseMapScaleU
     string UIName   = "Model Base Map U Scale  (gbxmodel, 0 = 1)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 425;
+    int    UIOrder = 428;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
 
@@ -3917,7 +3942,7 @@ float ModelBaseMapScaleV
     string UIName   = "Model Base Map V Scale  (gbxmodel, 0 = 1)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 426;
+    int    UIOrder = 429;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
 

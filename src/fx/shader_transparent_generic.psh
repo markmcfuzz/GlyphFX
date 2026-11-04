@@ -43,8 +43,8 @@
 //     event fires (e.g. the shield being hit), so the LOWER bound is used.
 //   - wave function Zero: lower bound.
 //   - anything else: the wave peak, i.e. the upper bound.
-// "Color0 Source" A-D multiplies color0's RGB by `ChangeColor`, the object's
-// change color filled by the toolkit (one per material, shared by all stages).
+// "Color0 Source" 1-4 multiplies color0's RGB by `ChangeColorA`-`ChangeColorD`,
+// the object's change colors A-D, filled by the toolkit (0 = no tint).
 // The stage colors are ARGB: the RGB comes from the color widget, the A from
 // the separate "Alpha (A of ARGB)" slider.
 //
@@ -199,8 +199,12 @@ void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
     // Constant color 0: the engine animates lower -> upper by the stage's
     // animation value (see Color0AnimationValue in the vertex shader).
     regs[8] = saturate(lowerBound + color0Anim * (upperBound - lowerBound));
-    // Color0 Source A-D: tint by the material's single ChangeColor (RGB only).
-    if (color0Source > 0) regs[8].rgb *= ChangeColor.rgb;
+    // Color0 Source 1-4: tint by the object's change color A-D (RGB only).
+    // Any other value leaves it untinted, as in the engine.
+    if (color0Source == 1) regs[8].rgb *= ChangeColorA.rgb;
+    if (color0Source == 2) regs[8].rgb *= ChangeColorB.rgb;
+    if (color0Source == 3) regs[8].rgb *= ChangeColorC.rgb;
+    if (color0Source == 4) regs[8].rgb *= ChangeColorD.rgb;
     regs[9] = color1;
 
     float3 a = ApplyInputMappingC(SelectColorInput(inA), inAMap);

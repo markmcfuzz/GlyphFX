@@ -50,7 +50,7 @@
 //
 // ── FRAMEBUFFER FADE ─────────────────────────────────────────────────────────
 // In-engine an extra combiner stage applies the Framebuffer Fade Mode; here
-// the equivalent math runs in each entry point:
+// the equivalent math runs in each blend function:
 //   Alpha Blend       final alpha × fade
 //   Add               final rgb × fade
 //   Multiply          lerp(1.0, rgb, fade)   - fades to blend-neutral white
@@ -62,9 +62,9 @@
 // Nitrous ignores blend states.  Alpha Blend dithers by the final alpha and
 // is exact.  Add / Multiply / Double Multiply use the coverage solve in
 // _coverage.fxh (the shader_transparent_water scheme), tuned by the
-// "Viewport Blend" parameters.  Subtract, Component Min/Max and
-// Alpha-Multiply Add have no viewport equivalent - use the closest of the
-// four techniques.
+// "Viewport Blend" parameters.  The Framebuffer Blend Function parameter
+// picks the blend (PS_Main); Subtract, Component Min/Max and Alpha-Multiply
+// Add draw as the closest of the four (ViewportBlendMode, _coverage.fxh).
 // ----------------------------------------------------------------------------
 
 // ─── Combiner register file ──────────────────────────────────────────────────
@@ -109,20 +109,22 @@ float ApplyInputMappingA(float v, int m)
 // 11/12=scratch color 13/14=constant color 15-24=alpha of the same registers.
 // Alpha: same order, but 5-14 read .a and 15-24 read .b (the "blue" inputs).
 
+// One return each: with early returns the compiler warns, inside the stage
+// loop, that the result may be uninitialized.
 float3 SelectColorInput(int sel)
 {
     sel = clamp(sel, 0, 24);
-    if (sel < 5)  return GX_KONST[sel].xxx;
-    if (sel < 15) return regs[sel - 5].rgb;
-    return regs[sel - 15].aaa;
+    float4 reg = regs[max(sel < 15 ? sel - 5 : sel - 15, 0)];
+    float3 v   = sel < 15 ? reg.rgb : reg.aaa;
+    return sel < 5 ? GX_KONST[min(sel, 4)].xxx : v;
 }
 
 float SelectAlphaInput(int sel)
 {
     sel = clamp(sel, 0, 24);
-    if (sel < 5)  return GX_KONST[sel];
-    if (sel < 15) return regs[sel - 5].a;
-    return regs[sel - 15].b;
+    float4 reg = regs[max(sel < 15 ? sel - 5 : sel - 15, 0)];
+    float  v   = sel < 15 ? reg.a : reg.b;
+    return sel < 5 ? GX_KONST[min(sel, 4)] : v;
 }
 
 // ─── Output function / mapping / write ───────────────────────────────────────
@@ -184,90 +186,116 @@ void WriteAlphaOutput(float v, int o)
 // Mirrors ringworld's STAGE macro exactly: all inputs and both mux decisions
 // read the register values from BEFORE this stage's writes; the six writes
 // happen together at the end (later writes to the same register win).
+//
+// The stages run in a real loop, so the compiler emits RunStage once.  Calling
+// it once per stage unrolled seven copies and made each pixel shader take ~1 s
+// to compile (~4 s for Max's first load of the effect).  Each iteration loads
+// its stage with LoadStage: a chain of branches on the stage index.  Copying
+// all stages into a local array and indexing it costs twice the compile time.
+// Do not unroll it back.
 
-void RunStage(float4 lowerBound, float4 upperBound, float4 color1,
-              float color0Anim, int color0Source,
-              bool colorMux, bool alphaMux,
-              int inA,  int inAMap,  int inB,  int inBMap,
-              int inC,  int inCMap,  int inD,  int inDMap,
-              int outAB, int outABFunc, int outCD, int outCDFunc,
-              int outMuxSum, int outMapping,
-              int aInA, int aInAMap, int aInB, int aInBMap,
-              int aInC, int aInCMap, int aInD, int aInDMap,
-              int aOutAB, int aOutCD, int aOutMuxSum, int aOutMapping)
+struct GxStage
+{
+    int    enabled;
+    float4 lower;          // constant color 0 animation bounds (ARGB as RGBA)
+    float4 upper;
+    float4 color1;         // constant color 1
+    float  color0Anim;     // color0 animation value, from the vertex shader
+    int    color0Source;
+    int    mux;            // bit 0 = color mux, bit 1 = alpha mux
+    int4   colorIn;        // color inputs A-D
+    int4   colorMap;       // and their mappings
+    int2   colorFunc;      // AB / CD function
+    int4   colorOut;       // AB, CD, AB CD mux/sum outputs, output mapping
+    int4   alphaIn;        // alpha inputs A-D
+    int4   alphaMap;       // and their mappings
+    int4   alphaOut;       // AB, CD, AB CD mux/sum outputs, output mapping
+};
+
+void RunStage(GxStage st)
 {
     // Constant color 0: the engine animates lower -> upper by the stage's
     // animation value (see Color0AnimationValue in the vertex shader).
-    regs[8] = saturate(lowerBound + color0Anim * (upperBound - lowerBound));
+    regs[8] = saturate(st.lower + st.color0Anim * (st.upper - st.lower));
     // Color0 Source 1-4: tint by the object's change color A-D (RGB only).
     // Any other value leaves it untinted, as in the engine.
-    if (color0Source == 1) regs[8].rgb *= ChangeColorA.rgb;
-    if (color0Source == 2) regs[8].rgb *= ChangeColorB.rgb;
-    if (color0Source == 3) regs[8].rgb *= ChangeColorC.rgb;
-    if (color0Source == 4) regs[8].rgb *= ChangeColorD.rgb;
-    regs[9] = color1;
+    if (st.color0Source == 1) regs[8].rgb *= ChangeColorA.rgb;
+    if (st.color0Source == 2) regs[8].rgb *= ChangeColorB.rgb;
+    if (st.color0Source == 3) regs[8].rgb *= ChangeColorC.rgb;
+    if (st.color0Source == 4) regs[8].rgb *= ChangeColorD.rgb;
+    regs[9] = st.color1;
 
-    float3 a = ApplyInputMappingC(SelectColorInput(inA), inAMap);
-    float3 b = ApplyInputMappingC(SelectColorInput(inB), inBMap);
-    float3 c = ApplyInputMappingC(SelectColorInput(inC), inCMap);
-    float3 d = ApplyInputMappingC(SelectColorInput(inD), inDMap);
+    float3 cin[4];
+    float  ain[4];
+    [loop] for (int j = 0; j < 4; j++)
+    {
+        cin[j] = ApplyInputMappingC(SelectColorInput(st.colorIn[j]), st.colorMap[j]);
+        ain[j] = ApplyInputMappingA(SelectAlphaInput(st.alphaIn[j]), st.alphaMap[j]);
+    }
+    float3 a = cin[0], b = cin[1], c = cin[2], d = cin[3];
 
-    float3 ab     = CombineC(a, b, outABFunc);
-    float3 cd     = CombineC(c, d, outCDFunc);
-    float3 muxSum = colorMux ? (regs[6].a >= 0.5 ? cd : ab) : ab + cd;
+    float3 ab     = CombineC(a, b, st.colorFunc.x);
+    float3 cd     = CombineC(c, d, st.colorFunc.y);
+    float3 muxSum = (st.mux & 1) ? (regs[6].a >= 0.5 ? cd : ab) : ab + cd;
     muxSum = clamp(muxSum, -1.0, 1.0);
 
-    ab     = ApplyOutputMappingC(ab,     outMapping);
-    cd     = ApplyOutputMappingC(cd,     outMapping);
-    muxSum = ApplyOutputMappingC(muxSum, outMapping);
+    ab     = ApplyOutputMappingC(ab,     st.colorOut.w);
+    cd     = ApplyOutputMappingC(cd,     st.colorOut.w);
+    muxSum = ApplyOutputMappingC(muxSum, st.colorOut.w);
 
-    float aA = ApplyInputMappingA(SelectAlphaInput(aInA), aInAMap);
-    float aB = ApplyInputMappingA(SelectAlphaInput(aInB), aInBMap);
-    float aC = ApplyInputMappingA(SelectAlphaInput(aInC), aInCMap);
-    float aD = ApplyInputMappingA(SelectAlphaInput(aInD), aInDMap);
+    float aA = ain[0], aB = ain[1], aC = ain[2], aD = ain[3];
 
     float abA     = CombineA(aA, aB);
     float cdA     = CombineA(aC, aD);
-    float muxSumA = alphaMux ? (regs[6].a >= 0.5 ? cdA : abA) : abA + cdA;
+    float muxSumA = (st.mux & 2) ? (regs[6].a >= 0.5 ? cdA : abA) : abA + cdA;
     muxSumA = clamp(muxSumA, -1.0, 1.0);
 
-    abA     = ApplyOutputMappingA(abA,     aOutMapping);
-    cdA     = ApplyOutputMappingA(cdA,     aOutMapping);
-    muxSumA = ApplyOutputMappingA(muxSumA, aOutMapping);
+    abA     = ApplyOutputMappingA(abA,     st.alphaOut.w);
+    cdA     = ApplyOutputMappingA(cdA,     st.alphaOut.w);
+    muxSumA = ApplyOutputMappingA(muxSumA, st.alphaOut.w);
 
-    WriteColorOutput(ab,     outAB);
-    WriteColorOutput(cd,     outCD);
-    WriteColorOutput(muxSum, outMuxSum);
-    WriteAlphaOutput(abA,     aOutAB);
-    WriteAlphaOutput(cdA,     aOutCD);
-    WriteAlphaOutput(muxSumA, aOutMuxSum);
+    WriteColorOutput(ab,     st.colorOut.x);
+    WriteColorOutput(cd,     st.colorOut.y);
+    WriteColorOutput(muxSum, st.colorOut.z);
+    WriteAlphaOutput(abA,     st.alphaOut.x);
+    WriteAlphaOutput(cdA,     st.alphaOut.y);
+    WriteAlphaOutput(muxSumA, st.alphaOut.z);
 }
 
-// Expands one stage's material parameters into a RunStage call.  The ARGB
-// colors are composed from the RGB color widget + the separate alpha slider.
-// F is the stage's color0 animation value from the vertex shader.
-#define GX_RUN_STAGE(N, F)                                                     \
-    RunStage(                                                                  \
-        float4(Stage##N##_Color0AnimationLowerBound.rgb,                       \
-               Stage##N##_Color0LowerAlpha),                                   \
-        float4(Stage##N##_Color0AnimationUpperBound.rgb,                       \
-               Stage##N##_Color0UpperAlpha),                                   \
-        float4(Stage##N##_Color1.rgb, Stage##N##_Color1Alpha),                 \
-        F, Stage##N##_Color0Source,                                            \
-        Stage##N##_ColorMux, Stage##N##_AlphaMux,                              \
-        Stage##N##_ColorInputA, Stage##N##_ColorInputAMapping,                 \
-        Stage##N##_ColorInputB, Stage##N##_ColorInputBMapping,                 \
-        Stage##N##_ColorInputC, Stage##N##_ColorInputCMapping,                 \
-        Stage##N##_ColorInputD, Stage##N##_ColorInputDMapping,                 \
-        Stage##N##_ColorOutputAB, Stage##N##_ColorOutputABFunction,            \
-        Stage##N##_ColorOutputCD, Stage##N##_ColorOutputCDFunction,            \
-        Stage##N##_ColorOutputABCDMuxSum, Stage##N##_ColorOutputMapping,       \
-        Stage##N##_AlphaInputA, Stage##N##_AlphaInputAMapping,                 \
-        Stage##N##_AlphaInputB, Stage##N##_AlphaInputBMapping,                 \
-        Stage##N##_AlphaInputC, Stage##N##_AlphaInputCMapping,                 \
-        Stage##N##_AlphaInputD, Stage##N##_AlphaInputDMapping,                 \
-        Stage##N##_AlphaOutputAB, Stage##N##_AlphaOutputCD,                    \
-        Stage##N##_AlphaOutputABCDMuxSum, Stage##N##_AlphaOutputMapping)
+// Copies stage N's material parameters into the record `s`.  The ARGB colors
+// are composed from the RGB color widget + the separate alpha slider.  F is
+// the stage's color0 animation value from the vertex shader.
+#define GX_STAGE_DATA(N, ENABLED, F)                                       \
+    s.enabled      = (ENABLED) ? 1 : 0;                                    \
+    s.lower        = float4(Stage##N##_Color0AnimationLowerBound.rgb,      \
+                                Stage##N##_Color0LowerAlpha);                  \
+    s.upper        = float4(Stage##N##_Color0AnimationUpperBound.rgb,      \
+                                Stage##N##_Color0UpperAlpha);                  \
+    s.color1       = float4(Stage##N##_Color1.rgb, Stage##N##_Color1Alpha);\
+    s.color0Anim   = (F);                                                  \
+    s.color0Source = Stage##N##_Color0Source;                              \
+    s.mux          = (Stage##N##_ColorMux ? 1 : 0) |                       \
+                         (Stage##N##_AlphaMux ? 2 : 0);                        \
+    s.colorIn      = int4(Stage##N##_ColorInputA, Stage##N##_ColorInputB,  \
+                              Stage##N##_ColorInputC, Stage##N##_ColorInputD); \
+    s.colorMap     = int4(Stage##N##_ColorInputAMapping,                   \
+                              Stage##N##_ColorInputBMapping,                   \
+                              Stage##N##_ColorInputCMapping,                   \
+                              Stage##N##_ColorInputDMapping);                  \
+    s.colorFunc    = int2(Stage##N##_ColorOutputABFunction,                \
+                              Stage##N##_ColorOutputCDFunction);               \
+    s.colorOut     = int4(Stage##N##_ColorOutputAB, Stage##N##_ColorOutputCD,\
+                              Stage##N##_ColorOutputABCDMuxSum,                \
+                              Stage##N##_ColorOutputMapping);                  \
+    s.alphaIn      = int4(Stage##N##_AlphaInputA, Stage##N##_AlphaInputB,  \
+                              Stage##N##_AlphaInputC, Stage##N##_AlphaInputD); \
+    s.alphaMap     = int4(Stage##N##_AlphaInputAMapping,                   \
+                              Stage##N##_AlphaInputBMapping,                   \
+                              Stage##N##_AlphaInputCMapping,                   \
+                              Stage##N##_AlphaInputDMapping);                  \
+    s.alphaOut     = int4(Stage##N##_AlphaOutputAB, Stage##N##_AlphaOutputCD,\
+                              Stage##N##_AlphaOutputABCDMuxSum,                \
+                              Stage##N##_AlphaOutputMapping);
 
 // ─── Map sampling ────────────────────────────────────────────────────────────
 
@@ -310,6 +338,32 @@ float2 NumericMap1UV(float2 uv)
     return uv;
 }
 
+// Stage k's record (k = 0 is stage 1, always active).
+GxStage LoadStage(int k, STG_PS_INPUT i)
+{
+    GxStage s = (GxStage)0;
+    [branch] if (k == 0) { GX_STAGE_DATA(1, true, i.color0Anim0.x) }
+#if GX_GENERIC_STAGES >= 2
+    [branch] if (k == 1) { GX_STAGE_DATA(2, EnableStage2, i.color0Anim0.y) }
+#endif
+#if GX_GENERIC_STAGES >= 3
+    [branch] if (k == 2) { GX_STAGE_DATA(3, EnableStage3, i.color0Anim0.z) }
+#endif
+#if GX_GENERIC_STAGES >= 4
+    [branch] if (k == 3) { GX_STAGE_DATA(4, EnableStage4, i.color0Anim0.w) }
+#endif
+#if GX_GENERIC_STAGES >= 5
+    [branch] if (k == 4) { GX_STAGE_DATA(5, EnableStage5, i.color0Anim1.x) }
+#endif
+#if GX_GENERIC_STAGES >= 6
+    [branch] if (k == 5) { GX_STAGE_DATA(6, EnableStage6, i.color0Anim1.y) }
+#endif
+#if GX_GENERIC_STAGES >= 7
+    [branch] if (k == 6) { GX_STAGE_DATA(7, EnableStage7, i.color0Anim1.z) }
+#endif
+    return s;
+}
+
 // ─── Combiner pipeline ───────────────────────────────────────────────────────
 // Samples the active maps and runs the active stages.  Returns the final
 // color/alpha from scratch register 0.
@@ -343,25 +397,11 @@ float4 PS_Evaluate(STG_PS_INPUT i)
     regs[9]  = float4(0.0, 0.0, 0.0, 0.0);
     regs[10] = float4(0.0, 0.0, 0.0, 0.0);
 
-    GX_RUN_STAGE(1, i.color0Anim0.x);   // stage 1 is always active
-#if GX_GENERIC_STAGES >= 2
-    [branch] if (EnableStage2) GX_RUN_STAGE(2, i.color0Anim0.y);
-#endif
-#if GX_GENERIC_STAGES >= 3
-    [branch] if (EnableStage3) GX_RUN_STAGE(3, i.color0Anim0.z);
-#endif
-#if GX_GENERIC_STAGES >= 4
-    [branch] if (EnableStage4) GX_RUN_STAGE(4, i.color0Anim0.w);
-#endif
-#if GX_GENERIC_STAGES >= 5
-    [branch] if (EnableStage5) GX_RUN_STAGE(5, i.color0Anim1.x);
-#endif
-#if GX_GENERIC_STAGES >= 6
-    [branch] if (EnableStage6) GX_RUN_STAGE(6, i.color0Anim1.y);
-#endif
-#if GX_GENERIC_STAGES >= 7
-    [branch] if (EnableStage7) GX_RUN_STAGE(7, i.color0Anim1.z);
-#endif
+    [loop] for (int k = 0; k < GX_GENERIC_STAGES; k++)
+    {
+        GxStage s = LoadStage(k, i);
+        [branch] if (s.enabled != 0) RunStage(s);
+    }
 
     return float4(saturate(regs[6].rgb), saturate(regs[6].a));
 }
@@ -400,7 +440,7 @@ void DitherClip(float alpha, float4 clipPos)
     clip(alpha - dither * DitherScale);
 }
 
-// ─── Pixel shader entry points ───────────────────────────────────────────────
+// ─── Framebuffer blends ───────────────────────────────────────────────
 
 // Alpha Blend - uses the combiner's final alpha for opacity.
 // Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
@@ -408,9 +448,8 @@ void DitherClip(float alpha, float4 clipPos)
 //     RGB output over the dark viewport background → black areas stay black.
 // Textures WITH an alpha channel: c.a < 1.0 on transparent pixels.
 //   → Opacity controls + dither clip for smooth transparency.
-float4 PS_AlphaBlend(STG_PS_INPUT i) : SV_TARGET
+float4 BlendAlphaBlend(float4 c, STG_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     c.a *= FramebufferFade(i);
     if (c.a >= 1.0)
         return float4(c.rgb, 0.0);
@@ -433,27 +472,40 @@ float4 ResolveViewportBlend(float3 Cmul, float3 Cadd, float4 clipPos)
 }
 
 // Add - background + color.  Brightness is a viewport gain on the added color.
-float4 PS_Add(STG_PS_INPUT i) : SV_TARGET
+float4 BlendAdd(float4 c, STG_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     float3 add = c.rgb * FramebufferFade(i) * Brightness;
     return ResolveViewportBlend((float3)1.0, add, i.clipPos);
 }
 
 // Multiply - background * color.  The fade pulls the color toward white, the
 // blend-neutral value.
-float4 PS_Multiply(STG_PS_INPUT i) : SV_TARGET
+float4 BlendMultiply(float4 c, STG_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     float3 mul = lerp((float3)1.0, c.rgb, FramebufferFade(i));
     return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
 }
 
 // Double Multiply - background * color * 2.  The fade pulls the color toward
 // mid grey, the blend-neutral value.
-float4 PS_DoubleMultiply(STG_PS_INPUT i) : SV_TARGET
+float4 BlendDoubleMultiply(float4 c, STG_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     float3 mul = 2.0 * lerp((float3)0.5, c.rgb, FramebufferFade(i));
     return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
+}
+
+// ─── Pixel shader ────────────────────────────────────────────────────────────
+// One pixel shader for every blend: the tag's Framebuffer Blend Function picks
+// it (ViewportBlendMode, _coverage.fxh), so the viewport matches the exported
+// tag.  One shader instead of one per technique also compiles four times
+// faster, i.e. Max's first load of the effect.
+
+float4 PS_Main(STG_PS_INPUT i) : SV_TARGET
+{
+    float4 c    = PS_Evaluate(i);
+    int    mode = ViewportBlendMode(FramebufferBlendFunction);
+    [branch] if (mode == 1) return BlendMultiply(c, i);
+    [branch] if (mode == 2) return BlendDoubleMultiply(c, i);
+    [branch] if (mode == 3) return BlendAdd(c, i);
+    return BlendAlphaBlend(c, i);
 }

@@ -9,18 +9,16 @@
 //   · Reflection: bump-mapped or flat cube-map with fresnel tint
 //   · Diffuse: diffuse map × diffuse detail × light, alpha-blended
 //   · Specular: specular map × specular detail × spec light, alpha-blended
+// drawn with real GPU blending as background * Cmul + Cadd (_blend.fxh).
 // ----------------------------------------------------------------------------
 
-// Stochastic (dithered) discard for semi-transparent glass in Nitrous.
-void DitherClip(float alpha, float4 clipPos)
-{
-    float2 screenUV = clipPos.xy / clipPos.w;
-    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-    clip(alpha - dither);
-}
 
-float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
+// Two Sided off: the engine culls back faces (D3DCULL_CCW).  The .fx leaves
+// culling to Nitrous, so the back faces are dropped here.
+GxBlendOutput PS_Main(TG_PS_INPUT i, bool frontFace : SV_IsFrontFace)
 {
+    if (!TwoSided && !frontFace) discard;
+
     // ------------------------------------------------------------------------
     // Lighting vectors
     // ------------------------------------------------------------------------
@@ -182,26 +180,19 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
     float specular_alpha = specular_map.a * specular_detail.a;
 
     // ------------------------------------------------------------------------
-    // Combine all layers (matching the original multi-pass compositing order)
+    // Combine the engine's passes into background * Cmul + Cadd
     //
-    //   Pass 1 - Tint: multiplies background (we use tint as base colour)
-    //   Pass 2 - Reflection: additive on top of tint
-    //   Pass 3 - Diffuse: alpha-blended over tint + reflection
-    //   Pass 4 - Specular: alpha-blended over everything
+    //   Pass 1 - Tint (ZERO/SRCCOLOR):        bg * tint
+    //   Pass 2 - Reflection (SRCALPHA/ONE):   + reflection
+    //   Pass 3 - Diffuse (SRCALPHA/INVSRCALPHA): lerp(that, diffuse, da)
+    //   then the specular layer (GlyphFX) is added on top, scaled by its alpha.
     // ------------------------------------------------------------------------
-    float3 color = tint + final_reflection;
-    color = lerp(color, lit_diffuse,          diffuse_alpha);
-    color = lerp(color, color + lit_specular, specular_alpha);
-    color = saturate(color);
+    float3 cmul = tint * (1.0 - diffuse_alpha);
+    float3 cadd = final_reflection * (1.0 - diffuse_alpha)
+                + lit_diffuse * diffuse_alpha
+                + lit_specular * specular_alpha;
 
-    // ------------------------------------------------------------------------
-    // Overall glass opacity
-    //
-    // Glass is fundamentally transparent.  The visible opacity comes from
-    // tint darkness, reflection brightness and the diffuse/specular alpha
-    // channels.  We compute a composite opacity so the viewport can
-    // approximate the transparency.
-    // ------------------------------------------------------------------------
+    // Opacity for the Alpha Tested flag
     float refl_lum    = dot(final_reflection, float3(0.299, 0.587, 0.114));
     float tint_lum    = 1.0 - dot(tint, float3(0.299, 0.587, 0.114));
     float glass_alpha = saturate(max(refl_lum, max(diffuse_alpha, specular_alpha))
@@ -210,17 +201,17 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
     // ------------------------------------------------------------------------
     // Debug visualisation
     // ------------------------------------------------------------------------
-    if      (DebugMode == 1) return float4(tint_map.rgb,         1.0);
-    else if (DebugMode == 2) return float4(bump_map.rgb,         1.0);
-    else if (DebugMode == 3) return float4(final_reflection,     1.0);
-    else if (DebugMode == 4) return float4(diffuse_map.rgb,      1.0);
-    else if (DebugMode == 5) return float4(diffuse_detail.rgb,   1.0);
-    else if (DebugMode == 6) return float4(specular_map.rgb,     1.0);
-    else if (DebugMode == 7) return float4(specular_detail.rgb,  1.0);
+    if      (DebugMode == 1) return BlendOpaque(tint_map.rgb);
+    else if (DebugMode == 2) return BlendOpaque(bump_map.rgb);
+    else if (DebugMode == 3) return BlendOpaque(final_reflection);
+    else if (DebugMode == 4) return BlendOpaque(diffuse_map.rgb);
+    else if (DebugMode == 5) return BlendOpaque(diffuse_detail.rgb);
+    else if (DebugMode == 6) return BlendOpaque(specular_map.rgb);
+    else if (DebugMode == 7) return BlendOpaque(specular_detail.rgb);
     else if (DebugMode == 8)
     {
         float3 sm = BumpMapIsSpecularMask ? bump_map.rgb : (float3)1.0;
-        return float4(sm, 1.0);
+        return BlendOpaque(sm);
     }
 
     // ------------------------------------------------------------------------
@@ -229,8 +220,5 @@ float4 PS_Main(TG_PS_INPUT i) : SV_TARGET
     if (AlphaTested)
         clip(glass_alpha - c_alpha_ref);
 
-    // Dithered transparency for Nitrous viewport
-    DitherClip(glass_alpha, i.clipPos);
-
-    return float4(color, 1.0);
+    return BlendOutput(cmul, cadd);
 }

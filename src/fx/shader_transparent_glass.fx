@@ -12,50 +12,42 @@ string ParamID = "0x003";
 #include "_constants.fxh"
 #include "_structs.fxh"
 #include "_samplers.fxh"
+#include "_blend.fxh"
 #include "shader_transparent_glass.params.fxh"
 #include "_cubemap.fxh"
 #include "shader_transparent_glass.vsh"
 #include "shader_transparent_glass.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state - glass is semi-transparent; Nitrous requires BlendEnable=FALSE
-// so we use dithered alpha in the pixel shader instead.
+// Blend state - dual source: out = PS target 0 + background * PS target 1,
+// i.e. background * Cmul + Cadd (see _blend.fxh).  Framebuffer alpha is kept.
 // ----------------------------------------------------------------------------
-BlendState BS_Glass
+BlendState BS_DualSource
 {
-    BlendEnable[0]           = FALSE;
+    BlendEnable[0]           = TRUE;
     SrcBlend                 = ONE;
-    DestBlend                = ZERO;
+    DestBlend                = SRC1_COLOR;
     BlendOp                  = ADD;
-    SrcBlendAlpha            = ONE;
-    DestBlendAlpha           = ZERO;
+    SrcBlendAlpha            = ZERO;
+    DestBlendAlpha           = ONE;
     BlendOpAlpha             = ADD;
     RenderTargetWriteMask[0] = 0x0F;
 };
 
 // ----------------------------------------------------------------------------
-// Depth state
+// Depth state - test, but do not write (writing depth breaks the blend in
+// Nitrous; it draws transparent surfaces after the opaque geometry).
 // ----------------------------------------------------------------------------
-DepthStencilState DS_Default
+DepthStencilState DS_DepthTestOnly
 {
     DepthEnable    = TRUE;
-    DepthWriteMask = ALL;
+    DepthWriteMask = ZERO;
     DepthFunc      = LESS_EQUAL;
 };
 
-// ----------------------------------------------------------------------------
-// Rasterizer state - no back-face culling so both sides render (glass is
-// often two-sided).
-// ----------------------------------------------------------------------------
-RasterizerState RS_NoCull
-{
-    CullMode = NONE;
-};
-
-RasterizerState RS_BackCull
-{
-    CullMode = BACK;
-};
+// No rasterizer state, on purpose: Nitrous draws transparent surfaces in two
+// passes (back faces, then front faces) with its own cull mode.  See
+// _blend.fxh.
 
 // ----------------------------------------------------------------------------
 // Technique
@@ -74,8 +66,7 @@ technique11 shader_transparent_glass
         SetVertexShader      ( CompileShader( vs_5_0, VS_Main() ) );
         SetGeometryShader    ( NULL );
         SetPixelShader       ( CompileShader( ps_5_0, PS_Main() ) );
-        SetBlendState        ( BS_Glass,          float4(0, 0, 0, 0), 0xFFFFFFFF );
-        SetDepthStencilState ( DS_Default,        0 );
-        SetRasterizerState   ( RS_NoCull );
+        SetBlendState        ( BS_DualSource,          float4(0, 0, 0, 0), 0xFFFFFFFF );
+        SetDepthStencilState ( DS_DepthTestOnly,  0 );
     }
 }

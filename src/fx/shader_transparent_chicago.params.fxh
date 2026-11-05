@@ -1440,57 +1440,6 @@ float NumericPlateEdgeInset
 > = 0.5;
 
 // ----------------------------------------------------------------------------
-// Viewport Blend (GlyphFX-only, not tag data)
-// Nitrous ignores blend states, so Add / Multiply / Double Multiply are drawn
-// with a coverage dither that reproduces the blend on average (same scheme as
-// shader_transparent_water - see _coverage.fxh).  Alpha Blend is exact and
-// does not use these.
-// ----------------------------------------------------------------------------
-
-// The shader cannot see what is behind the surface, so it assumes this
-// brightness.  Set it to roughly the scene behind the effect.
-float BackgroundBrightness
-<
-    string UIName   = "Background Brightness  [0,1]  (brightness behind the surface)";
-    string UIGroup  = "Viewport Blend";
-    string UIWidget = "slider";
-    int    UIOrder = 157;
-    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-> = 0.0;
-
-// 1 = exact brightness.  Above 1 = more background shows through, the
-// effect gets dimmer (hue is kept).  Below 1 = smoother, less see-through.
-float DitherAmount
-<
-    string UIName   = "Dither Amount  (1 = exact, >1 = more see-through, <1 = smoother)";
-    string UIGroup  = "Viewport Blend";
-    string UIWidget = "slider";
-    int    UIOrder = 158;
-    float  UIMin = 0; float UIMax = 5; float UIStep = 0.01;
-> = 1.5;
-
-// Ceiling on coverage, so the brightest spots never hide the background fully.
-float MaxOpacity
-<
-    string UIName   = "Max Opacity  [0,1]  (lower = background always shows through)";
-    string UIGroup  = "Viewport Blend";
-    string UIWidget = "slider";
-    int    UIOrder = 159;
-    float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
-> = 1.0;
-
-// Adding Background Brightness washes the colour toward grey; this pushes its
-// chroma back up.  1 = exact brightness.
-float ColorSaturation
-<
-    string UIName   = "Color Saturation  (1 = faithful, >1 = richer)";
-    string UIGroup  = "Viewport Blend";
-    string UIWidget = "slider";
-    int    UIOrder = 160;
-    float  UIMin = 0; float UIMax = 4; float UIStep = 0.01;
-> = 1.2;
-
-// ----------------------------------------------------------------------------
 // Animation Preview (Only for 3ds Max, not tag data)
 // Plays the 2D texture animation of each map in the viewport, evaluated as
 // the engine does (_texture_animation.fxh, _periodic.fxh).  The toolkit
@@ -1505,7 +1454,7 @@ bool AnimationPreview
 <
     string UIName  = "Animation Preview";
     string UIGroup = "Animation Preview (Only for 3ds Max)";
-    int    UIOrder = 161;
+    int    UIOrder = 157;
 > = false;
 
 // Game time in seconds.  A plain animatable float: key it, or wire it to the
@@ -1515,7 +1464,7 @@ float AnimationTime
     string UIName   = "Animation Time  (Seconds)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "Spinner";
-    int    UIOrder = 162;
+    int    UIOrder = 158;
     float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
 
@@ -1526,7 +1475,7 @@ float ObjectFunctionA
     string UIName   = "A Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 163;
+    int    UIOrder = 159;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1535,7 +1484,7 @@ float ObjectFunctionB
     string UIName   = "B Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 164;
+    int    UIOrder = 160;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1544,7 +1493,7 @@ float ObjectFunctionC
     string UIName   = "C Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 165;
+    int    UIOrder = 161;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1553,7 +1502,7 @@ float ObjectFunctionD
     string UIName   = "D Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 166;
+    int    UIOrder = 162;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -1568,7 +1517,7 @@ float ModelBaseMapScaleU
     string UIName   = "Model Base Map U Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 167;
+    int    UIOrder = 163;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
 
@@ -1577,57 +1526,8 @@ float ModelBaseMapScaleV
     string UIName   = "Model Base Map V Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 168;
+    int    UIOrder = 164;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
-
-// ----------------------------------------------------------------------------
-// Opacity Controls
-// Applied to the alpha channel (Alpha Blend only).  Brightness also scales
-// the color added by the Add blend.
-// Match the controls from the opacity example shader.
-// ----------------------------------------------------------------------------
-float OpacityGamma
-<
-    //string UIName   = "Opacity Gamma / Smoothing  (1 = linear)";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    float  UIMin = 0.1; float UIMax = 4.0; float UIStep = 0.05;
-> = 1.0;
-
-float OpacityContrast
-<
-    //string UIName   = "Opacity Contrast  (1 = no change)";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    float  UIMin = 0.1; float UIMax = 5.0; float UIStep = 0.05;
-> = 1.0;
-
-float OpacityBias
-<
-    //string UIName   = "Opacity Bias";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    float  UIMin = -1.0; float UIMax = 1.0; float UIStep = 0.01;
-> = 0.0;
-
-float DitherScale
-<
-    //string UIName   = "Dither Scale  (1 = full range)";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    float  UIMin = 0.0; float UIMax = 2.0; float UIStep = 0.01;
-> = 1.0;
-
-// Brightness multiplier applied to RGB before output.
-// Compensates for the viewport being darker than the in-game renderer.
-// 1.0 = no change.  Raise above 1.0 to match in-game brightness.
-float Brightness
-<
-    //string UIName   = "Brightness  (1 = no change)";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    float  UIMin = 0.0; float UIMax = 8.0; float UIStep = 0.05;
-> = 1.0;
 
 #endif // GLYPHFX_TRANSPARENT_CHICAGO_PARAMS_FXH

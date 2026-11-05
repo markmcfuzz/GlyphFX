@@ -19,49 +19,48 @@ string ParamID = "0x003";
 #include "_structs.fxh"
 #include "_samplers.fxh"
 #include "_numeric_counter.fxh"
-#include "_coverage.fxh"
+#include "_blend.fxh"
 #include "_periodic.fxh"
 #include "shader_transparent_chicago.params.fxh"
 #include "shader_transparent_chicago.vsh"
 #include "shader_transparent_chicago.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state
-// Nitrous ignores blend states, so GPU blending stays off and the material is
-// declared opaque; the pixel shader reproduces each blend (alpha with a
-// dither, the others with the coverage solve in _coverage.fxh).
+// Blend state - dual source: out = PS target 0 + background * PS target 1,
+// i.e. background * Cmul + Cadd for every framebuffer blend (see the psh).
+// The framebuffer alpha is left as it is.
 // ----------------------------------------------------------------------------
-BlendState BS_Opaque
+BlendState BS_DualSource
 {
-    BlendEnable[0]           = FALSE;
+    BlendEnable[0]           = TRUE;
     SrcBlend                 = ONE;
-    DestBlend                = ZERO;
+    DestBlend                = SRC1_COLOR;
     BlendOp                  = ADD;
-    SrcBlendAlpha            = ONE;
-    DestBlendAlpha           = ZERO;
+    SrcBlendAlpha            = ZERO;
+    DestBlendAlpha           = ONE;
     BlendOpAlpha             = ADD;
     RenderTargetWriteMask[0] = 0x0F;
 };
 
 // ----------------------------------------------------------------------------
-// Depth state
-// DepthWriteMask = ALL is required by Nitrous.  The dither clip in the pixel
-// shader ensures transparent fragments are discarded before writing depth.
+// Depth state - test, but do not write.  A transparent surface that writes
+// depth hides what Nitrous draws behind it later (tested in Max 2026).
 // ----------------------------------------------------------------------------
-DepthStencilState DS_DepthReadWrite
+DepthStencilState DS_DepthTestOnly
 {
     DepthEnable    = TRUE;
-    DepthWriteMask = ALL;
+    DepthWriteMask = ZERO;
     DepthFunc      = LESS_EQUAL;
 };
 
 // ----------------------------------------------------------------------------
-// Rasterizer state - no back-face culling so both sides render correctly.
+// No rasterizer state, on purpose.  Nitrous draws a transparent surface in two
+// passes, back faces first and then front faces, by setting the cull mode of
+// each pass itself.  Setting one here (it used to be CullMode NONE) overrides
+// that, so both passes drew every face and every blend was applied twice
+// (measured in Max 2026: an Add of 0.25 came out 0.5).  The Two Sided flag is
+// handled in the pixel shader instead.
 // ----------------------------------------------------------------------------
-RasterizerState RS_NoCull
-{
-    CullMode = NONE;
-};
 
 // ----------------------------------------------------------------------------
 // Technique
@@ -80,8 +79,7 @@ technique11 shader_transparent_chicago
         SetVertexShader      ( CompileShader( vs_5_0, VS_Main() ) );
         SetGeometryShader    ( NULL );
         SetPixelShader       ( CompileShader( ps_5_0, PS_Main() ) );
-        SetBlendState        ( BS_Opaque,          float4(0, 0, 0, 0), 0xFFFFFFFF );
-        SetDepthStencilState ( DS_DepthReadWrite,  0 );
-        SetRasterizerState   ( RS_NoCull );
+        SetBlendState        ( BS_DualSource,      float4(0, 0, 0, 0), 0xFFFFFFFF );
+        SetDepthStencilState ( DS_DepthTestOnly,   0 );
     }
 }

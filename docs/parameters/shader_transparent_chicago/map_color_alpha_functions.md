@@ -81,5 +81,5 @@ rather than four.
 
 - Alpha Replicate spreads a map's sampled alpha across its RGB *before* the blend, so it changes what
   that map contributes as `B`.
-- The stage arithmetic runs before the framebuffer blend mode. Pick the technique that matches the
-  tag's Framebuffer Blend Function; the maps are already combined by then.
+- The stage arithmetic runs before the framebuffer blend mode, which the Framebuffer Blend Function
+  parameter picks; the maps are already combined by then.

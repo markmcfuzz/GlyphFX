@@ -25,8 +25,8 @@
 //                          between the lower and upper bounds, exactly like the
 //                          self-illumination color of the model shader
 //
-// Framebuffer blend function is informational only; select the matching
-// technique in the DirectX Shader material to activate the correct blend mode.
+// The Framebuffer Blend Function parameter picks the blend the pixel shader
+// draws (one technique for all blends).
 // ----------------------------------------------------------------------------
 
 #ifndef GLYPHFX_TRANSPARENT_GENERIC_PARAMS_FXH
@@ -199,7 +199,7 @@ bool Numeric
     int    UIOrder = 16;
 > = false;
 
-// Informational - select the matching technique to activate the correct blend.
+// Informational - the viewport always samples Map 1 as a 2D map.
 int FirstMapType
 <
     string UIName   = "First Map Type  [0=2D Map 1=Reflection Cube 2=Object Center Cube 3=Viewer Center Cube]";
@@ -209,9 +209,11 @@ int FirstMapType
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
 
+// Picks the blend the pixel shader draws (see ViewportBlendMode in
+// _coverage.fxh): 4-7 draw as the closest of 0-3.
 int FramebufferBlendFunction
 <
-    string UIName   = "Framebuffer Blend Function  [0=Alpha Blend 1=Multiply 2=Double Multiply 3=Add 4=Subtract 5=Comp Min 6=Comp Max 7=Alpha-Mul Add]";
+    string UIName   = "Framebuffer Blend Function  [0=Alpha Blend 1=Multiply 2=Double Multiply 3=Add 4=Subtract 5=Comp Min 6=Comp Max 7=Alpha-Mul Add]  (picks the viewport blend; 4-7 use the closest)";
     string UIGroup  = "Shader Generic Attributes";
     string UIWidget = "Spinner";
     int    UIOrder = 18;
@@ -3948,7 +3950,7 @@ float ModelBaseMapScaleV
 // ----------------------------------------------------------------------------
 // Opacity Controls
 // Applied to the alpha channel (Alpha Blend only).  Brightness also scales
-// the color added by the Add technique.
+// the color added by the Add blend.
 // Match the controls from the opacity example shader.
 // ----------------------------------------------------------------------------
 float OpacityGamma

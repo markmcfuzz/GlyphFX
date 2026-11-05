@@ -23,9 +23,10 @@
 // MipmapBias shifts the sampled mip level via SampleBias.
 //
 // ── FRAMEBUFFER BLEND MODES ──────────────────────────────────────────────────
-// Each blend mode has its own pixel-shader entry point and a matching
-// technique in shader_transparent_chicago.fx.  Select the technique that
-// matches the "Framebuffer Blend Function" value in the tag.
+// One pixel shader (PS_Main) draws every blend; the "Framebuffer Blend
+// Function" parameter picks it.  Subtract, Component Min/Max and
+// Alpha-Multiply Add draw as the closest of the four below
+// (ViewportBlendMode, _coverage.fxh).
 //
 //   Alpha Blend     - opacity from the texture's alpha channel.
 //                     For textures WITH an alpha channel.
@@ -248,7 +249,7 @@ void DitherClip(float alpha, float4 clipPos)
     clip(alpha - dither * DitherScale);
 }
 
-// ─── Pixel shader entry points ────────────────────────────────────────────────
+// ─── Framebuffer blends ────────────────────────────────────────────────
 
 // Alpha Blend - uses the texture's alpha channel for opacity.
 // Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
@@ -256,9 +257,8 @@ void DitherClip(float alpha, float4 clipPos)
 //     RGB output over the dark viewport background → black areas stay black.
 // Textures WITH an alpha channel: c.a < 1.0 on transparent pixels.
 //   → Opacity controls + dither clip for smooth transparency.
-float4 PS_AlphaBlend(TC_PS_INPUT i) : SV_TARGET
+float4 BlendAlphaBlend(float4 c, TC_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     if (c.a >= 1.0)
         return float4(c.rgb, 0.0);
     float alpha = ApplyOpacityControls(c.a);
@@ -280,22 +280,35 @@ float4 ResolveViewportBlend(float3 Cmul, float3 Cadd, float4 clipPos)
 }
 
 // Add - background + color.  Brightness is a viewport gain on the added color.
-float4 PS_Add(TC_PS_INPUT i) : SV_TARGET
+float4 BlendAdd(float4 c, TC_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     return ResolveViewportBlend((float3)1.0, c.rgb * Brightness, i.clipPos);
 }
 
 // Multiply - background * color.  White leaves the background unchanged.
-float4 PS_Multiply(TC_PS_INPUT i) : SV_TARGET
+float4 BlendMultiply(float4 c, TC_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     return ResolveViewportBlend(c.rgb, (float3)0.0, i.clipPos);
 }
 
 // Double Multiply - background * color * 2.  Mid grey leaves it unchanged.
-float4 PS_DoubleMultiply(TC_PS_INPUT i) : SV_TARGET
+float4 BlendDoubleMultiply(float4 c, TC_PS_INPUT i)
 {
-    float4 c = PS_Evaluate(i);
     return ResolveViewportBlend(2.0 * c.rgb, (float3)0.0, i.clipPos);
+}
+
+// ─── Pixel shader ────────────────────────────────────────────────────────────
+// One pixel shader for every blend: the tag's Framebuffer Blend Function picks
+// it (ViewportBlendMode, _coverage.fxh), so the viewport matches the exported
+// tag.  One shader instead of one per technique also compiles four times
+// faster, i.e. Max's first load of the effect.
+
+float4 PS_Main(TC_PS_INPUT i) : SV_TARGET
+{
+    float4 c    = PS_Evaluate(i);
+    int    mode = ViewportBlendMode(FramebufferBlendFunction);
+    [branch] if (mode == 1) return BlendMultiply(c, i);
+    [branch] if (mode == 2) return BlendDoubleMultiply(c, i);
+    [branch] if (mode == 3) return BlendAdd(c, i);
+    return BlendAlphaBlend(c, i);
 }

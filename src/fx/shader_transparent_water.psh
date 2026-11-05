@@ -55,58 +55,11 @@
 // ----------------------------------------------------------------------------
 // HOW THAT IS REPRODUCED IN THE VIEWPORT
 //
-// Nitrous honours no blending whatsoever - not the ZERO/SRCCOLOR multiply, not
-// the ONE/ONE add, and not the plain SRC_ALPHA/INV_SRC_ALPHA blend either
-// (all three were tried in the viewport and all three landed opaque).  The
-// pixel shader cannot reach the background through the blender at all.
-//
-// What it can do is decide, per pixel, whether the surface covers it: a dither
-// threshold writes the pixel opaque or drops it entirely, and a dropped pixel
-// writes no colour and no depth, so the background survives untouched.  Over a
-// neighbourhood the framebuffer resolves to
-//
-//      out = coverage * written + (1 - coverage) * background
-//
-// and over TIME it resolves further: Nitrous refines a still image across
-// several jittered frames, so a per-frame-varying threshold (see
-// DitherThreshold) averages the stipple away once the camera stops, exactly
-// like the other transparent shaders.
-//
-// Given an estimate E of the background brightness (BackgroundBrightness), the
-// target `background * Cmul + Cadd` is reached exactly, for ANY coverage, by
-//
-//      written = residual / coverage + E,   residual = E * (Cmul - 1) + Cadd
-//
-//      check:  coverage * written + (1 - coverage) * E
-//            = residual + coverage * E + E - coverage * E
-//            = E * Cmul + Cadd                                            ✓
-//
-// Coverage is therefore FREE, and that freedom is the only quality knob this
-// shader has.  The floor is the smallest value that keeps the written colour
-// inside [0,1]:
-//
-//      coverage >= -min(residual) / E        to be able to darken
-//      coverage >=  max(residual) / (1 - E)  to be able to brighten
-//
-// Sitting on that floor preserves the most real background - it is dropped,
-// not overwritten, so it keeps every bit of its detail.  But coverage is
-// realised with a 1-bit dither here, and a dither is noisiest exactly at half
-// coverage, which is where a water surface tends to sit across its whole area.
-// (Water is the worst case in this project: the other transparent shaders
-// carry an alpha that is near 0 or near 1 over most of the surface, so their
-// grain only shows in narrow bands.)
-//
-// Raising coverage above the floor trades that real background for smoothness
-// - the result stays correct, it just leans on E instead of on what is
-// actually behind the surface - and at full coverage the grain is gone
-// entirely.  DitherAmount picks a point on that trade.  It scales the floor
-// rather than blending towards 1, so pixels with nothing to contribute
-// (residual = 0, outside the alpha mask) still resolve to zero coverage and
-// disappear, at every setting.  MaxOpacity caps the coverage from above so a
-// bright reflection cannot fully occlude the terrain.
-//
-// E cannot be derived here - the viewport gives the shader no access to what is
-// behind the surface.  Set it to roughly the terrain brightness under the water.
+// Exactly: the pixel shader returns Cmul and Cadd and the dual-source blend
+// state has the GPU compute background * Cmul + Cadd (_blend.fxh).  It used to
+// be approximated with a coverage dither against an estimated background
+// brightness, because the blend never worked - it does, as long as the
+// surface writes no depth and the technique sets no rasterizer state.
 //
 // ----------------------------------------------------------------------------
 // BASE MAP ALPHA ALSO MASKS THE MULTIPLY  (deliberate deviation)
@@ -350,56 +303,7 @@ WaterShading ShadeWater(TW_PS_INPUT i)
     return s;
 }
 
-// ----------------------------------------------------------------------------
-// Coverage solve.  See the compositing note in the header for the derivation.
-// ----------------------------------------------------------------------------
-struct WaterCoverage
-{
-    float3 color;      // what to write where the surface covers
-    float  coverage;   // how much of the pixel it covers
-};
-
-WaterCoverage ResolveCoverage(WaterShading s)
-{
-    WaterCoverage c;
-
-    // What this surface has to contribute on top of an average background
-    float  E = clamp(BackgroundBrightness, 0.05, 0.95);
-    float3 residual = E * (s.Cmul - 1.0) + s.Cadd;
-
-    // Smallest coverage whose written colour still fits in [0,1]
-    float need_dark   = max(-min(min(residual.r, residual.g), residual.b), 0.0) / E;
-    float need_bright = max( max(max(residual.r, residual.g), residual.b), 0.0) / (1.0 - E);
-    float floor_cov   = max(need_dark, need_bright);
-
-    // Trade real background for smoothness.  Scaling the floor (rather than
-    // blending it towards 1) keeps zero-contribution pixels at zero coverage,
-    // so the edges still disappear no matter how smooth this is set.
-    float cov = floor_cov / max(DitherAmount, 0.125);
-
-    // Cap it so bright reflections can never fully occlude the terrain (see
-    // MaxOpacity).  Above the cap the written colour saturates instead: the
-    // reflection loses a little brightness, the riverbed keeps showing through.
-    // Pixels with nothing to contribute (floor_cov = 0) still cap to 0, so the
-    // edges are unaffected.
-    cov = min(cov, MaxOpacity);
-
-    c.coverage = saturate(cov);
-    float3 col = residual / max(c.coverage, 0.0001) + E;
-
-    // Additive-via-coverage lifts every channel by E, washing the reflection's
-    // true (dark, saturated) hue toward white.  Push the chroma back up around
-    // the pixel's own luminance so the water can read with its real colour.
-    // ColorSaturation = 1 leaves the exact, engine-faithful value untouched.
-    float lum = dot(col, float3(0.299, 0.587, 0.114));
-    col = lum + (col - lum) * ColorSaturation;
-
-    c.color = saturate(col);
-
-    return c;
-}
-
-// Debug visualisations are drawn solid, at full coverage.
+// Debug visualisations are drawn solid, covering the background.
 bool DebugOverride(WaterShading s, out float3 color)
 {
     color = (float3)0;
@@ -415,41 +319,15 @@ bool DebugOverride(WaterShading s, out float3 color)
 }
 
 // ----------------------------------------------------------------------------
-// Screen-space hash dither threshold, identical to the rest of this project's
-// transparent shaders (see DitherClip in shader_transparent_generic.psh).
-//
-// The threshold is taken from clipPos.xy / clipPos.w, NOT from the raw pixel
-// coordinate, and the division by w is the whole point.  Nitrous refines a
-// still image over several frames with a sub-pixel jitter on the projection;
-// the pixel coordinate is locked to the screen grid and does not move under
-// that jitter, but the surface depth w behind a given pixel does, so dividing
-// by it makes the threshold shift frame-to-frame.  The clip decision then
-// flickers and the grain averages out to smooth once the camera stops - the
-// way generic/chicago/glass resolve.  A threshold built from the bare pixel
-// coordinate is frame-invariant and leaves the permanent, coarse stipple this
-// shader had before.
+// Main pixel shader - the engine's multiply and add, applied by the blend.
 // ----------------------------------------------------------------------------
-float DitherThreshold(float4 clipPos)
-{
-    float2 screenUV = clipPos.xy / clipPos.w;
-    return frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-}
-
-// ----------------------------------------------------------------------------
-// Main pixel shader - resolves the engine's multiply and add into a coverage
-// and a colour, then realises that coverage by dropping pixels.
-// ----------------------------------------------------------------------------
-float4 PS_Main(TW_PS_INPUT i) : SV_TARGET
+GxBlendOutput PS_Main(TW_PS_INPUT i)
 {
     WaterShading s = ShadeWater(i);
 
     float3 debug;
     if (DebugOverride(s, debug))
-        return float4(debug, 1.0);
+        return BlendOpaque(debug);
 
-    WaterCoverage c = ResolveCoverage(s);
-
-    clip(c.coverage - DitherThreshold(i.clipPos));
-
-    return float4(c.color, 1.0);
+    return BlendOutput(s.Cmul, s.Cadd);
 }

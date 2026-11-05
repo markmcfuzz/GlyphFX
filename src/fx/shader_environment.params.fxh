@@ -8,18 +8,6 @@
 #define GLYPHFX_ENVIRONMENT_PARAMS_FXH
 
 // ----------------------------------------------------------------------------
-// Tag fields in the material UI.  1 = shown, 0 = hidden (UIWidget "None").
-// The toolkit edits them from its tag editor, so they can be hidden once it
-// covers this shader; hidden fields still compile and keep their names and
-// values.  GlyphFX/3ds Max-only parameters and textures stay visible.
-// See _tag_fields.fxh.
-// ----------------------------------------------------------------------------
-#ifndef GX_SHOW_TAG_FIELDS
-#define GX_SHOW_TAG_FIELDS 1
-#endif
-#include "_tag_fields.fxh"
-
-// ----------------------------------------------------------------------------
 // Viewport light
 // ----------------------------------------------------------------------------
 float3 LampPos : POSITION
@@ -97,7 +85,6 @@ float CubemapPitch
 // ----------------------------------------------------------------------------
 bool SimpleParameterization
 <
-    GX_TAG_HIDDEN
     string UIName = "Simple Parameterization";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 0;
@@ -105,7 +92,6 @@ bool SimpleParameterization
 
 bool IgnoreNormals
 <
-    GX_TAG_HIDDEN
     string UIName = "Ignore Normals";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 1;
@@ -113,7 +99,6 @@ bool IgnoreNormals
 
 bool TransparentLit
 <
-    GX_TAG_HIDDEN
     string UIName = "Transparent Lit";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 2;
@@ -123,7 +108,7 @@ int DetailLevel
 <
     string UIName   = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
     int    UIOrder = 3;
 > = 0;
@@ -132,7 +117,7 @@ float Power
 <
     string UIName   = "Power";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = -0; float UIMax = 9999; float UIStep = 1;
     int    UIOrder = 4;
 > = 1;
@@ -141,7 +126,7 @@ float4 ColorOfEmittedLight
 <
     string UIName   = "Color of Emitted Light";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 5;
 > = float4(0, 0, 0, 0);
 
@@ -149,7 +134,7 @@ float4 TintColor
 <
     string UIName   = "Tint Color";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
@@ -160,7 +145,7 @@ float MaterialType
 <
     string UIName   = "Material Type";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
     int    UIOrder = 7;
 > = 0;
@@ -170,7 +155,6 @@ float MaterialType
 // ----------------------------------------------------------------------------
 bool AlphaTested
 <
-    GX_TAG_HIDDEN
     string UIName  = "Alpha Tested";
     string UIGroup = "Environment Shader Flags";
     int    UIOrder = 8;
@@ -178,7 +162,6 @@ bool AlphaTested
 
 bool BumpMapIsSpecularMask
 <
-    GX_TAG_HIDDEN
     string UIName  = "Bump Map Is Specular Mask";
     string UIGroup = "Environment Shader Flags";
     int    UIOrder = 9;
@@ -186,7 +169,6 @@ bool BumpMapIsSpecularMask
 
 bool TrueAtmosphericFog
 <
-    GX_TAG_HIDDEN
     string UIName  = "True Atmospheric Fog";
     string UIGroup = "Environment Shader Flags";
     int    UIOrder = 10;
@@ -194,7 +176,6 @@ bool TrueAtmosphericFog
 
 bool BumpAttenuation
 <
-    GX_TAG_HIDDEN
     string UIName  = "Use Variant 2 for Calculation Bump Attenuation";
     string UIGroup = "Environment Shader Flags";
     int    UIOrder = 11;
@@ -210,7 +191,7 @@ int EnvironmentType
 <
     string UIName   = "Type  [0=Normal  1=Blended  2=Blended Base Specular]";
     string UIGroup  = "Environment Shader Type";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
     int    UIOrder = 12;
 > = 0;
@@ -219,7 +200,7 @@ int LensFlareSpacing
 <
     string UIName   = "Lens Flare Spacing";
     string UIGroup  = "Lens Flares";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 13;
     float  UIMin = 0; float UIMax = 255; float UIStep = 1;
 > = 0;
@@ -237,7 +218,6 @@ Texture2D LensFlare
 // ----------------------------------------------------------------------------
 bool RescaleDetailMaps
 <
-    GX_TAG_HIDDEN
     string UIName  = "Rescale Detail Maps";
     string UIGroup = "Diffuse Properties";
     int    UIOrder = 15;
@@ -245,7 +225,6 @@ bool RescaleDetailMaps
 
 bool RescaleBumpMap
 <
-    GX_TAG_HIDDEN
     string UIName  = "Rescale Bump Map";
     string UIGroup = "Bump Properties";
     int    UIOrder = 16;
@@ -270,7 +249,7 @@ int DetailMapFunction
 <
     string UIName   = "Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
     int    UIOrder = 18;
 > = 0;
@@ -286,7 +265,7 @@ float PrimaryDetailMapScale
 <
     string UIName   = "Primary Detail Map Scale";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
     int    UIOrder = 19;
 > = 0.0;
@@ -310,7 +289,7 @@ float SecondaryDetailMapScale
 <
     string UIName   = "Secondary Detail Map Scale";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
     int    UIOrder = 21;
 > = 0.0;
@@ -334,7 +313,7 @@ int MicroDetailMapFunction
 <
     string UIName   = "Micro Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
     int    UIOrder = 23;
 > = 0;
@@ -343,7 +322,7 @@ float MicroDetailMapScale
 <
     string UIName   = "Micro Detail Map Scale";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
     int    UIOrder = 24;
 > = 0.0;
@@ -360,7 +339,7 @@ float4 MaterialColor
 <
     string UIName   = "Material Color";
     string UIGroup  = "Diffuse Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 26;
 > = float4(0, 0, 0, 1);
 
@@ -378,7 +357,7 @@ float BumpMapScale
 <
     string UIName   = "Bump Map Scale";
     string UIGroup  = "Bump Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
     int    UIOrder = 27;
 > = 0.0;
@@ -398,7 +377,7 @@ int UAnimationFunction
 <
     string UIName   = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
     int    UIOrder = 29;
 > = 0;
@@ -407,7 +386,7 @@ float UAnimationPeriod
 <
     string UIName   = "U Animation Period................(Seconds)";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 30;
 > = 0.0;
@@ -416,7 +395,7 @@ float UAnimationScale
 <
     string UIName   = "U Animation Scale................(Repeats)";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 31;
 > = 0.0;
@@ -425,7 +404,7 @@ int VAnimationFunction
 <
     string UIName   = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
     int    UIOrder = 32;
 > = 0;
@@ -434,7 +413,7 @@ float VAnimationPeriod
 <
     string UIName   = "V Animation Period................(Seconds)";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 32;
 > = 0.0;
@@ -443,7 +422,7 @@ float VAnimationScale
 <
     string UIName   = "V Animation Scale................(Repeats)";
     string UIGroup  = "Texture Scrolling Animation";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 33;
 > = 0.0;
@@ -461,7 +440,6 @@ float VAnimationScale
 // ----------------------------------------------------------------------------
 bool unfilteredFlag
 <
-    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Self-Illumination Properties";
     int    UIOrder = 34;
@@ -471,7 +449,7 @@ float4 PrimaryOnColor
 <
     string UIName   = "Primary On Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 35;
 > = float4(0, 0, 0, 1);
 
@@ -479,7 +457,7 @@ float4 PrimaryOffColor
 <
     string UIName   = "Primary Off Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 36;
 > = float4(0, 0, 0, 1);
 
@@ -487,7 +465,7 @@ int PrimaryAnimationFunction
 <
     string UIName   = "Primary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
     int    UIOrder = 37;
 > = 0;
@@ -496,7 +474,7 @@ float PrimaryAnimationPeriod
 <
     string UIName   = "Primary Animation Period................(Seconds)";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 38;
 > = 0.0;
@@ -505,7 +483,7 @@ float PrimaryAnimationPhase
 <
     string UIName   = "Primary Animation Phase";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 39;
 > = 0.0;
@@ -523,7 +501,7 @@ float4 SecondaryOnColor
 <
     string UIName   = "Secondary On Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 41;
 > = float4(0, 0, 0, 1);
 
@@ -531,7 +509,7 @@ float4 SecondaryOffColor
 <
     string UIName   = "Secondary Off Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 42;
 > = float4(0, 0, 0, 1);
 
@@ -539,7 +517,7 @@ int SecondaryAnimationFunction
 <
     string UIName   = "Secondary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
     int    UIOrder = 43;
 > = 0;
@@ -548,7 +526,7 @@ float SecondaryAnimationPeriod
 <
     string UIName   = "Secondary Animation Period................(Seconds)";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 44;
 > = 0.0;
@@ -557,7 +535,7 @@ float SecondaryAnimationPhase
 <
     string UIName   = "Secondary Animation Phase";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 45;
 > = 0.0;
@@ -575,7 +553,7 @@ float4 PlasmaOnColor
 <
     string UIName   = "Plasma On Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 47;
 > = float4(0, 0, 0, 1);
 
@@ -583,7 +561,7 @@ float4 PlasmaOffColor
 <
     string UIName   = "Plasma Off Color";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 48;
 > = float4(0, 0, 0, 1);
 
@@ -591,7 +569,7 @@ int PlasmaAnimationFunction
 <
     string UIName   = "Plasma Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 11; float UIStep = 1;
     int    UIOrder = 49;
 > = 0;
@@ -600,7 +578,7 @@ float PlasmaAnimationPeriod
 <
     string UIName   = "Plasma Animation Period................(Seconds)";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 50;
 > = 0.0;
@@ -609,7 +587,7 @@ float PlasmaAnimationPhase
 <
     string UIName   = "Plasma Animation Phase";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.1;
     int    UIOrder = 51;
 > = 0.0;
@@ -627,7 +605,7 @@ float SelfIlluminationMapScale
 <
     string UIName   = "Self-Illumination Map Scale";
     string UIGroup  = "Self-Illumination Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
     int    UIOrder = 53;
 > = 0.0;
@@ -652,7 +630,6 @@ Texture2D SelfIlluminationMapTexture
 // ----------------------------------------------------------------------------
 bool SpecularOverbright
 <
-    GX_TAG_HIDDEN
     string UIName  = "Overbright";
     string UIGroup = "Specular Properties";
     int    UIOrder = 55;
@@ -660,7 +637,6 @@ bool SpecularOverbright
 
 bool SpecularExtraShiny
 <
-    GX_TAG_HIDDEN
     string UIName  = "Extra Shiny";
     string UIGroup = "Specular Properties";
     int    UIOrder = 56;
@@ -668,7 +644,6 @@ bool SpecularExtraShiny
 
 bool LightmapIsSpecular
 <
-    GX_TAG_HIDDEN
     string UIName  = "Lightmap Is Specular";
     string UIGroup = "Specular Properties";
     int    UIOrder = 57;
@@ -678,7 +653,7 @@ float SpecBrightness
 <
     string UIName   = "Brightness";
     string UIGroup  = "Specular Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 58;
 > = 0.0;
@@ -687,7 +662,7 @@ float4 SpecPerpendicularColor
 <
     string UIName   = "Perpendicular Color";
     string UIGroup  = "Specular Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 59;
 > = float4(0.0, 0.0, 0.0, 1);
 
@@ -695,7 +670,7 @@ float4 SpecParallelColor
 <
     string UIName   = "Parallel Color";
     string UIGroup  = "Specular Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 60;
 > = float4(0.0, 0.0, 0.0, 1);
 
@@ -704,7 +679,6 @@ float4 SpecParallelColor
 // ----------------------------------------------------------------------------
 bool DynamicMirror
 <
-    GX_TAG_HIDDEN
     string UIName  = "Dynamic Mirror";
     string UIGroup = "Reflection Properties";
     int    UIOrder = 61;
@@ -717,7 +691,7 @@ int ReflectionType
 <
     string UIName   = "Reflection Type  [0=Bumped Cube Map  1=Flat Cube Map  2=Bumped Radiosity]";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 2; float UIStep = 1;
     int    UIOrder = 62;
 > = 0;
@@ -726,7 +700,7 @@ float LightmapBrightnessScale
 <
     string UIName   = "Lightmap Brightness Scale";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 63;
 > = 0.0;
@@ -735,7 +709,7 @@ float ReflPerpendicularBrightness
 <
     string UIName   = "Perpendicular Brightness";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 64;
 > = 0.0;
@@ -744,7 +718,7 @@ float ReflParallelBrightness
 <
     string UIName   = "Parallel Brightness";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
     int    UIOrder = 65;
 > = 0.0;

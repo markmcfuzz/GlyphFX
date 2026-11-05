@@ -30,18 +30,6 @@
 #define GLYPHFX_TRANSPARENT_METER_PARAMS_FXH
 
 // ----------------------------------------------------------------------------
-// Tag fields in the material UI.  1 = shown, 0 = hidden (UIWidget "None").
-// The toolkit edits them from its tag editor, so they can be hidden once it
-// covers this shader; hidden fields still compile and keep their names and
-// values.  GlyphFX/3ds Max-only parameters and textures stay visible.
-// See _tag_fields.fxh.
-// ----------------------------------------------------------------------------
-#ifndef GX_SHOW_TAG_FIELDS
-#define GX_SHOW_TAG_FIELDS 1
-#endif
-#include "_tag_fields.fxh"
-
-// ----------------------------------------------------------------------------
 // Shader General Fields  (base "Shader" tag struct)
 //   Guerrilla "radiosity properties" + "physics properties".
 //   Radiosity is baked offline by the tools and physics only matters in
@@ -50,7 +38,6 @@
 // ----------------------------------------------------------------------------
 bool SimpleParameterization
 <
-    GX_TAG_HIDDEN
     string UIName  = "Simple Parameterization";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 0;
@@ -58,7 +45,6 @@ bool SimpleParameterization
 
 bool IgnoreNormals
 <
-    GX_TAG_HIDDEN
     string UIName  = "Ignore Normals";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 1;
@@ -66,7 +52,6 @@ bool IgnoreNormals
 
 bool TransparentLit
 <
-    GX_TAG_HIDDEN
     string UIName  = "Transparent Lit";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 2;
@@ -76,7 +61,7 @@ int DetailLevel
 <
     string UIName   = "Detail Level  [0=High 1=Medium 2=Low 3=Turd]";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 3;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -85,7 +70,7 @@ float Power
 <
     string UIName   = "Power";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 4;
     float  UIMin = 0; float UIMax = 9999; float UIStep = 1;
 > = 1;
@@ -94,7 +79,7 @@ float4 ColorOfEmittedLight
 <
     string UIName   = "Color of Emitted Light";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 5;
 > = float4(0, 0, 0, 0);
 
@@ -102,7 +87,7 @@ float4 TintColor
 <
     string UIName   = "Tint Color  (radiosity)";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
@@ -119,7 +104,7 @@ float MaterialType
 <
     string UIName   = "Material Type  (see enum in header comment)";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 7;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 0;
@@ -132,7 +117,6 @@ float MaterialType
 // ----------------------------------------------------------------------------
 bool Decal
 <
-    GX_TAG_HIDDEN
     string UIName  = "Decal  (blend mode fixed by technique)";
     string UIGroup = "Meter Shader Flags";
     int    UIOrder = 8;
@@ -140,7 +124,6 @@ bool Decal
 
 bool TwoSided
 <
-    GX_TAG_HIDDEN
     string UIName  = "Two Sided  (culling always off in viewport)";
     string UIGroup = "Meter Shader Flags";
     int    UIOrder = 9;
@@ -148,7 +131,6 @@ bool TwoSided
 
 bool FlashColorIsNegative
 <
-    GX_TAG_HIDDEN
     string UIName  = "Flash Color Is Negative";
     string UIGroup = "Meter Shader Flags";
     int    UIOrder = 10;
@@ -156,7 +138,6 @@ bool FlashColorIsNegative
 
 bool TintMode2
 <
-    GX_TAG_HIDDEN
     string UIName  = "Tint Mode 2  (not implemented in viewport)";
     string UIGroup = "Meter Shader Flags";
     int    UIOrder = 11;
@@ -164,7 +145,6 @@ bool TintMode2
 
 bool Unfiltered
 <
-    GX_TAG_HIDDEN
     string UIName  = "Unfiltered";
     string UIGroup = "Meter Shader Flags";
     int    UIOrder = 12;
@@ -201,7 +181,7 @@ float4 GradientMinColor
 <
     string UIName   = "Gradient Min Color";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 14;
 > = float4(0.0, 0.0, 0.0, 1.0);
 
@@ -210,7 +190,7 @@ float4 GradientMaxColor
     //(Alpha channel = gradient sensitivity: 0.125 = full sweep, 1.0 = 1/8 sweep)
     string UIName   = "Gradient Max Color";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 15;
 > = float4(0.0, 0.0, 0.0, 0.125);
 
@@ -218,7 +198,7 @@ float4 BackgroundColor
 <
     string UIName   = "Background Color";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 16;
 > = float4(0.0, 0.0, 0.0, 1.0);
 
@@ -226,7 +206,7 @@ float4 FlashColor
 <
     string UIName   = "Flash Color";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 17;
 > = float4(0.0, 0.0, 0.0, 1.0);
 
@@ -237,7 +217,7 @@ float4 MeterTintColor
 <
     string UIName   = "Tint Color  (meter)  (not applied in viewport)";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 18;
 > = float4(0.0, 0.0, 0.0, 1.0);
 
@@ -245,7 +225,7 @@ float MeterTransparency
 <
     string UIName   = "Meter Transparency  [0,1]";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 19;
     float  UIMin = 0.0; float UIMax = 1.0; float UIStep = 0.01;
 > = 0.0;
@@ -254,7 +234,7 @@ float BackgroundTransparency
 <
     string UIName   = "Background Transparency  [0,1]";
     string UIGroup  = "Colors";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 20;
     float  UIMin = 0.0; float UIMax = 1.0; float UIStep = 0.01;
 > = 0.0;
@@ -271,7 +251,7 @@ int MeterBrightnessSource
 <
     string UIName   = "Meter Brightness Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (not implemented in viewport)";
     string UIGroup  = "External Function Sources";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 21;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -280,7 +260,7 @@ int FlashBrightnessSource
 <
     string UIName   = "Flash Brightness Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (see Flash Brightness)";
     string UIGroup  = "External Function Sources";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 22;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -289,7 +269,7 @@ int ValueSource
 <
     string UIName   = "Value Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (see Meter Value)";
     string UIGroup  = "External Function Sources";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 23;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -298,7 +278,7 @@ int GradientSource
 <
     string UIName   = "Gradient Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (not implemented in viewport)";
     string UIGroup  = "External Function Sources";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 24;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
@@ -307,7 +287,7 @@ int FlashExtensionSource
 <
     string UIName   = "Flash-Extension Source  [0=None 1=A Out 2=B Out 3=C Out 4=D Out]  (not implemented in viewport)";
     string UIGroup  = "External Function Sources";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 25;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;

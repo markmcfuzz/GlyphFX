@@ -33,18 +33,6 @@
 #define GLYPHFX_TRANSPARENT_WATER_PARAMS_FXH
 
 // ----------------------------------------------------------------------------
-// Tag fields in the material UI.  1 = shown, 0 = hidden (UIWidget "None").
-// The toolkit edits them from its tag editor, so they can be hidden once it
-// covers this shader; hidden fields still compile and keep their names and
-// values.  GlyphFX/3ds Max-only parameters and textures stay visible.
-// See _tag_fields.fxh.
-// ----------------------------------------------------------------------------
-#ifndef GX_SHOW_TAG_FIELDS
-#define GX_SHOW_TAG_FIELDS 1
-#endif
-#include "_tag_fields.fxh"
-
-// ----------------------------------------------------------------------------
 // Viewport light  (GlyphFX-only, not tag data)
 // ----------------------------------------------------------------------------
 float3 LampPos : POSITION
@@ -95,7 +83,6 @@ float LampIntensity
 // ----------------------------------------------------------------------------
 bool SimpleParameterization
 <
-    GX_TAG_HIDDEN
     string UIName  = "Simple Parameterization";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 0;
@@ -103,7 +90,6 @@ bool SimpleParameterization
 
 bool IgnoreNormals
 <
-    GX_TAG_HIDDEN
     string UIName  = "Ignore Normals";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 1;
@@ -111,7 +97,6 @@ bool IgnoreNormals
 
 bool TransparentLit
 <
-    GX_TAG_HIDDEN
     string UIName  = "Transparent Lit";
     string UIGroup = "Shader General Fields";
     int    UIOrder = 2;
@@ -121,7 +106,7 @@ int DetailLevel
 <
     string UIName   = "Detail Level  [0=High 1=Medium 2=Low 3=Turd]";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 3;
     float  UIMin = 0; float UIMax = 3; float UIStep = 1;
 > = 0;
@@ -130,7 +115,7 @@ float Power
 <
     string UIName   = "Power";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 4;
     float  UIMin = 0; float UIMax = 9999; float UIStep = 1;
 > = 1;
@@ -139,7 +124,7 @@ float4 ColorOfEmittedLight
 <
     string UIName   = "Color of Emitted Light";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 5;
 > = float4(0, 0, 0, 0);
 
@@ -147,7 +132,7 @@ float4 TintColor
 <
     string UIName   = "Tint Color";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 6;
 > = float4(1, 1, 1, 1);
 
@@ -164,7 +149,7 @@ float MaterialType
 <
     string UIName   = "Material Type  (see enum in header comment)";
     string UIGroup  = "Shader General Fields";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 7;
     float  UIMin = 0; float UIMax = 32; float UIStep = 1;
 > = 0;
@@ -174,7 +159,6 @@ float MaterialType
 // ----------------------------------------------------------------------------
 bool BaseMapAlphaModulatesReflection
 <
-    GX_TAG_HIDDEN
     string UIName  = "Base Map Alpha Modulates Reflection";
     string UIGroup = "Water Shader Flags";
     int    UIOrder = 8;
@@ -182,7 +166,6 @@ bool BaseMapAlphaModulatesReflection
 
 bool BaseMapColorModulatesBackground
 <
-    GX_TAG_HIDDEN
     string UIName  = "Base Map Color Modulates Background";
     string UIGroup = "Water Shader Flags";
     int    UIOrder = 9;
@@ -190,7 +173,6 @@ bool BaseMapColorModulatesBackground
 
 bool AtmosphericFog
 <
-    GX_TAG_HIDDEN
     string UIName  = "Atmospheric Fog  (not implemented in viewport)";
     string UIGroup = "Water Shader Flags";
     int    UIOrder = 10;
@@ -198,7 +180,6 @@ bool AtmosphericFog
 
 bool DrawBeforeFog
 <
-    GX_TAG_HIDDEN
     string UIName  = "Draw Before Fog  (not implemented in viewport)";
     string UIGroup = "Water Shader Flags";
     int    UIOrder = 11;
@@ -238,7 +219,7 @@ float ViewPerpendicularBrightness
 <
     string UIName   = "View Perpendicular Brightness  [0,1]";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 14;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -247,7 +228,7 @@ float4 ViewPerpendicularTintColor
 <
     string UIName   = "View Perpendicular Tint Color";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 15;
 > = float4(0, 0, 0, 1);
 
@@ -255,7 +236,7 @@ float ViewParallelBrightness
 <
     string UIName   = "View Parallel Brightness  [0,1]";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 16;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -264,7 +245,7 @@ float4 ViewParallelTintColor
 <
     string UIName   = "View Parallel Tint Color";
     string UIGroup  = "Reflection Properties";
-    string UIWidget = GX_TAG_WIDGET("Color");
+    string UIWidget = "Color";
     int    UIOrder = 17;
 > = float4(0, 0, 0, 1);
 
@@ -291,7 +272,7 @@ float RippleAnimationAngle
 <
     string UIName   = "Ripple Animation Angle  [0,360]";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 20;
     float  UIMin = 0; float UIMax = 360; float UIStep = 1;
 > = 0.0;
@@ -300,7 +281,7 @@ float RippleAnimationVelocity
 <
     string UIName   = "Ripple Animation Velocity  (not animated in viewport)";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 21;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -309,7 +290,7 @@ float RippleScale
 <
     string UIName   = "Ripple Scale";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 22;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -333,7 +314,7 @@ float RippleMipmapLevels
 <
     string UIName   = "Ripple Mipmap Levels";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 25;
     float  UIMin = 0; float UIMax = 16; float UIStep = 1;
 > = 0.0;
@@ -342,7 +323,7 @@ float RippleMipmapFadeFactor
 <
     string UIName   = "Ripple Mipmap Fade Factor  [0,1]";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 26;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -351,7 +332,7 @@ float RippleMipmapDetailBias
 <
     string UIName   = "Ripple Mipmap Detail Bias";
     string UIGroup  = "Ripple Properties";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 27;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -370,7 +351,7 @@ float Ripple0_ContributionFactor
 <
     string UIName   = "Contribution Factor  [0,1]";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 29;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -379,7 +360,7 @@ float Ripple0_AnimationAngle
 <
     string UIName   = "Animation Angle  [0,360]";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 30;
     float  UIMin = 0; float UIMax = 360; float UIStep = 1;
 > = 0.0;
@@ -388,7 +369,7 @@ float Ripple0_AnimationVelocity
 <
     string UIName   = "Animation Velocity  (not animated in viewport)";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 31;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -397,7 +378,7 @@ float Ripple0_MapOffsetU
 <
     string UIName   = "Map Offset (i)";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 32;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -406,7 +387,7 @@ float Ripple0_MapOffsetV
 <
     string UIName   = "Map Offset (j)";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 33;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -415,7 +396,7 @@ float Ripple0_MapRepeats
 <
     string UIName   = "Map Repeats";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 34;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -424,7 +405,7 @@ float Ripple0_MapIndex
 <
     string UIName   = "Map Index";
     string UIGroup  = "Ripple 0";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 35;
     float  UIMin = 0; float UIMax = 16; float UIStep = 1;
 > = 0.0;
@@ -443,7 +424,7 @@ float Ripple1_ContributionFactor
 <
     string UIName   = "Contribution Factor  [0,1]";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 37;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -452,7 +433,7 @@ float Ripple1_AnimationAngle
 <
     string UIName   = "Animation Angle  [0,360]";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 38;
     float  UIMin = 0; float UIMax = 360; float UIStep = 1;
 > = 0.0;
@@ -461,7 +442,7 @@ float Ripple1_AnimationVelocity
 <
     string UIName   = "Animation Velocity  (not animated in viewport)";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 39;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -470,7 +451,7 @@ float Ripple1_MapOffsetU
 <
     string UIName   = "Map Offset (i)";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 40;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -479,7 +460,7 @@ float Ripple1_MapOffsetV
 <
     string UIName   = "Map Offset (j)";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 41;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -488,7 +469,7 @@ float Ripple1_MapRepeats
 <
     string UIName   = "Map Repeats";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 42;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -497,7 +478,7 @@ float Ripple1_MapIndex
 <
     string UIName   = "Map Index";
     string UIGroup  = "Ripple 1";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 43;
     float  UIMin = 0; float UIMax = 16; float UIStep = 1;
 > = 0.0;
@@ -516,7 +497,7 @@ float Ripple2_ContributionFactor
 <
     string UIName   = "Contribution Factor  [0,1]";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 45;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -525,7 +506,7 @@ float Ripple2_AnimationAngle
 <
     string UIName   = "Animation Angle  [0,360]";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 46;
     float  UIMin = 0; float UIMax = 360; float UIStep = 1;
 > = 0.0;
@@ -534,7 +515,7 @@ float Ripple2_AnimationVelocity
 <
     string UIName   = "Animation Velocity  (not animated in viewport)";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 47;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -543,7 +524,7 @@ float Ripple2_MapOffsetU
 <
     string UIName   = "Map Offset (i)";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 48;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -552,7 +533,7 @@ float Ripple2_MapOffsetV
 <
     string UIName   = "Map Offset (j)";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 49;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -561,7 +542,7 @@ float Ripple2_MapRepeats
 <
     string UIName   = "Map Repeats";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 50;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -570,7 +551,7 @@ float Ripple2_MapIndex
 <
     string UIName   = "Map Index";
     string UIGroup  = "Ripple 2";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 51;
     float  UIMin = 0; float UIMax = 16; float UIStep = 1;
 > = 0.0;
@@ -589,7 +570,7 @@ float Ripple3_ContributionFactor
 <
     string UIName   = "Contribution Factor  [0,1]";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 53;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
@@ -598,7 +579,7 @@ float Ripple3_AnimationAngle
 <
     string UIName   = "Animation Angle  [0,360]";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 54;
     float  UIMin = 0; float UIMax = 360; float UIStep = 1;
 > = 0.0;
@@ -607,7 +588,7 @@ float Ripple3_AnimationVelocity
 <
     string UIName   = "Animation Velocity  (not animated in viewport)";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 55;
     float  UIMin = -10; float UIMax = 10; float UIStep = 0.01;
 > = 0.0;
@@ -616,7 +597,7 @@ float Ripple3_MapOffsetU
 <
     string UIName   = "Map Offset (i)";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 56;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -625,7 +606,7 @@ float Ripple3_MapOffsetV
 <
     string UIName   = "Map Offset (j)";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 57;
     float  UIMin = -256; float UIMax = 256; float UIStep = 1;
 > = 0.0;
@@ -634,7 +615,7 @@ float Ripple3_MapRepeats
 <
     string UIName   = "Map Repeats";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("slider");
+    string UIWidget = "slider";
     int    UIOrder = 58;
     float  UIMin = 0; float UIMax = 200; float UIStep = 0.1;
 > = 0.0;
@@ -643,7 +624,7 @@ float Ripple3_MapIndex
 <
     string UIName   = "Map Index";
     string UIGroup  = "Ripple 3";
-    string UIWidget = GX_TAG_WIDGET("Spinner");
+    string UIWidget = "Spinner";
     int    UIOrder = 59;
     float  UIMin = 0; float UIMax = 16; float UIStep = 1;
 > = 0.0;

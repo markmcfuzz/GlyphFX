@@ -12,13 +12,6 @@
 // reconstructs a pseudo-volume from that filmstrip and trilinearly samples it.
 // ----------------------------------------------------------------------------
 
-// Stochastic (dithered) discard for semi-transparent plasma in Nitrous.
-void DitherClip(float alpha, float4 clipPos)
-{
-    float2 screenUV = clipPos.xy / clipPos.w;
-    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-    clip(alpha - dither);
-}
 
 // Reconstructs one Z-trilinear-filtered sample of a 3D noise volume stored as
 // a horizontal filmstrip atlas: sliceCount square cells, each preceded by a
@@ -77,7 +70,7 @@ float4 SampleNoiseVolumeAtlas(Texture2D tex, SamplerState smp, float3 uvw,
     return lerp(a, b, zt);
 }
 
-float4 PS_Main(TP_PS_INPUT i) : SV_TARGET
+GxBlendOutput PS_Main(TP_PS_INPUT i)
 {
     // EnablePrimaryNoiseMap/EnableSecondaryNoiseMap simulate an unassigned
     // texture (0.5/0.5/0.5/0.5 is neutral for the +-0.5 threshold math below).
@@ -112,18 +105,12 @@ float4 PS_Main(TP_PS_INPUT i) : SV_TARGET
     // ------------------------------------------------------------------------
     // Debug visualisation
     // ------------------------------------------------------------------------
-    if      (DebugMode == 1) return float4(t0.rgb,             1.0);
-    else if (DebugMode == 2) return float4(t1.rgb,             1.0);
-    else if (DebugMode == 3) return float4((float3)plasma,     1.0);
-    else if (DebugMode == 4) return float4(i.D0.rgb,           1.0);
+    if      (DebugMode == 1) return BlendOpaque(t0.rgb);
+    else if (DebugMode == 2) return BlendOpaque(t1.rgb);
+    else if (DebugMode == 3) return BlendOpaque((float3)plasma);
+    else if (DebugMode == 4) return BlendOpaque(i.D0.rgb);
 
-    // Boost surviving pixel colour to compensate for dither-discarded
-    // neighbours (see shader_transparent_water.psh) - true alpha blending
-    // isn't available under Nitrous's BlendEnable=FALSE constraint.
-    float3 color = saturate(plasma_color / max(alpha, 0.15));
-
-    // Dithered transparency for Nitrous viewport
-    DitherClip(alpha, i.clipPos);
-
-    return float4(color, 1.0);
+    // The engine draws plasma additively (SRCALPHA/ONE, both sides, no depth
+    // write - rasterizer_xbox_plasma_energy.c): background + color * alpha.
+    return BlendOutput((float3)1.0, plasma_color * alpha);
 }

@@ -50,7 +50,7 @@
 //
 // ── FRAMEBUFFER FADE ─────────────────────────────────────────────────────────
 // In-engine an extra combiner stage applies the Framebuffer Fade Mode; here
-// the equivalent math runs in each blend function:
+// the equivalent math runs in PS_Main:
 //   Alpha Blend       final alpha × fade
 //   Add               final rgb × fade
 //   Multiply          lerp(1.0, rgb, fade)   - fades to blend-neutral white
@@ -59,12 +59,10 @@
 // informational only.
 //
 // ── FRAMEBUFFER BLEND MODES ──────────────────────────────────────────────────
-// Nitrous ignores blend states.  Alpha Blend dithers by the final alpha and
-// is exact.  Add / Multiply / Double Multiply use the coverage solve in
-// _coverage.fxh (the shader_transparent_water scheme), tuned by the
-// "Viewport Blend" parameters.  The Framebuffer Blend Function parameter
-// picks the blend (PS_Main); Subtract, Component Min/Max and Alpha-Multiply
-// Add draw as the closest of the four (ViewportBlendMode, _coverage.fxh).
+// Real GPU blending with a dual-source blend state (see "Framebuffer blend"
+// below).  The Framebuffer Blend Function parameter picks the blend
+// (PS_Main); Subtract, Component Min/Max and Alpha-Multiply Add draw as the
+// closest of the four (ViewportBlendMode, _coverage.fxh).
 // ----------------------------------------------------------------------------
 
 // ─── Combiner register file ──────────────────────────────────────────────────
@@ -418,94 +416,33 @@ float FramebufferFade(STG_PS_INPUT i)
     return 1.0;
 }
 
-// ─── Opacity helpers (same as shader_transparent_chicago) ───────────────────
+// ─── Framebuffer blend ───────────────────────────────────────────────────────
+// Real GPU blending: the pixel shader returns background * Cmul + Cadd as
+// GxBlendOutput and the dual-source blend state applies it (_blend.fxh).
+// The Framebuffer Blend Function parameter picks it (ViewportBlendMode):
+//   Alpha Blend      Cmul = 1 - a          Cadd = rgb * a
+//   Multiply         Cmul = rgb            Cadd = 0
+//   Double Multiply  Cmul = 2 * rgb        Cadd = 0
+//   Add              Cmul = 1              Cadd = rgb
 
-// Applies contrast (centred at 0.5), bias and gamma to a raw opacity value.
-float ApplyOpacityControls(float raw)
+// The fade pulls each blend toward its neutral value: alpha toward 0, Add
+// toward black, Multiply toward white, Double Multiply toward mid grey.
+// Two Sided off: the engine culls back faces (D3DCULL_CCW); with it on it
+// draws both.  The .fx leaves culling to Nitrous (it draws back faces and
+// front faces in separate passes), so the back faces of a one-sided surface
+// are dropped here.
+GxBlendOutput PS_Main(STG_PS_INPUT i, bool frontFace : SV_IsFrontFace)
 {
-    float o = saturate((raw - 0.5) * OpacityContrast + 0.5);
-    o = saturate(o + OpacityBias);
-    o = pow(o, 1.0 / max(OpacityGamma, 0.001));
-    return o;
-}
+    if (!TwoSided && !frontFace) discard;
 
-// Stochastic (dithered) discard using a screen-space hash.
-// Ensures near-transparent fragments don't write to the depth buffer, which
-// is required because DepthWriteMask = ALL is a Nitrous constraint.
-// Fragments with alpha == 0 always discard; alpha == 1 always survive.
-void DitherClip(float alpha, float4 clipPos)
-{
-    float2 screenUV = clipPos.xy / clipPos.w;
-    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-    clip(alpha - dither * DitherScale);
-}
-
-// ─── Framebuffer blends ───────────────────────────────────────────────
-
-// Alpha Blend - uses the combiner's final alpha for opacity.
-// Textures WITHOUT an alpha channel: 3ds Max fills t.a = 1.0, so c.a == 1.0.
-//   → PS outputs alpha = 0.0 → Nitrous Standard/High Quality composites the
-//     RGB output over the dark viewport background → black areas stay black.
-// Textures WITH an alpha channel: c.a < 1.0 on transparent pixels.
-//   → Opacity controls + dither clip for smooth transparency.
-float4 BlendAlphaBlend(float4 c, STG_PS_INPUT i)
-{
-    c.a *= FramebufferFade(i);
-    if (c.a >= 1.0)
-        return float4(c.rgb, 0.0);
-    float alpha = ApplyOpacityControls(c.a);
-    DitherClip(alpha, i.clipPos);
-    return float4(c.rgb, alpha);
-}
-
-// Add, Multiply and Double Multiply express the engine blend as
-// background * Cmul + Cadd and let the coverage solve in _coverage.fxh realise
-// it.  The old approach (draw the colour opaque, luminance as coverage) lost
-// most of a dim additive effect: a colour of 0.2 only showed on 20% of the
-// pixels and REPLACED the background there instead of adding to it.
-float4 ResolveViewportBlend(float3 Cmul, float3 Cadd, float4 clipPos)
-{
-    BlendCoverage b = ResolveBlendCoverage(Cmul, Cadd, BackgroundBrightness,
-                                           DitherAmount, MaxOpacity, ColorSaturation);
-    clip(b.coverage - CoverageThreshold(clipPos));
-    return float4(b.color, 1.0);
-}
-
-// Add - background + color.  Brightness is a viewport gain on the added color.
-float4 BlendAdd(float4 c, STG_PS_INPUT i)
-{
-    float3 add = c.rgb * FramebufferFade(i) * Brightness;
-    return ResolveViewportBlend((float3)1.0, add, i.clipPos);
-}
-
-// Multiply - background * color.  The fade pulls the color toward white, the
-// blend-neutral value.
-float4 BlendMultiply(float4 c, STG_PS_INPUT i)
-{
-    float3 mul = lerp((float3)1.0, c.rgb, FramebufferFade(i));
-    return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
-}
-
-// Double Multiply - background * color * 2.  The fade pulls the color toward
-// mid grey, the blend-neutral value.
-float4 BlendDoubleMultiply(float4 c, STG_PS_INPUT i)
-{
-    float3 mul = 2.0 * lerp((float3)0.5, c.rgb, FramebufferFade(i));
-    return ResolveViewportBlend(mul, (float3)0.0, i.clipPos);
-}
-
-// ─── Pixel shader ────────────────────────────────────────────────────────────
-// One pixel shader for every blend: the tag's Framebuffer Blend Function picks
-// it (ViewportBlendMode, _coverage.fxh), so the viewport matches the exported
-// tag.  One shader instead of one per technique also compiles four times
-// faster, i.e. Max's first load of the effect.
-
-float4 PS_Main(STG_PS_INPUT i) : SV_TARGET
-{
     float4 c    = PS_Evaluate(i);
+    float  fade = FramebufferFade(i);
     int    mode = ViewportBlendMode(FramebufferBlendFunction);
-    [branch] if (mode == 1) return BlendMultiply(c, i);
-    [branch] if (mode == 2) return BlendDoubleMultiply(c, i);
-    [branch] if (mode == 3) return BlendAdd(c, i);
-    return BlendAlphaBlend(c, i);
+
+    [branch] if (mode == 1) return BlendOutput(lerp((float3)1.0, c.rgb, fade), (float3)0.0);
+    [branch] if (mode == 2) return BlendOutput(2.0 * lerp((float3)0.5, c.rgb, fade), (float3)0.0);
+    [branch] if (mode == 3) return BlendOutput((float3)1.0, c.rgb * fade);
+
+    float a = saturate(c.a * fade);
+    return BlendOutput((float3)(1.0 - a), c.rgb * a);
 }

@@ -77,6 +77,18 @@ BlendCoverage ResolveBlendCoverage(float3 Cmul, float3 Cadd, float background,
     return c;
 }
 
+// Framebuffer Blend Function (tag enum) -> the blend the viewport draws.
+//   0 alpha blend, 1 multiply, 2 double multiply, 3 add: as in the tag.
+//   4 subtract, 5 component min: darken -> multiply.
+//   6 component max: brightens -> add.
+//   7 alpha-multiply add: -> alpha blend.
+static const int GX_VIEWPORT_BLEND[8] = { 0, 1, 2, 3, 1, 1, 3, 0 };
+
+int ViewportBlendMode(int framebufferBlendFunction)
+{
+    return GX_VIEWPORT_BLEND[clamp(framebufferBlendFunction, 0, 7)];
+}
+
 // Screen-space hash threshold, the same one the other transparent shaders use.
 // Dividing by w makes it shift under Nitrous's sub-pixel jitter, so the grain
 // averages out once the camera stops.

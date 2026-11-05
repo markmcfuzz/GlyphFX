@@ -13,8 +13,12 @@
 // The FlashColorIsNegative flag inverts the flash contribution sign.
 // The Unfiltered flag switches to a point sampler.
 // ----------------------------------------------------------------------------
-float4 PS_Main(TM_PS_INPUT i) : SV_TARGET
+// Two Sided off: the engine culls back faces (D3DCULL_CCW).  The .fx leaves
+// culling to Nitrous, so the back faces are dropped here.
+GxBlendOutput PS_Main(TM_PS_INPUT i, bool frontFace : SV_IsFrontFace)
 {
+    if (!TwoSided && !frontFace) discard;
+
     // Sample the meter map (filtered or point depending on Unfiltered flag)
     float4 t0 = Unfiltered
                 ? MeterMap.Sample(smpPoint, i.uv0)
@@ -68,12 +72,6 @@ float4 PS_Main(TM_PS_INPUT i) : SV_TARGET
     finalColor *= t0.a;
     finalAlpha *= t0.a;
 
-    // Discard fully transparent pixels so they do not write to the depth
-    // buffer.  Without this, masked-out regions (t0.a ≈ 0) write depth at
-    // the biased value and block the shader_model from showing through.
-    float2 screenUV = i.clipPos.xy / i.clipPos.w;
-    float  dither   = frac(sin(dot(screenUV, float2(12.9898, 78.233))) * 43758.5453);
-    clip(finalAlpha - dither * DitherScale);
-
-    return float4(finalColor, finalAlpha);
+    // Alpha blend, applied by the dual-source blend state (_blend.fxh).
+    return BlendOutput((float3)(1.0 - finalAlpha), finalColor * finalAlpha);
 }

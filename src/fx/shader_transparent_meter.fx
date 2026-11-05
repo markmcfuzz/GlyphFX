@@ -12,50 +12,41 @@ string ParamID = "0x003";
 #include "_constants.fxh"
 #include "_structs.fxh"
 #include "_samplers.fxh"
+#include "_blend.fxh"
 #include "shader_transparent_meter.params.fxh"
 #include "shader_transparent_meter.vsh"
 #include "shader_transparent_meter.psh"
 
 // ----------------------------------------------------------------------------
-// Blend state - standard alpha blending
-// Transparent objects composite over the scene normally.
-// Note: in-engine the Decal flag switches to a modulative blend mode;
-// that cannot be toggled per-pass here, so alpha blend is used for all cases.
+// Blend state - dual source: out = PS target 0 + background * PS target 1,
+// i.e. background * Cmul + Cadd (see _blend.fxh).  Framebuffer alpha is kept.
 // ----------------------------------------------------------------------------
-BlendState BS_AlphaBlend
+BlendState BS_DualSource
 {
     BlendEnable[0]           = TRUE;
-    SrcBlend                 = SRC_ALPHA;
-    DestBlend                = INV_SRC_ALPHA;
+    SrcBlend                 = ONE;
+    DestBlend                = SRC1_COLOR;
     BlendOp                  = ADD;
-    SrcBlendAlpha            = ONE;
-    DestBlendAlpha           = INV_SRC_ALPHA;
+    SrcBlendAlpha            = ZERO;
+    DestBlendAlpha           = ONE;
     BlendOpAlpha             = ADD;
     RenderTargetWriteMask[0] = 0x0F;
 };
 
 // ----------------------------------------------------------------------------
-// Depth state - write depth so opaque passes rendered after the meter cannot
-// overwrite its pixels.  The VS Z-bias ensures the meter always wins against
-// coplanar shader_model geometry regardless of sub-material render order.
+// Depth state - test, but do not write (writing depth breaks the blend in
+// Nitrous; it draws transparent surfaces after the opaque geometry).
 // ----------------------------------------------------------------------------
-DepthStencilState DS_MeterDepth
+DepthStencilState DS_DepthTestOnly
 {
     DepthEnable    = TRUE;
-    DepthWriteMask = ALL;
+    DepthWriteMask = ZERO;
     DepthFunc      = LESS_EQUAL;
 };
 
-// ----------------------------------------------------------------------------
-// Rasterizer state - no backface culling
-// Matches Halo's two-sided transparent rendering; the TwoSided flag is
-// retained as a tag-visible parameter but culling is disabled here for
-// correct viewport preview of all meter geometry orientations.
-// ----------------------------------------------------------------------------
-RasterizerState RS_NoCull
-{
-    CullMode = None;
-};
+// No rasterizer state, on purpose: Nitrous draws transparent surfaces in two
+// passes (back faces, then front faces) with its own cull mode.  See
+// _blend.fxh.
 
 // ----------------------------------------------------------------------------
 // Technique
@@ -74,9 +65,8 @@ technique11 shader_transparent_meter
         SetVertexShader      ( CompileShader( vs_5_0, VS_Main() ) );
         SetGeometryShader    ( NULL );
         SetPixelShader       ( CompileShader( ps_5_0, PS_Main() ) );
-        SetBlendState        ( BS_AlphaBlend, float4(0, 0, 0, 0), 0xFFFFFFFF );
-        SetDepthStencilState ( DS_MeterDepth, 0 );
-        SetRasterizerState   ( RS_NoCull );
+        SetBlendState        ( BS_DualSource, float4(0, 0, 0, 0), 0xFFFFFFFF );
+        SetDepthStencilState ( DS_DepthTestOnly,  0 );
     }
 }
 

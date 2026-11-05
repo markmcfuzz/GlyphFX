@@ -317,16 +317,4 @@ float FlashBrightness
     float  UIMin = 0.0; float UIMax = 1.0; float UIStep = 0.01;
 > = 0.0;
 
-// ----------------------------------------------------------------------------
-// Opacity Controls  (GlyphFX-only, not tag data)
-// ----------------------------------------------------------------------------
-float DitherScale
-<
-    //string UIName   = "Dither Scale  (1 = full range)";
-    string UIGroup  = "Opacity Controls";
-    string UIWidget = "slider";
-    int    UIOrder = 28;
-    float  UIMin = 0.5; float UIMax = 2.0; float UIStep = 0.01;
-> = 1.0;
-
 #endif // GLYPHFX_TRANSPARENT_METER_PARAMS_FXH

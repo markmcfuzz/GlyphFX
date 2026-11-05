@@ -14,7 +14,11 @@
 // Function enum -> stored table (-1 = one / zero, no table).
 static const int GX_PERIODIC_TABLE_OF[12] = { -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 7, 8 };
 
-static const uint4 GX_PERIODIC_TABLES[576] =
+// A plain global (constant buffer) with its values as the default, not
+// `static const`: as an immediate constant buffer it added ~110 ms to every
+// vertex shader compile.  It has no UIName, so 3ds Max neither shows it nor
+// writes it, and the effect keeps these defaults.
+uint4 GX_PERIODIC_TABLES[576] =
 {
     // 0: cosine
     uint4(0xEEF7FDFF, 0xADC1D2E2, 0x576C8298, 0x13213143), uint4(0x00000309, 0x27190D05, 0x76604B38, 0xC8B6A18B),

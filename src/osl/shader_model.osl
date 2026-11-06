@@ -1,0 +1,346 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | osl/shader_model.osl
+//
+// Halo CE - shader_model as an OSL map, a port of fx/shader_model.fx
+// (shader_model.vsh + shader_model.psh + _cubemap.fxh).
+//
+// Why OSL: Nitrous draws every DirectX Shader material in one camera-sorted
+// group, so an opaque DirectX material can be drawn after a transparent one on
+// top of it and hide it.  A native material is drawn first, so the
+// transparent DirectX shaders (generic, chicago, meter...) always land on top.
+//
+// Use in 3ds Max (the toolkit builds it):
+//   Standard (Legacy) material:
+//     Diffuse map = this OSL Map (output Col),
+//     Self-Illumination 100 (amount, "Color" off), Specular Level 0.
+//   Only for alpha-tested / alpha-blended-decal shaders: Opacity map = this
+//   same OSL Map, output Opacity.
+//   With full self-illumination the material ignores 3ds Max's lights; what
+//   shows is this shader's own lighting, as in the DirectX version.  (A
+//   Self-Illumination *color* map shows black in the viewport.)
+//
+// Parameters keep the names of shader_model.fx (tag fields included, even the
+// ones the viewport does not use), so scripts address them the same way.
+// Differences, forced by OSL:
+//   - textures are file names (string), not bitmaps;
+//   - colors have no alpha (none of these colors uses it);
+//   - the light cannot follow a scene light: LampPos / LampColor are plain
+//     parameters, defaulting to the DirectX shader's no-light values.
+// ----------------------------------------------------------------------------
+
+// ---- Halo cube atlas (4x3 cross), as _cubemap.fxh -------------------------
+//   [UP   ][     ][     ][     ]   row 0
+//   [BACK ][LEFT ][FRONT][RIGHT]   row 1
+//   [DOWN ][     ][     ][     ]   row 2
+// Face: 0=BACK(+Y) 1=FRONT(-Y) 2=RIGHT(+X) 3=LEFT(-X) 4=UP(+Z) 5=DOWN(-Z)
+
+point HaloCubeFaceUV(vector d, int face, float mx, float my, float uOff, float vOff)
+{
+    float mag, uc, vc, bx, by;
+    if      (face == 0) { mag =  d[1]; uc = -d[0]; vc = -d[2]; bx = 0.00; by = 1.0 / 3.0; }
+    else if (face == 1) { mag = -d[1]; uc =  d[0]; vc = -d[2]; bx = 0.50; by = 1.0 / 3.0; }
+    else if (face == 2) { mag =  d[0]; uc =  d[1]; vc = -d[2]; bx = 0.75; by = 1.0 / 3.0; }
+    else if (face == 3) { mag = -d[0]; uc = -d[1]; vc = -d[2]; bx = 0.25; by = 1.0 / 3.0; }
+    else if (face == 4) { mag =  d[2]; uc = -d[0]; vc =  d[1]; bx = 0.00; by = 0.0; }
+    else                { mag = -d[2]; uc = -d[0]; vc = -d[1]; bx = 0.00; by = 2.0 / 3.0; }
+    mag = max(mag, 0.001);
+    float fu = clamp(uc / mag * 0.5 + 0.5, mx, 1.0 - mx);
+    float fv = clamp(vc / mag * 0.5 + 0.5, my, 1.0 - my);
+    // top-left origin, as texture() expects (same as the D3D atlas UV)
+    return point(bx + fu * 0.25 + uOff * 0.25, by + fv * (1.0 / 3.0) + vOff * (1.0 / 3.0), 0);
+}
+
+// SampleHaloCECubeMap: blend the three axis faces with sharp per-axis weights.
+color SampleHaloCubeMap(string file, vector dir0, float blur, float uOff, float vOff)
+{
+    vector dir = normalize(dir0);
+    int res[2] = { 256, 192 };
+    gettextureinfo(file, "resolution", res);
+    float mx = max(0.5, pow(2.0, blur) * 0.5) / (res[0] * 0.25);
+    float my = max(0.5, pow(2.0, blur) * 0.5) / (res[1] / 3.0);
+
+    vector a = vector(abs(dir[0]), abs(dir[1]), abs(dir[2]));
+    vector w = a * a; w = w * w; w = w * w; w = w * w;   // ^16
+    w = w * a; w = w * a;                                 // ^18
+    w /= max(w[0] + w[1] + w[2], 0.0001);
+
+    int fX = (dir[0] >= 0) ? 2 : 3;
+    int fY = (dir[1] >= 0) ? 0 : 1;
+    int fZ = (dir[2] >= 0) ? 4 : 5;
+    // ReflectionBlur is a mip level in the DirectX shader; OSL's "blur" is a
+    // fraction of the texture, so a mip level is 2^level texels of a face.
+    float b = (blur > 0) ? (pow(2.0, blur) / (res[0] * 0.25)) : 0.0;
+
+    color r = 0;
+    if (w[0] > 0.01) { point t = HaloCubeFaceUV(dir, fX, mx, my, uOff, vOff);
+                       r += w[0] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    if (w[1] > 0.01) { point t = HaloCubeFaceUV(dir, fY, mx, my, uOff, vOff);
+                       r += w[1] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    if (w[2] > 0.01) { point t = HaloCubeFaceUV(dir, fZ, mx, my, uOff, vOff);
+                       r += w[2] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    return r;
+}
+
+// RGBA lookup.  s, t are already in texture space (V flipped, top-left
+// origin), like the DirectX shader's TEXCOORD0.
+color Tex(string file, float s, float t, output float a)
+{
+    a = 1.0;
+    return texture(file, s, t, "wrap", "periodic", "colorspace", "Raw", "alpha", a);
+}
+
+shader shader_model
+[[ string label = "GlyphFX shader_model", string category = "GlyphFX" ]]
+(
+    point  UVW = point(u, v, 0) [[ string label = "UVW" ]],
+
+    // ---- Viewport light (3ds Max only) -----------------------------------
+    point  LampPos = point(-50.0, 150.0, 100.0) [[ string label = "Light Position (World)" ]],
+    color  LampColor = color(1.0, 1.0, 1.0) [[ string label = "Light Color" ]],
+    color  AmbientColor = color(0.3, 0.3, 0.3) [[ string label = "Ambient Color" ]],
+    color  FillLightColor = color(0.3, 0.3, 0.35) [[ string label = "Fill Light Color" ]],
+    float  LampIntensity = 0.6 [[ string label = "Light Intensity" ]],
+    float  SpecularPower = 24.0 [[ string widget = "null" ]],
+
+    // ---- Debug (3ds Max only) --------------------------------------------
+    float  DitherScale = 1.0 [[ string widget = "null" ]],
+    float  ReflectionIntensityScale = 1.0 [[ string widget = "null" ]],
+    float  ReflectionBlur = 0.0 [[ string widget = "null" ]],
+    float  CubemapVOffset = 0.0 [[ string widget = "null" ]],
+    float  CubemapUOffset = 0.0 [[ string widget = "null" ]],
+    float  CubemapPitch = 0.0 [[ string widget = "null" ]],
+
+    // ---- Shader General Fields -------------------------------------------
+    int    SimpleParameterization = 0 [[ string label = "Simple Parameterization", string widget = "checkBox" ]],
+    int    IgnoreNormals = 0 [[ string label = "Ignore Normals", string widget = "checkBox" ]],
+    int    TransparentLit = 0 [[ string label = "Transparent Lit", string widget = "checkBox" ]],
+    int    DetailLevel = 0 [[ string label = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]" ]],
+    float  Power = 1.0 [[ string label = "Power" ]],
+    color  ColorOfEmittedLight = color(0) [[ string label = "Color of Emitted Light" ]],
+    color  TintColor = color(1) [[ string label = "Tint Color" ]],
+    float  MaterialType = 0 [[ string label = "Material Type" ]],
+
+    // ---- Shader Model Flags ----------------------------------------------
+    int    DetailAfterReflection = 0 [[ string label = "Detail After Reflection", string widget = "checkBox" ]],
+    int    TwoSided = 0 [[ string label = "Two Sided", string widget = "checkBox" ]],
+    int    NotAlphaTested = 0 [[ string label = "Not Alpha Tested", string widget = "checkBox" ]],
+    int    AlphaBlendedDecal = 0 [[ string label = "Alpha Blended Decal", string widget = "checkBox" ]],
+    int    TrueAtmosphericFog = 0 [[ string label = "True Atmospheric Fog", string widget = "checkBox" ]],
+    int    DisableTwoSidedCulling = 0 [[ string label = "Disable Two-Sided Culling", string widget = "checkBox" ]],
+    int    UseXboxChannelOrder = 0 [[ string label = "Use Xbox Multipurpose Channel Order", string widget = "checkBox" ]],
+    float  Translucency = 0.0 [[ string label = "Translucency" ]],
+
+    // ---- Change Color ----------------------------------------------------
+    int    ChangeColorSource = 0 [[ string label = "Change Color Source  [0=none  1=A  2=B  3=C  4=D]" ]],
+    color  ChangeColor = color(1) [[ string label = "Change Color (Only for 3ds Max)" ]],
+
+    // ---- Self Illumination -----------------------------------------------
+    int    NoRandomPhaseFlag = 0 [[ string label = "No Random Phase", string widget = "checkBox" ]],
+    int    SelfIlluminationColorSource = 0 [[ string label = "Self Illum Color Source" ]],
+    int    SelfIlluminationAnimationFunction = 0 [[ string label = "Self Illum Animation Function" ]],
+    float  SelfIlluminationAnimationPeriod = 0.0 [[ string label = "Self Illum Animation Period (Seconds)" ]],
+    color  AnimationColorLowerBound = color(0) [[ string label = "Animation Color Lower Bound" ]],
+    color  AnimationColorUpperBound = color(0) [[ string label = "Animation Color Upper Bound" ]],
+    color  SelfIlluminationColor = color(0) [[ string label = "Self Illumination Color (Only for 3ds Max)" ]],
+
+    // ---- Base Map --------------------------------------------------------
+    float  MapUScale = 1.0 [[ string label = "Map U Scale" ]],
+    float  MapVScale = 1.0 [[ string label = "Map V Scale" ]],
+    int    EnableBaseMap = 1 [[ string label = "Enable Base Map (only for 3ds Max)", string widget = "checkBox" ]],
+    string BaseMapTexture = "" [[ string label = "Base Map", string widget = "filename" ]],
+
+    // ---- Multipurpose / Detail -------------------------------------------
+    int    EnableMultipurposeMap = 1 [[ string label = "Enable Multipurpose Map (only for 3ds Max)", string widget = "checkBox" ]],
+    string MultipurposeMapTexture = "" [[ string label = "Multipurpose Map", string widget = "filename" ]],
+    int    DetailFunction = 0 [[ string label = "Detail Function  [0=Double Biased Multiply  1=Multiply  2=Biased Add]" ]],
+    int    DetailMask = 0 [[ string label = "Detail Mask  [0=None  1=Refl_Inv  2=Refl  3=SI_Inv  4=SI  5=CC_Inv  6=CC  7=Aux_Inv  8=Aux]" ]],
+    float  DetailMapScale = 1.0 [[ string label = "Detail Map Scale" ]],
+    int    EnableDetailMap = 1 [[ string label = "Enable Detail Map (only for 3ds Max)", string widget = "checkBox" ]],
+    string DetailMapTexture = "" [[ string label = "Detail Map", string widget = "filename" ]],
+    float  DetailMapVScale = 0.0 [[ string label = "Detail Map V Scale  (multiplier of Detail Map Scale)" ]],
+
+    // ---- Texture Scrolling Animation (tag data, not animated here) --------
+    int    UAnimationSource = 0 [[ string label = "U Animation Source" ]],
+    int    UAnimationFunction = 0 [[ string label = "U Animation Function" ]],
+    float  UAnimationPeriod = 0.0 [[ string label = "U Animation Period (Seconds)" ]],
+    float  UAnimationPhase = 0.0 [[ string label = "U Animation Phase" ]],
+    float  UAnimationScale = 0.0 [[ string label = "U Animation Scale (Repeats)" ]],
+    float  VAnimationSource = 0 [[ string label = "V Animation Source" ]],
+    float  VAnimationFunction = 0 [[ string label = "V Animation Function" ]],
+    float  VAnimationPeriod = 0.0 [[ string label = "V Animation Period (Seconds)" ]],
+    float  VAnimationPhase = 0.0 [[ string label = "V Animation Phase" ]],
+    float  VAnimationScale = 0.0 [[ string label = "V Animation Scale (Repeats)" ]],
+    float  RotationAnimationSource = 0 [[ string label = "Rotation Animation Source" ]],
+    float  RotationAnimationFunction = 0 [[ string label = "Rotation Animation Function" ]],
+    float  RotationAnimationPeriod = 0.0 [[ string label = "Rotation Animation Period (Seconds)" ]],
+    float  RotationAnimationPhase = 0.0 [[ string label = "Rotation Animation Phase" ]],
+    float  RotationAnimationScale = 0.0 [[ string label = "Rotation Animation Scale" ]],
+    float  RotationAnimationCenterX = 0.0 [[ string label = "Animation Center X" ]],
+    float  RotationAnimationCenterY = 0.0 [[ string label = "Animation Center Y" ]],
+
+    // ---- Reflection ------------------------------------------------------
+    float  PerpendicularBrightness = 0.0 [[ string label = "Perpendicular Brightness", float min = 0, float max = 1 ]],
+    color  PerpendicularTintColor = color(1) [[ string label = "Perpendicular Tint Color" ]],
+    float  ParallelBrightness = 0.0 [[ string label = "Parallel Brightness", float min = 0, float max = 1 ]],
+    color  ParallelTintColor = color(1) [[ string label = "Parallel Tint Color" ]],
+    int    ReflectionMask = 0 [[ string widget = "null" ]],
+    int    EnableReflectionCube = 1 [[ string label = "Enable Reflection Cube (only for 3ds Max)", string widget = "checkBox" ]],
+    string ReflectionCubeTexture = "" [[ string label = "Reflection Cube Map", string widget = "filename" ]],
+
+    int    DebugMode = 0 [[ string label = "Debug Mode  [0=Off 1=Base 2=MP.RGB 3=MP.R 4=MP.G 5=MP.B 6=MP.A 7=Detail 8=ReflOnly]" ]],
+
+    // ---- Other (shader constants) -----------------------------------------
+    float  c_alpha_ref = 0.5 [[ string widget = "null" ]],
+    color  c_fog_color = color(0.5, 0.6, 0.7) [[ string widget = "null" ]],
+    color  c_fog_color_correction_0 = color(0.5, 0.6, 0.7) [[ string widget = "null" ]],
+    float  c_fog_color_correction_0_a = 1.0 [[ string widget = "null" ]],
+    color  c_fog_color_correction_E = color(0) [[ string widget = "null" ]],
+    color  c_fog_color_correction_1 = color(1) [[ string widget = "null" ]],
+
+    output color Col = 0,
+    output float Opacity = 1
+)
+{
+    // ---- UVs (shader_model.vsh) -------------------------------------------
+    // 3ds Max hands DirectX shaders the UV with V flipped (1 - v); the scales
+    // apply after that, as in the DirectX vertex shader.
+    float uD = UVW[0], vD = 1.0 - UVW[1];
+    float s0 = uD * MapUScale, t0 = vD * MapVScale;
+    float dvs = (DetailMapVScale == 0.0) ? DetailMapScale : DetailMapScale * DetailMapVScale;
+    float s1 = uD * DetailMapScale, t1 = vD * dvs;
+
+    // ---- Lighting vectors (world space) -----------------------------------
+    point  Pw = transform("world", P);
+    vector Nw = normalize(transform("world", N));
+    vector Iw = normalize(transform("world", I));
+    vector V  = -Iw;
+    vector Ln = normalize(LampPos - Pw);
+
+    float NdotL      = clamp(dot(Nw,  Ln), 0.0, 1.0);
+    float NdotL_fill = clamp(dot(Nw, -Ln), 0.0, 1.0);
+    float NdotV      = clamp(dot(Nw,  V),  0.0, 1.0);
+
+    color diffuse_light_base = AmbientColor + LampColor * LampIntensity * NdotL
+                             + FillLightColor * NdotL_fill;
+
+    // ---- Texture samples ----------------------------------------------------
+    float base_a = 1.0;
+    color base_rgb = color(0.5);
+    if (EnableBaseMap && BaseMapTexture != "")
+        base_rgb = Tex(BaseMapTexture, s0, t0, base_a);
+
+    float detail_a = 1.0;
+    color detail_rgb = (DetailFunction == 1) ? color(1) : color(0.5);
+    if (EnableDetailMap && DetailMapTexture != "")
+        detail_rgb = Tex(DetailMapTexture, s1, t1, detail_a);
+
+    float mp_a = 0.0;
+    color mp_rgb = color(0);
+    if (EnableMultipurposeMap && MultipurposeMapTexture != "")
+        mp_rgb = Tex(MultipurposeMapTexture, s0, t0, mp_a);
+
+    // ---- Reflection -----------------------------------------------------------
+    color reflection_map = 0;
+    if (EnableReflectionCube && ReflectionCubeTexture != "")
+    {
+        vector reflVec = normalize(mix(Nw, reflect(Iw, Nw), 0.7));
+        float cp = cos(CubemapPitch), sp = sin(CubemapPitch);
+        reflVec = normalize(vector(reflVec[0],
+                                   reflVec[1] * cp - reflVec[2] * sp,
+                                   reflVec[1] * sp + reflVec[2] * cp));
+        reflection_map = SampleHaloCubeMap(ReflectionCubeTexture, reflVec,
+                                           ReflectionBlur, CubemapUOffset, CubemapVOffset);
+    }
+
+    // ---- Xbox channel order: .agrb -----------------------------------------------
+    float mpR = mp_rgb[0], mpG = mp_rgb[1], mpB = mp_rgb[2], mpA = mp_a;
+    if (UseXboxChannelOrder)
+    {
+        float r = mpA, g = mpG, b = mpR, a = mpB;
+        mpR = r; mpG = g; mpB = b; mpA = a;
+    }
+
+    // ---- Diffuse light + self-illumination -----------------------------------
+    color diffuse_light = clamp(diffuse_light_base + mpG * SelfIlluminationColor, color(0), color(1));
+
+    // ---- Reflection mask and alpha -------------------------------------------------
+    float SRCALPHA, specular_reflection_mask;
+    if (ReflectionMask == 1) { specular_reflection_mask = base_a * detail_a; SRCALPHA = mpA; }
+    else                     { specular_reflection_mask = mpB;               SRCALPHA = base_a; }
+    specular_reflection_mask *= clamp(mix(ParallelBrightness, PerpendicularBrightness, NdotV), 0.0, 1.0);
+
+    // ---- Reflection tint ------------------------------------------------------------
+    color reflTint = mix(ParallelTintColor * ParallelBrightness,
+                         PerpendicularTintColor * PerpendicularBrightness, NdotV);
+    color tinted_reflection = reflection_map * reflTint * 1.12;
+
+    // ---- Change colour ------------------------------------------------------------
+    diffuse_light *= mix(color(1), ChangeColor, mpA);
+
+    // ---- Detail mask ----------------------------------------------------------------
+    float detail_mask = 1.0;
+    if      (DetailMask == 1) detail_mask = 1.0 - mpB;
+    else if (DetailMask == 2) detail_mask =       mpB;
+    else if (DetailMask == 3) detail_mask = 1.0 - mpG;
+    else if (DetailMask == 4) detail_mask =       mpG;
+    else if (DetailMask == 5) detail_mask = 1.0 - mpA;
+    else if (DetailMask == 6) detail_mask =       mpA;
+    else if (DetailMask == 7) detail_mask = 1.0 - mpR;
+    else if (DetailMask == 8) detail_mask =       mpR;
+
+    color detail_neutral = (DetailFunction == 1) ? color(1) : color(0.5);
+    color detail = mix(detail_neutral, detail_rgb, detail_mask);
+
+    // ---- Combine ------------------------------------------------------------------
+    color lit;
+    if (!DetailAfterReflection)
+    {
+        color dr;
+        if      (DetailFunction == 0) dr = base_rgb * detail * 2.0;
+        else if (DetailFunction == 1) dr = base_rgb * detail;
+        else                          dr = base_rgb + 2.0 * detail - 1.0;
+        lit = clamp(dr, color(0), color(1)) * diffuse_light
+            + tinted_reflection * specular_reflection_mask;
+    }
+    else
+    {
+        color lit_base = clamp(base_rgb * diffuse_light
+                               + tinted_reflection * specular_reflection_mask, color(0), color(1));
+        color dr;
+        if      (DetailFunction == 0) dr = lit_base * detail * 2.0;
+        else if (DetailFunction == 1) dr = lit_base * detail;
+        else                          dr = lit_base + 2.0 * detail - 1.0;
+        lit = clamp(dr, color(0), color(1));
+    }
+    lit = clamp(lit, color(0), color(1));
+
+    // ---- Fog (fog weight is 0 in the viewport, as in the DirectX shader) -----
+    color SRCCOLOR = lit;
+    if (TrueAtmosphericFog)
+    {
+        float fog_a = 0.0;
+        color fog = clamp(c_fog_color_correction_1 - fog_a * c_fog_color_correction_E, color(0), color(1));
+        SRCCOLOR = mix(lit * c_fog_color_correction_0_a, c_fog_color_correction_0, fog_a) + fog;
+    }
+
+    tinted_reflection *= ReflectionIntensityScale;
+
+    // ---- Debug ------------------------------------------------------------------------
+    if      (DebugMode == 1) SRCCOLOR = base_rgb;
+    else if (DebugMode == 2) SRCCOLOR = color(mpR, mpG, mpB);
+    else if (DebugMode == 3) SRCCOLOR = color(mpR);
+    else if (DebugMode == 4) SRCCOLOR = color(mpG);
+    else if (DebugMode == 5) SRCCOLOR = color(mpB);
+    else if (DebugMode == 6) SRCCOLOR = color(mpA);
+    else if (DebugMode == 7) SRCCOLOR = detail_rgb;
+    else if (DebugMode == 8) SRCCOLOR = tinted_reflection * specular_reflection_mask;
+
+    Col = SRCCOLOR;
+
+    // ---- Opacity (used only when the material wires it) -------------------------
+    // Alpha-blended decal: the alpha itself.  Alpha tested: a hard cut at
+    // c_alpha_ref.  Otherwise opaque.
+    if (AlphaBlendedDecal)    Opacity = SRCALPHA;
+    else if (!NotAlphaTested) Opacity = (SRCALPHA >= c_alpha_ref) ? 1.0 : 0.0;
+    else                      Opacity = 1.0;
+}

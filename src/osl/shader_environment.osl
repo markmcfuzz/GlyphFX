@@ -1,0 +1,465 @@
+// ----------------------------------------------------------------------------
+// GlyphFX | osl/shader_environment.osl
+//
+// Halo CE - shader_environment as an OSL map, a port of
+// fx/shader_environment.fx (shader_environment.vsh + shader_environment.psh +
+// _cubemap.fxh).
+//
+// Why OSL: see shader_model.osl.  An opaque DirectX material is drawn in the
+// same camera-sorted group as the transparent DirectX shaders and can hide
+// them; a native material is drawn first.
+//
+// Use in 3ds Max (the toolkit builds it):
+//   Standard (Legacy) material:
+//     Diffuse map = this OSL Map (output Col),
+//     Self-Illumination 100 (amount, "Color" off), Specular Level 0.
+//   Only for alpha-tested shaders: Opacity map = this same OSL Map, output
+//   Opacity.
+//
+// Parameters keep the names of shader_environment.fx (tag fields included,
+// even the ones the viewport does not use).  Differences, forced by OSL:
+//   - textures are file names (string), not bitmaps;
+//   - colors have no alpha (c_fog_color_correction_0's alpha is the extra
+//     float c_fog_color_correction_0_a);
+//   - the light cannot follow a scene light: LampPos / LampColor are plain
+//     parameters, defaulting to the DirectX shader's no-light values;
+//   - the tangent frame for the bump map comes from dPdu / dPdv (the
+//     DirectX shader gets 3ds Max's TANGENT / BINORMAL).
+// ----------------------------------------------------------------------------
+
+// ---- Halo cube atlas (4x3 cross), as _cubemap.fxh -------------------------
+//   [UP   ][     ][     ][     ]   row 0
+//   [BACK ][LEFT ][FRONT][RIGHT]   row 1
+//   [DOWN ][     ][     ][     ]   row 2
+// Face: 0=BACK(+Y) 1=FRONT(-Y) 2=RIGHT(+X) 3=LEFT(-X) 4=UP(+Z) 5=DOWN(-Z)
+
+point HaloCubeFaceUV(vector d, int face, float mx, float my, float uOff, float vOff)
+{
+    float mag, uc, vc, bx, by;
+    if      (face == 0) { mag =  d[1]; uc = -d[0]; vc = -d[2]; bx = 0.00; by = 1.0 / 3.0; }
+    else if (face == 1) { mag = -d[1]; uc =  d[0]; vc = -d[2]; bx = 0.50; by = 1.0 / 3.0; }
+    else if (face == 2) { mag =  d[0]; uc =  d[1]; vc = -d[2]; bx = 0.75; by = 1.0 / 3.0; }
+    else if (face == 3) { mag = -d[0]; uc = -d[1]; vc = -d[2]; bx = 0.25; by = 1.0 / 3.0; }
+    else if (face == 4) { mag =  d[2]; uc = -d[0]; vc =  d[1]; bx = 0.00; by = 0.0; }
+    else                { mag = -d[2]; uc = -d[0]; vc = -d[1]; bx = 0.00; by = 2.0 / 3.0; }
+    mag = max(mag, 0.001);
+    float fu = clamp(uc / mag * 0.5 + 0.5, mx, 1.0 - mx);
+    float fv = clamp(vc / mag * 0.5 + 0.5, my, 1.0 - my);
+    // top-left origin, as texture() expects (same as the D3D atlas UV)
+    return point(bx + fu * 0.25 + uOff * 0.25, by + fv * (1.0 / 3.0) + vOff * (1.0 / 3.0), 0);
+}
+
+// SampleHaloCECubeMap: blend the three axis faces with sharp per-axis weights.
+color SampleHaloCubeMap(string file, vector dir0, float blur, float uOff, float vOff)
+{
+    vector dir = normalize(dir0);
+    int res[2] = { 256, 192 };
+    gettextureinfo(file, "resolution", res);
+    float mx = max(0.5, pow(2.0, blur) * 0.5) / (res[0] * 0.25);
+    float my = max(0.5, pow(2.0, blur) * 0.5) / (res[1] / 3.0);
+
+    vector a = vector(abs(dir[0]), abs(dir[1]), abs(dir[2]));
+    vector w = a * a; w = w * w; w = w * w; w = w * w;   // ^16
+    w = w * a; w = w * a;                                 // ^18
+    w /= max(w[0] + w[1] + w[2], 0.0001);
+
+    int fX = (dir[0] >= 0) ? 2 : 3;
+    int fY = (dir[1] >= 0) ? 0 : 1;
+    int fZ = (dir[2] >= 0) ? 4 : 5;
+    // ReflectionBlur is a mip level in the DirectX shader; OSL's "blur" is a
+    // fraction of the texture, so a mip level is 2^level texels of a face.
+    float b = (blur > 0) ? (pow(2.0, blur) / (res[0] * 0.25)) : 0.0;
+
+    color r = 0;
+    if (w[0] > 0.01) { point t = HaloCubeFaceUV(dir, fX, mx, my, uOff, vOff);
+                       r += w[0] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    if (w[1] > 0.01) { point t = HaloCubeFaceUV(dir, fY, mx, my, uOff, vOff);
+                       r += w[1] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    if (w[2] > 0.01) { point t = HaloCubeFaceUV(dir, fZ, mx, my, uOff, vOff);
+                       r += w[2] * (color)texture(file, t[0], t[1], "wrap", "clamp", "colorspace", "Raw", "blur", b); }
+    return r;
+}
+
+// RGBA lookup.  s, t are already in texture space (V flipped, top-left
+// origin), like the DirectX shader's TEXCOORD0.
+color Tex(string file, float s, float t, output float a)
+{
+    a = 1.0;
+    return texture(file, s, t, "wrap", "periodic", "colorspace", "Raw", "alpha", a);
+}
+
+color Sat(color c) { return clamp(c, color(0), color(1)); }
+
+// World-space tangent / binormal from dPdu / dPdv.
+// In the 3ds Max viewport dPdu / dPdv are per triangle (flat), not smoothed
+// per vertex like the TANGENT / BINORMAL the DirectX shader gets, and they lie
+// in the flat face, not in the plane of the smooth normal.  Used as they come,
+// the normal-mapped normal jumps from face to face.  Projecting them onto the
+// smooth normal's plane (Gram-Schmidt) removes that jump; their sign, which
+// follows the UV mirroring, is kept.  A degenerate UV falls back to any frame
+// around N, so the normal never turns NaN.
+void TangentFrame(vector Nw, output vector Tw, output vector Bw)
+{
+    vector t = transform("world", dPdu);
+    vector b = transform("world", dPdv);
+    t = t - dot(t, Nw) * Nw;
+    if (length(t) < 1e-8)
+        t = cross(Nw, (abs(Nw[2]) < 0.9) ? vector(0, 0, 1) : vector(1, 0, 0));
+    Tw = normalize(t);
+    b = b - dot(b, Nw) * Nw - dot(b, Tw) * Tw;
+    vector bo = cross(Nw, Tw);
+    Bw = (length(b) < 1e-8) ? bo : normalize(b);
+}
+
+shader shader_environment
+[[ string label = "GlyphFX shader_environment", string category = "GlyphFX" ]]
+(
+    point  UVW = point(u, v, 0) [[ string label = "UVW" ]],
+
+    // ---- Viewport light (3ds Max only) -----------------------------------
+    point  LampPos = point(-50.0, 150.0, 100.0) [[ string label = "Light Position (World)" ]],
+    color  LampColor = color(1.0, 1.0, 1.0) [[ string label = "Light Color" ]],
+    color  AmbientColor = color(0.3, 0.3, 0.3) [[ string label = "Lightmap Ambient Color" ]],
+    color  FillLightColor = color(0.3, 0.3, 0.35) [[ string label = "Fill Light Color" ]],
+    float  LampIntensity = 0.6 [[ string label = "Light Power", float min = 0, float max = 2 ]],
+
+    // ---- Hidden in the DirectX shader (no UIName) ------------------------
+    float  ReflectionIntensityScale = 1.0 [[ string widget = "null" ]],
+    float  ReflectionBlur = 0.0 [[ string widget = "null" ]],
+    float  CubemapVOffset = 0.0 [[ string widget = "null" ]],
+    float  CubemapUOffset = 0.0 [[ string widget = "null" ]],
+    float  CubemapPitch = 0.0 [[ string widget = "null" ]],
+
+    // ---- Shader General Fields -------------------------------------------
+    int    SimpleParameterization = 0 [[ string label = "Simple Parameterization", string widget = "checkBox" ]],
+    int    IgnoreNormals = 0 [[ string label = "Ignore Normals", string widget = "checkBox" ]],
+    int    TransparentLit = 0 [[ string label = "Transparent Lit", string widget = "checkBox" ]],
+    int    DetailLevel = 0 [[ string label = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]", int min = 0, int max = 3 ]],
+    float  Power = 1.0 [[ string label = "Power" ]],
+    color  ColorOfEmittedLight = color(0) [[ string label = "Color of Emitted Light" ]],
+    color  TintColor = color(1) [[ string label = "Tint Color" ]],
+    float  MaterialType = 0 [[ string label = "Material Type" ]],
+
+    // ---- Environment Shader Flags ----------------------------------------
+    int    AlphaTested = 0 [[ string label = "Alpha Tested", string widget = "checkBox" ]],
+    int    BumpMapIsSpecularMask = 0 [[ string label = "Bump Map Is Specular Mask", string widget = "checkBox" ]],
+    int    TrueAtmosphericFog = 0 [[ string label = "True Atmospheric Fog", string widget = "checkBox" ]],
+    int    BumpAttenuation = 0 [[ string label = "Use Variant 2 for Calculation Bump Attenuation", string widget = "checkBox" ]],
+
+    // ---- Environment Shader Type -----------------------------------------
+    int    EnvironmentType = 0 [[ string label = "Type  [0=Normal  1=Blended  2=Blended Base Specular]", int min = 0, int max = 2 ]],
+
+    // ---- Lens Flares -------------------------------------------------------
+    int    LensFlareSpacing = 0 [[ string label = "Lens Flare Spacing" ]],
+    string LensFlare = "" [[ string label = "Lens Flare", string widget = "filename" ]],
+
+    // ---- Diffuse Properties ----------------------------------------------
+    int    RescaleDetailMaps = 0 [[ string label = "Rescale Detail Maps", string widget = "checkBox" ]],
+    int    RescaleBumpMap = 0 [[ string label = "Rescale Bump Map", string widget = "checkBox" ]],
+    int    EnableBaseMap = 0 [[ string label = "Enable Base Map", string widget = "checkBox" ]],
+    string BaseMapTexture = "" [[ string label = "Base Map", string widget = "filename" ]],
+    int    DetailMapFunction = 0 [[ string label = "Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]", int min = 0, int max = 2 ]],
+    int    EnablePrimaryDetailMap = 0 [[ string label = "Enable Primary Detail Map", string widget = "checkBox" ]],
+    float  PrimaryDetailMapScale = 0.0 [[ string label = "Primary Detail Map Scale" ]],
+    string PrimaryDetailMapTexture = "" [[ string label = "Primary Detail Map", string widget = "filename" ]],
+    int    EnableSecondaryDetailMap = 0 [[ string label = "Enable Secondary Detail Map", string widget = "checkBox" ]],
+    float  SecondaryDetailMapScale = 0.0 [[ string label = "Secondary Detail Map Scale" ]],
+    string SecondaryDetailMapTexture = "" [[ string label = "Secondary Detail Map", string widget = "filename" ]],
+    int    EnableMicroDetailMap = 0 [[ string label = "Enable Micro Detail Map", string widget = "checkBox" ]],
+    int    MicroDetailMapFunction = 0 [[ string label = "Micro Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]", int min = 0, int max = 2 ]],
+    float  MicroDetailMapScale = 0.0 [[ string label = "Micro Detail Map Scale" ]],
+    string MicroDetailMapTexture = "" [[ string label = "Micro Detail Map", string widget = "filename" ]],
+    color  MaterialColor = color(0) [[ string label = "Material Color" ]],
+
+    // ---- Bump Properties --------------------------------------------------
+    int    EnableBumpMap = 0 [[ string label = "Enable Bump Map", string widget = "checkBox" ]],
+    float  BumpMapScale = 0.0 [[ string label = "Bump Map Scale" ]],
+    string BumpMapTexture = "" [[ string label = "Bump Map", string widget = "filename" ]],
+
+    // ---- Texture Scrolling Animation (tag data, not animated here) --------
+    int    UAnimationFunction = 0 [[ string label = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    float  UAnimationPeriod = 0.0 [[ string label = "U Animation Period................(Seconds)" ]],
+    float  UAnimationScale = 0.0 [[ string label = "U Animation Scale................(Repeats)" ]],
+    int    VAnimationFunction = 0 [[ string label = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    float  VAnimationPeriod = 0.0 [[ string label = "V Animation Period................(Seconds)" ]],
+    float  VAnimationScale = 0.0 [[ string label = "V Animation Scale................(Repeats)" ]],
+
+    // ---- Self-Illumination Properties ------------------------------------
+    int    unfilteredFlag = 0 [[ string label = "Unfiltered", string widget = "checkBox" ]],
+    color  PrimaryOnColor = color(0) [[ string label = "Primary On Color" ]],
+    color  PrimaryOffColor = color(0) [[ string label = "Primary Off Color" ]],
+    int    PrimaryAnimationFunction = 0 [[ string label = "Primary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    float  PrimaryAnimationPeriod = 0.0 [[ string label = "Primary Animation Period................(Seconds)" ]],
+    float  PrimaryAnimationPhase = 0.0 [[ string label = "Primary Animation Phase" ]],
+    float  PrimaryAnimationValue = 0.0 [[ string widget = "null" ]],
+    color  SecondaryOnColor = color(0) [[ string label = "Secondary On Color" ]],
+    color  SecondaryOffColor = color(0) [[ string label = "Secondary Off Color" ]],
+    int    SecondaryAnimationFunction = 0 [[ string label = "Secondary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    float  SecondaryAnimationPeriod = 0.0 [[ string label = "Secondary Animation Period................(Seconds)" ]],
+    float  SecondaryAnimationPhase = 0.0 [[ string label = "Secondary Animation Phase" ]],
+    float  SecondaryAnimationValue = 0.0 [[ string widget = "null" ]],
+    color  PlasmaOnColor = color(0) [[ string label = "Plasma On Color" ]],
+    color  PlasmaOffColor = color(0) [[ string label = "Plasma Off Color" ]],
+    int    PlasmaAnimationFunction = 0 [[ string label = "Plasma Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    float  PlasmaAnimationPeriod = 0.0 [[ string label = "Plasma Animation Period................(Seconds)" ]],
+    float  PlasmaAnimationPhase = 0.0 [[ string label = "Plasma Animation Phase" ]],
+    float  PlasmaAnimationValue = 0.0 [[ string widget = "null" ]],
+    float  SelfIlluminationMapScale = 0.0 [[ string label = "Self-Illumination Map Scale" ]],
+    int    EnableSelfIlluminationMap = 0 [[ string label = "Enable Self-Illumination Map", string widget = "checkBox" ]],
+    string SelfIlluminationMapTexture = "" [[ string label = "Self-Illumination Map", string widget = "filename" ]],
+
+    // ---- Specular Properties ---------------------------------------------
+    int    SpecularOverbright = 0 [[ string label = "Overbright", string widget = "checkBox" ]],
+    int    SpecularExtraShiny = 0 [[ string label = "Extra Shiny", string widget = "checkBox" ]],
+    int    LightmapIsSpecular = 0 [[ string label = "Lightmap Is Specular", string widget = "checkBox" ]],
+    float  SpecBrightness = 0.0 [[ string label = "Brightness", float min = 0, float max = 1 ]],
+    color  SpecPerpendicularColor = color(0) [[ string label = "Perpendicular Color" ]],
+    color  SpecParallelColor = color(0) [[ string label = "Parallel Color" ]],
+
+    // ---- Reflection Properties -------------------------------------------
+    int    DynamicMirror = 0 [[ string label = "Dynamic Mirror", string widget = "checkBox" ]],
+    int    ReflectionType = 0 [[ string label = "Reflection Type  [0=Bumped Cube Map  1=Flat Cube Map  2=Bumped Radiosity]", int min = 0, int max = 2 ]],
+    float  LightmapBrightnessScale = 0.0 [[ string label = "Lightmap Brightness Scale", float min = 0, float max = 1 ]],
+    float  ReflPerpendicularBrightness = 0.0 [[ string label = "Perpendicular Brightness", float min = 0, float max = 1 ]],
+    float  ReflParallelBrightness = 0.0 [[ string label = "Parallel Brightness", float min = 0, float max = 1 ]],
+    int    EnableReflectionCube = 0 [[ string label = "Enable Reflection Cube", string widget = "checkBox" ]],
+    string ReflectionCubeTexture = "" [[ string label = "Reflection Cube Map", string widget = "filename" ]],
+
+    // ---- Debug (3ds Max only) --------------------------------------------
+    int    DebugMode = 0 [[ string label = "Debug Mode  [0=Normal  1=Base Map  2=Primary Detail Map  3=Secondary Detail Map  4=Micro Detail Map  5=Bump Map Normal  6=Self-Illumination Map  7=Specular Mask  8=Reflection Only  9=Blend Factor]", int min = 0, int max = 9 ]],
+    float  BumpStrength = 0.8 [[ string label = "Bump Strength", float min = 0, float max = 2 ]],
+
+    // ---- Other (shader constants) -----------------------------------------
+    float  c_alpha_ref = 0.5 [[ string widget = "null" ]],
+    color  c_fog_color_correction_0 = color(0.5, 0.6, 0.7) [[ string widget = "null" ]],
+    float  c_fog_color_correction_0_a = 1.0 [[ string widget = "null" ]],
+    color  c_fog_color_correction_E = color(0) [[ string widget = "null" ]],
+    color  c_fog_color_correction_1 = color(1) [[ string widget = "null" ]],
+
+    output color Col = 0,
+    output float Opacity = 1
+)
+{
+    // ---- Lighting vectors (world space) -----------------------------------
+    point  Pw = transform("world", P);
+    vector Nw = normalize(transform("world", N));
+    vector Iw = normalize(transform("world", I));
+    vector V  = -Iw;
+    vector Ln = normalize(LampPos - Pw);
+
+    // Tangent frame: dPdu / dPdv stand in for 3ds Max's TANGENT / BINORMAL.
+    // Both follow 3ds Max's UV (V up), as the DirectX shader's binormal does.
+    vector Tw, Bw;
+    TangentFrame(Nw, Tw, Bw);
+
+    // ---- UVs ------------------------------------------------------------------
+    // 3ds Max hands DirectX shaders the UV with V flipped (1 - v); the scales
+    // apply after that, as in the DirectX shader.
+    float uD = UVW[0], vD = 1.0 - UVW[1];
+
+    // "Rescale detail maps" / "rescale bump map": keyed off the base map's
+    // real size (see shader_environment.psh for the in-game cases).
+    float detailRescaleS = 1.0, detailRescaleT = 1.0;
+    float bumpRescaleS   = 1.0, bumpRescaleT   = 1.0;
+    float detailScaleFactor = 1.0;
+    float bumpScaleFactor   = 1.0;
+
+    if ((RescaleDetailMaps || RescaleBumpMap) && EnableBaseMap && BaseMapTexture != "")
+    {
+        int res[2] = { 0, 0 };
+        gettextureinfo(BaseMapTexture, "resolution", res);
+        float bw = res[0], bh = res[1];
+        float aspect = (bw > 0.0 && bh > 0.0) ? (bw / bh) : 1.0;
+        float rS = sqrt(aspect), rT = 1.0 / sqrt(aspect);
+        aspect = max(aspect, 1.0 / aspect);
+        float factor = (aspect > 1.0) ? (aspect * 0.5) : 0.5;
+        if (RescaleDetailMaps)
+        {
+            detailRescaleS = rS; detailRescaleT = rT;
+            detailScaleFactor = factor;
+        }
+        if (RescaleBumpMap)
+        {
+            bumpRescaleS = rS; bumpRescaleT = rT;
+            bumpScaleFactor = factor;
+        }
+    }
+
+    float pdS = PrimaryDetailMapScale   * detailScaleFactor;
+    float sdS = SecondaryDetailMapScale * detailScaleFactor;
+    float mdS = MicroDetailMapScale     * detailScaleFactor;
+    float bmS = BumpMapScale            * bumpScaleFactor;
+
+    // ---- Texture samples ----------------------------------------------------
+    float base_a = 1.0;
+    color base_rgb = color(0.5);
+    if (EnableBaseMap && BaseMapTexture != "")
+        base_rgb = Tex(BaseMapTexture, uD, vD, base_a);
+
+    float primary_a = 1.0;
+    color primary_rgb = color(0.5);
+    if (EnablePrimaryDetailMap && PrimaryDetailMapTexture != "")
+        primary_rgb = Tex(PrimaryDetailMapTexture,
+                          uD * pdS * detailRescaleS, vD * pdS * detailRescaleT, primary_a);
+
+    float secondary_a = 1.0;
+    color secondary_rgb = color(0.5);
+    if (EnableSecondaryDetailMap && SecondaryDetailMapTexture != "")
+        secondary_rgb = Tex(SecondaryDetailMapTexture,
+                            uD * sdS * detailRescaleS, vD * sdS * detailRescaleT, secondary_a);
+
+    float micro_a = 1.0;
+    color micro_rgb = color(0.5);
+    if (EnableMicroDetailMap && MicroDetailMapTexture != "")
+        micro_rgb = Tex(MicroDetailMapTexture,
+                        uD * mdS * detailRescaleS, vD * mdS * detailRescaleT, micro_a);
+
+    float bump_a = 1.0;
+    color bump_rgb = color(0.5, 0.5, 1.0);
+    if (EnableBumpMap && BumpMapTexture != "")
+        bump_rgb = Tex(BumpMapTexture,
+                       uD * bmS * bumpRescaleS, vD * bmS * bumpRescaleT, bump_a);
+
+    float si_a = 0.0;
+    color si_rgb = color(0);
+    if (EnableSelfIlluminationMap && SelfIlluminationMapTexture != "")
+        si_rgb = Tex(SelfIlluminationMapTexture,
+                     uD * SelfIlluminationMapScale, vD * SelfIlluminationMapScale, si_a);
+
+    // ---- Bump normal: tangent space -> world space ---------------------------
+    vector bumpN = Nw;
+    if (EnableBumpMap)
+    {
+        vector bump_ts = vector(bump_rgb[0] * 2.0 - 1.0,
+                                bump_rgb[1] * 2.0 - 1.0,
+                                bump_rgb[2] * 2.0 - 1.0);
+        bump_ts[0] *= BumpStrength;
+        bump_ts[1] *= BumpStrength;
+        bump_ts = normalize(bump_ts);
+        bumpN = normalize(bump_ts[0] * Tw + bump_ts[1] * Bw + bump_ts[2] * Nw);
+    }
+
+    // ---- Detail blending (Environment Type) ----------------------------------
+    // Normal: secondary alpha blends; Blended types: base alpha.
+    float bf = (EnvironmentType == 0) ? secondary_a : base_a;
+    color blended_rgb = mix(secondary_rgb, primary_rgb, bf);
+    float blended_a   = mix(secondary_a,   primary_a,   bf);
+
+    // ---- Specular mask --------------------------------------------------------
+    float specular_mask;
+    if (BumpMapIsSpecularMask)     specular_mask = bump_a;
+    else if (EnvironmentType == 2) specular_mask = base_a * micro_a;
+    else if (EnvironmentType == 1) specular_mask = blended_a * micro_a;
+    else                           specular_mask = base_a * blended_a * micro_a;
+
+    // ---- Detail map function ----------------------------------------------------
+    color diffuse_color;
+    if      (DetailMapFunction == 1) diffuse_color = base_rgb * blended_rgb;
+    else if (DetailMapFunction == 2) diffuse_color = Sat(base_rgb + 2.0 * blended_rgb - 1.0);
+    else                             diffuse_color = Sat(base_rgb * blended_rgb * 2.0);
+
+    // ---- Micro detail function ----------------------------------------------------
+    if      (MicroDetailMapFunction == 1) diffuse_color = diffuse_color * micro_rgb;
+    else if (MicroDetailMapFunction == 2) diffuse_color = Sat(diffuse_color + 2.0 * micro_rgb - 1.0);
+    else                                  diffuse_color = Sat(diffuse_color * micro_rgb * 2.0);
+
+    // ---- Material color tint (never below ~0.3 grey, as in-game) -------------
+    color mat = color(max(MaterialColor[0], 0.3), max(MaterialColor[1], 0.3), max(MaterialColor[2], 0.3));
+    diffuse_color *= mat;
+
+    // ---- Diffuse lighting ------------------------------------------------------------
+    float NdotL      = clamp(dot(bumpN,  Ln), 0.0, 1.0);
+    float NdotL_fill = clamp(dot(bumpN, -Ln), 0.0, 1.0);
+    float NdotV      = clamp(dot(bumpN,  V),  0.0, 1.0);
+
+    color diffuse_light = AmbientColor
+                        + LampColor * LampIntensity * NdotL
+                        + FillLightColor * NdotL_fill;
+
+    // ---- Specular highlight (viewport light) ------------------------------------
+    vector H = normalize(Ln + V);
+    float  NdotH = clamp(dot(bumpN, H), 0.0, 1.0);
+    float  spec_term = pow(NdotH, SpecularExtraShiny ? 16.0 : 8.0);
+
+    color spec_tint = mix(SpecParallelColor, SpecPerpendicularColor, NdotV);
+    color spec_light = spec_term * spec_tint * SpecBrightness * specular_mask;
+    if (SpecularOverbright)
+        spec_light *= 2.0;
+
+    // ---- Self-illumination (primary + secondary + plasma) -----------------------
+    color primary_color   = mix(PrimaryOffColor,   PrimaryOnColor,   PrimaryAnimationValue);
+    color secondary_color = mix(SecondaryOffColor, SecondaryOnColor, SecondaryAnimationValue);
+
+    color primary_glow   = primary_color   * si_rgb[0];
+    color secondary_glow = secondary_color * si_rgb[1];
+
+    // Plasma: the hard-edge effect from env_lm_normal.psh
+    float plasma_i1 = PlasmaAnimationValue + 0.5 - max(0.0, si_a);
+    float plasma_i2 = si_a + 0.5 - max(0.0, PlasmaAnimationValue);
+    float plasma    = (plasma_i1 < 0.5) ? plasma_i1 : plasma_i2;
+    plasma = clamp(plasma * plasma * 4.0, 0.0, 1.0);
+    plasma = plasma * plasma;
+    plasma = (plasma < 0.5) ? 0.0 : pow(2.0 * plasma - 1.0, 2.0);
+
+    color plasma_color = Sat(PlasmaOnColor * plasma + PlasmaOffColor);
+    color plasma_glow  = plasma_color * si_rgb[2];
+
+    color self_illumination = Sat(primary_glow + secondary_glow + plasma_glow);
+
+    // ---- Cube-map reflection ---------------------------------------------------------
+    color reflection_map = 0;
+    if (EnableReflectionCube && ReflectionCubeTexture != "")
+    {
+        vector reflVec = (ReflectionType == 0) ? reflect(Iw, bumpN)   // bumped
+                                               : reflect(Iw, Nw);     // flat
+        float cp = cos(CubemapPitch), sp = sin(CubemapPitch);
+        reflVec = normalize(vector(reflVec[0],
+                                   reflVec[1] * cp - reflVec[2] * sp,
+                                   reflVec[1] * sp + reflVec[2] * cp));
+        reflection_map = SampleHaloCubeMap(ReflectionCubeTexture, reflVec,
+                                       ReflectionBlur, CubemapUOffset, CubemapVOffset);
+    }
+
+    // ---- Reflection tint (env_reflection_bumped / env_reflection_flat) ---------------
+    float diffuse_refl = pow(NdotV, 2.0);
+    float attenuation  = mix(ReflParallelBrightness, ReflPerpendicularBrightness, diffuse_refl);
+    color tint_color   = mix(SpecParallelColor, SpecPerpendicularColor, diffuse_refl);
+
+    color ra = color(abs(reflection_map[0]), abs(reflection_map[1]), abs(reflection_map[2]));
+    color spec_refl = pow(ra, 8.0);
+    color tinted_refl = mix(spec_refl, reflection_map, tint_color);
+    color final_reflection = tinted_refl * attenuation * specular_mask * ReflectionIntensityScale;
+
+    // ---- Bump attenuation (env_lm_normal.psh) -----------------------------------------
+    float bump_attenuation = EnableBumpMap ? clamp(dot(bumpN, Nw), 0.0, 1.0) : 1.0;
+
+    // ---- Combine ---------------------------------------------------------------------
+    color lit_diffuse = diffuse_color * bump_attenuation * diffuse_light + self_illumination;
+    color lit = Sat(lit_diffuse + final_reflection + spec_light * LampIntensity);
+
+    // ---- Fog (fog weight is 0 in the viewport, as in the DirectX shader) -----
+    color SRCCOLOR = lit;
+    if (TrueAtmosphericFog)
+    {
+        float fog_a = 0.0;
+        color fog = Sat(c_fog_color_correction_1 - fog_a * c_fog_color_correction_E);
+        SRCCOLOR = mix(lit * c_fog_color_correction_0_a, c_fog_color_correction_0, fog_a) + fog;
+    }
+
+    // ---- Debug --------------------------------------------------------------------------
+    if      (DebugMode == 1) SRCCOLOR = base_rgb;
+    else if (DebugMode == 2) SRCCOLOR = primary_rgb;
+    else if (DebugMode == 3) SRCCOLOR = secondary_rgb;
+    else if (DebugMode == 4) SRCCOLOR = micro_rgb;
+    else if (DebugMode == 5) SRCCOLOR = bump_rgb;
+    else if (DebugMode == 6) SRCCOLOR = si_rgb;
+    else if (DebugMode == 7) SRCCOLOR = color(specular_mask);
+    else if (DebugMode == 8) SRCCOLOR = final_reflection;
+    else if (DebugMode == 9) SRCCOLOR = color(bf);
+
+    Col = SRCCOLOR;
+
+    // ---- Opacity (used only when the material wires it) -------------------------
+    // Alpha tested (perforated): a hard cut of the bump map alpha at c_alpha_ref.
+    Opacity = (AlphaTested && DebugMode == 0) ? ((bump_a >= c_alpha_ref) ? 1.0 : 0.0) : 1.0;
+}

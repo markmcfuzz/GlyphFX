@@ -24,8 +24,10 @@
 // Differences, forced by OSL:
 //   - textures are file names (string), not bitmaps;
 //   - colors have no alpha (none of these colors uses it);
-//   - the light cannot follow a scene light: LampPos / LampColor are plain
-//     parameters, defaulting to the DirectX shader's no-light values.
+//   - the light cannot follow a scene light.  With LampFromView = 1 (the
+//     default) it sits at the eye, like the viewport's default light that the
+//     DirectX shader gets when the scene has no lights; with 0 it sits at
+//     LampPos.  LampPos / LampColor are plain parameters.
 // ----------------------------------------------------------------------------
 
 // ---- Halo cube atlas (4x3 cross), as _cubemap.fxh -------------------------
@@ -95,6 +97,7 @@ shader shader_model
     point  UVW = point(u, v, 0) [[ string label = "UVW" ]],
 
     // ---- Viewport light (3ds Max only) -----------------------------------
+    int    LampFromView = 0 [[ string label = "Light From View", string widget = "checkBox" ]],
     point  LampPos = point(-50.0, 150.0, 100.0) [[ string label = "Light Position (World)" ]],
     color  LampColor = color(1.0, 1.0, 1.0) [[ string label = "Light Color" ]],
     color  AmbientColor = color(0.3, 0.3, 0.3) [[ string label = "Ambient Color" ]],
@@ -214,7 +217,7 @@ shader shader_model
     vector Nw = normalize(transform("world", N));
     vector Iw = normalize(transform("world", I));
     vector V  = -Iw;
-    vector Ln = normalize(LampPos - Pw);
+    vector Ln = LampFromView ? V : normalize(LampPos - Pw);
 
     float NdotL      = clamp(dot(Nw,  Ln), 0.0, 1.0);
     float NdotL_fill = clamp(dot(Nw, -Ln), 0.0, 1.0);

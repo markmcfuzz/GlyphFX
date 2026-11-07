@@ -24,10 +24,8 @@
 // Differences, forced by OSL:
 //   - textures are file names (string), not bitmaps;
 //   - colors have no alpha (none of these colors uses it);
-//   - the light cannot follow a scene light.  With LampFromView = 1 (the
-//     default) it sits at the eye, like the viewport's default light that the
-//     DirectX shader gets when the scene has no lights; with 0 it sits at
-//     LampPos.  LampPos / LampColor are plain parameters.
+//   - the light cannot follow a scene light: it sits at LampPos, or at the
+//     eye with LampFromView = 1.  LampPos / LampColor are plain parameters.
 // ----------------------------------------------------------------------------
 
 // ---- Halo cube atlas (4x3 cross), as _cubemap.fxh -------------------------

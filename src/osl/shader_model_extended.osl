@@ -22,10 +22,8 @@
 //   - textures are file names (string), not bitmaps;
 //   - colors have no alpha (c_fog_color_correction_0's alpha is the extra
 //     float c_fog_color_correction_0_a);
-//   - the light cannot follow a scene light.  With LampFromView = 1 (the
-//     default) it sits at the eye, like the viewport's default light that the
-//     DirectX shader gets when the scene has no lights; with 0 it sits at
-//     LampPos.  LampPos / LampColor are plain parameters;
+//   - the light cannot follow a scene light: it sits at LampPos, or at the
+//     eye with LampFromView = 1.  LampPos / LampColor are plain parameters;
 //   - the tangent frame comes from dPdu / dPdv (the DirectX shader gets
 //     3ds Max's TANGENT / BINORMAL);
 //   - an alpha-blended decal outputs its alpha as Opacity instead of the

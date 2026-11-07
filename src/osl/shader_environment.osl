@@ -113,10 +113,83 @@ void TangentFrame(vector Nw, output vector Tw, output vector Bw)
     Bw = (length(b) < 1e-8) ? bo : normalize(b);
 }
 
+// ---- Animation Preview helpers ---------------------------------------------
+// Time in periods.  A period of 0 counts as 1 (the engine treats it so, or
+// asserts it is not 0).
+float GxPeriods(float seconds, float period) { return seconds / ((period == 0.0) ? 1.0 : period); }
+
+// ---- Halo periodic functions -------------------------------------------------
+// periodic_function_evaluate (source/math/periodic_functions.c, OpenCE), as
+// fx/_periodic.fxh but without the engine's 1024-entry tables: as an array
+// here they made the viewport shader very slow to build and to draw.
+// One period covers 0.7 cycles (x = periods * 0.7), as in the engine.
+//   - cosine, diagonal wave, slide, jitter, wander: the table's formula,
+//     normalized as the table is (to within its 8-bit steps);
+//   - noise: a random value per table entry (25.6 per period), interpolated
+//     as the table is, but not the engine's random sequence;
+//   - the variable period ones and spark: the engine's average variable
+//     speed, without its random part (up to about 1/4 cycle off).
+
+// A random value in [0, 1) for each whole n.
+float GxHash(float n)
+{
+    float h = sin(n * 12.9898) * 43758.5453;
+    return h - floor(h);
+}
+
+// The variable period x (periodic_function_build_variable_period_x_table):
+// each table entry advances 0.25 + 0.25 r1 + (cos(k1 i) + 1) r2 + ...  with
+// random r; here each random is its average, 1/2.  28 cycles per 1024 entries.
+float GxVariableX(float periods)
+{
+    float i = periods * 25.6;
+    i -= 1024.0 * floor(i / 1024.0);
+    float a = i / 1024.0;
+    float x = 1.875 * i + 512.0 * (sin(25.76106  * a) / 25.76106 +
+                                   sin(32.044245 * a) / 32.044245 +
+                                   sin(45.867253 * a) / 45.867253);
+    return 28.0 * x / 1951.6901;
+}
+
+// periodic_function_evaluate(function, time); time in periods.  (Named
+// fn / periods: `time` is an OSL global.)
+float GxPeriodic(int fn, float periods)
+{
+    // "one", and the engine's fallback for an invalid type
+    if (fn <= 0 || fn > 11) return 1.0;
+    if (fn == 1) return 0.0;   // zero
+
+    if (fn == 8)               // noise
+    {
+        float i = periods * 25.6, i0 = floor(i);
+        return mix(GxHash(i0), GxHash(i0 + 1.0), i - i0);
+    }
+
+    float x = (fn == 3 || fn == 5 || fn == 7 || fn == 11) ? GxVariableX(periods)
+                                                          : periods * 0.7;
+    float r = x - floor(x);
+    if (fn == 2 || fn == 3) return 0.5 + 0.5 * cos(6.2831855 * x);     // cosine
+    if (fn == 4 || fn == 5) return (r < 0.5) ? 2.0 * r : 2.0 - 2.0 * r; // diagonal wave
+    if (fn == 6 || fn == 7) return r;                                   // slide
+    if (fn == 11) return r * r;                                         // spark
+
+    // jitter, wander (same formula), normalized by the table's min / max
+    float j = cos(x * 0.89759791) * cos(x * 25.132742)
+            + cos(x * 43.9823) * sin(x * 1.5707964);
+    j = j * 0.5 + sin(x * 3.1415927) * cos(x * 6.2831855);
+    return clamp((j + 1.853553) / 3.632303, 0.0, 1.0);
+}
+
 shader shader_environment
 [[ string label = "GlyphFX shader_environment", string category = "GlyphFX" ]]
 (
     point  UVW = point(u, v, 0) [[ string label = "UVW" ]],
+
+    // ---- Animation Preview (3ds Max only, not tag data) -------------------
+    // Plays the texture scrolling and the self-illumination animations in the
+    // viewport.  The toolkit drives AnimationTime from the scene time.
+    int    AnimationPreview = 0 [[ string label = "Animation Preview", string widget = "checkBox" ]],
+    float  AnimationTime = 0.0 [[ string label = "Animation Time (Seconds)" ]],
 
     // ---- Viewport light (3ds Max only) -----------------------------------
     int    LampFromView = 1 [[ string label = "Light From View", string widget = "checkBox" ]],
@@ -260,6 +333,26 @@ shader shader_environment
     // apply after that, as in the DirectX shader.
     float uD = UVW[0], vD = 1.0 - UVW[1];
 
+    // Animation Preview (rasterizer_xbox_environment.c): the texture scrolling
+    // moves every map's UV (shader_environment_texture_animation_evaluate), and
+    // the primary / secondary / plasma self-illumination values come from
+    // their periodic functions.  Without it the hidden *AnimationValue
+    // parameters are used, as before.
+    float primary_value   = PrimaryAnimationValue;
+    float secondary_value = SecondaryAnimationValue;
+    float plasma_value    = PlasmaAnimationValue;
+    if (AnimationPreview)
+    {
+        uD += GxPeriodic((int)UAnimationFunction, GxPeriods(AnimationTime, UAnimationPeriod)) * UAnimationScale;
+        vD += GxPeriodic((int)VAnimationFunction, GxPeriods(AnimationTime, VAnimationPeriod)) * VAnimationScale;
+        primary_value   = GxPeriodic((int)PrimaryAnimationFunction,
+                              GxPeriods(AnimationTime + PrimaryAnimationPhase, PrimaryAnimationPeriod));
+        secondary_value = GxPeriodic((int)SecondaryAnimationFunction,
+                              GxPeriods(AnimationTime + SecondaryAnimationPhase, SecondaryAnimationPeriod));
+        plasma_value    = GxPeriodic((int)PlasmaAnimationFunction,
+                              GxPeriods(AnimationTime + PlasmaAnimationPhase, PlasmaAnimationPeriod));
+    }
+
     // "Rescale detail maps" / "rescale bump map": keyed off the base map's
     // real size (see shader_environment.psh for the in-game cases).
     float detailRescaleS = 1.0, detailRescaleT = 1.0;
@@ -390,15 +483,15 @@ shader shader_environment
         spec_light *= 2.0;
 
     // ---- Self-illumination (primary + secondary + plasma) -----------------------
-    color primary_color   = mix(PrimaryOffColor,   PrimaryOnColor,   PrimaryAnimationValue);
-    color secondary_color = mix(SecondaryOffColor, SecondaryOnColor, SecondaryAnimationValue);
+    color primary_color   = mix(PrimaryOffColor,   PrimaryOnColor,   primary_value);
+    color secondary_color = mix(SecondaryOffColor, SecondaryOnColor, secondary_value);
 
     color primary_glow   = primary_color   * si_rgb[0];
     color secondary_glow = secondary_color * si_rgb[1];
 
     // Plasma: the hard-edge effect from env_lm_normal.psh
-    float plasma_i1 = PlasmaAnimationValue + 0.5 - max(0.0, si_a);
-    float plasma_i2 = si_a + 0.5 - max(0.0, PlasmaAnimationValue);
+    float plasma_i1 = plasma_value + 0.5 - max(0.0, si_a);
+    float plasma_i2 = si_a + 0.5 - max(0.0, plasma_value);
     float plasma    = (plasma_i1 < 0.5) ? plasma_i1 : plasma_i2;
     plasma = clamp(plasma * plasma * 4.0, 0.0, 1.0);
     plasma = plasma * plasma;

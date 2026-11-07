@@ -9,7 +9,8 @@
 // (1-4): MapN_UScale/VScale/UOffset/VOffset/Rotation and the tag's
 // {U,V,Rotation}Animation{Source,Function,Period,Phase,Scale}N and
 // AnimationCenterU/VN; plus the Animation Preview params AnimationPreview,
-// AnimationTime, ObjectFunctionA-D and ModelBaseMapScaleU/V.
+// AnimationTime, AnimationLoopLength, ObjectFunctionA-D and
+// ModelBaseMapScaleU/V.
 //
 // The periodic functions are evaluated in slots, all in one loop (see
 // GX_ANIM_SLOT): emitting PeriodicFunctionEvaluate once per use instead
@@ -35,10 +36,25 @@ float AnimationSourceInput(int source)
     return 1.0;
 }
 
-// Slot K evaluates periodic(function, (phase + time) / period); period 0 = 1.
+// A slot's time in periods: (phase + time) / period; period 0 = 1.  With an
+// AnimationLoopLength, cosine, diagonal wave and slide (0.7 cycles per period,
+// _periodic.fxh) run the whole number of cycles nearest to the game's in it,
+// at least one, so the loop has no jump.  The random functions are unchanged.
+float AnimationSlotTime(int function, float period, float phase)
+{
+    float p = period == 0.0 ? 1.0 : period;
+    if (AnimationLoopLength > 0.0 && (function == 2 || function == 4 || function == 6))
+    {
+        float cycles = max(1.0, round(AnimationLoopLength * 0.7 / abs(p)));
+        return phase / p + sign(p) * AnimationTime * cycles / (0.7 * AnimationLoopLength);
+    }
+    return (phase + AnimationTime) / p;
+}
+
+// Slot K evaluates periodic(function, AnimationSlotTime).
 #define GX_ANIM_SLOT(K, FUNCTION, PERIOD, PHASE)                               \
     fn[K] = (int)(FUNCTION);                                                   \
-    tm[K] = ((PHASE) + AnimationTime) / ((PERIOD) == 0.0 ? 1.0 : (PERIOD));
+    tm[K] = AnimationSlotTime((int)(FUNCTION), (PERIOD), (PHASE));
 
 #define GX_TEXANIM_SLOTS(N)                                                    \
     GX_ANIM_SLOT(3 * N - 3, UAnimationFunction##N,                             \

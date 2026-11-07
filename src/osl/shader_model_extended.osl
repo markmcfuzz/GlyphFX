@@ -144,10 +144,112 @@ void TangentFrame(vector Nw, output vector Tw, output vector Bw)
     Bw = (length(b) < 1e-8) ? bo : normalize(b);
 }
 
+// ---- Animation Preview helpers ---------------------------------------------
+// Time in periods.  A period of 0 counts as 1 (the engine treats it so, or
+// asserts it is not 0).
+float GxPeriods(float seconds, float period) { return seconds / ((period == 0.0) ? 1.0 : period); }
+
+// The object's A-D Out value for an animation source (0 = none = 1).
+float GxSourceInput(int source, float a, float b, float c, float d)
+{
+    if (source == 1) return a;
+    if (source == 2) return b;
+    if (source == 3) return c;
+    if (source == 4) return d;
+    return 1.0;
+}
+
+// The UV as shader_texture_animation_evaluate (source/shaders/shaders.c)
+// transforms it: scaled, moved by the animated U / V, then rotated by the
+// animated angle (degrees) around the animation center.  With no animation
+// it is just the scaled UV.
+void GxAnimatedUV(float uIn, float vIn, float su, float sv,
+                  float au, float av, float ar, float cx, float cy,
+                  output float uOut, output float vOut)
+{
+    float pu = uIn * su - cx + au, pv = vIn * sv - cy + av;
+    float r = radians(ar), c = cos(r), sn = sin(r);
+    uOut = c * pu - sn * pv + cx;
+    vOut = sn * pu + c * pv + cy;
+}
+
+// ---- Halo periodic functions -------------------------------------------------
+// periodic_function_evaluate (source/math/periodic_functions.c, OpenCE), as
+// fx/_periodic.fxh but without the engine's 1024-entry tables: as an array
+// here they made the viewport shader very slow to build and to draw.
+// One period covers 0.7 cycles (x = periods * 0.7), as in the engine.
+//   - cosine, diagonal wave, slide, jitter, wander: the table's formula,
+//     normalized as the table is (to within its 8-bit steps);
+//   - noise: a random value per table entry (25.6 per period), interpolated
+//     as the table is, but not the engine's random sequence;
+//   - the variable period ones and spark: the engine's average variable
+//     speed, without its random part (up to about 1/4 cycle off).
+
+// A random value in [0, 1) for each whole n.
+float GxHash(float n)
+{
+    float h = sin(n * 12.9898) * 43758.5453;
+    return h - floor(h);
+}
+
+// The variable period x (periodic_function_build_variable_period_x_table):
+// each table entry advances 0.25 + 0.25 r1 + (cos(k1 i) + 1) r2 + ...  with
+// random r; here each random is its average, 1/2.  28 cycles per 1024 entries.
+float GxVariableX(float periods)
+{
+    float i = periods * 25.6;
+    i -= 1024.0 * floor(i / 1024.0);
+    float a = i / 1024.0;
+    float x = 1.875 * i + 512.0 * (sin(25.76106  * a) / 25.76106 +
+                                   sin(32.044245 * a) / 32.044245 +
+                                   sin(45.867253 * a) / 45.867253);
+    return 28.0 * x / 1951.6901;
+}
+
+// periodic_function_evaluate(function, time); time in periods.  (Named
+// fn / periods: `time` is an OSL global.)
+float GxPeriodic(int fn, float periods)
+{
+    // "one", and the engine's fallback for an invalid type
+    if (fn <= 0 || fn > 11) return 1.0;
+    if (fn == 1) return 0.0;   // zero
+
+    if (fn == 8)               // noise
+    {
+        float i = periods * 25.6, i0 = floor(i);
+        return mix(GxHash(i0), GxHash(i0 + 1.0), i - i0);
+    }
+
+    float x = (fn == 3 || fn == 5 || fn == 7 || fn == 11) ? GxVariableX(periods)
+                                                          : periods * 0.7;
+    float r = x - floor(x);
+    if (fn == 2 || fn == 3) return 0.5 + 0.5 * cos(6.2831855 * x);     // cosine
+    if (fn == 4 || fn == 5) return (r < 0.5) ? 2.0 * r : 2.0 - 2.0 * r; // diagonal wave
+    if (fn == 6 || fn == 7) return r;                                   // slide
+    if (fn == 11) return r * r;                                         // spark
+
+    // jitter, wander (same formula), normalized by the table's min / max
+    float j = cos(x * 0.89759791) * cos(x * 25.132742)
+            + cos(x * 43.9823) * sin(x * 1.5707964);
+    j = j * 0.5 + sin(x * 3.1415927) * cos(x * 6.2831855);
+    return clamp((j + 1.853553) / 3.632303, 0.0, 1.0);
+}
+
 shader shader_model_extended
 [[ string label = "GlyphFX shader_model_extended", string category = "GlyphFX" ]]
 (
     point  UVW = point(u, v, 0) [[ string label = "UVW" ]],
+
+    // ---- Animation Preview (3ds Max only, not tag data) -------------------
+    // Plays the texture animation and the self-illumination animation in the
+    // viewport.  The toolkit drives AnimationTime from the scene time; the
+    // A-D Out values stand in for the object's functions (0 = idle).
+    int    AnimationPreview = 0 [[ string label = "Animation Preview", string widget = "checkBox" ]],
+    float  AnimationTime = 0.0 [[ string label = "Animation Time (Seconds)" ]],
+    float  ObjectFunctionA = 0.0 [[ string label = "A Out (preview of the object's function)", float min = 0, float max = 1 ]],
+    float  ObjectFunctionB = 0.0 [[ string label = "B Out (preview of the object's function)", float min = 0, float max = 1 ]],
+    float  ObjectFunctionC = 0.0 [[ string label = "C Out (preview of the object's function)", float min = 0, float max = 1 ]],
+    float  ObjectFunctionD = 0.0 [[ string label = "D Out (preview of the object's function)", float min = 0, float max = 1 ]],
 
     // ---- Viewport light (3ds Max only) -----------------------------------
     int    LampFromView = 0 [[ string label = "Light From View", string widget = "checkBox" ]],
@@ -293,8 +395,28 @@ shader shader_model_extended
     // apply after that, as in the DirectX vertex shader.
     float uD = UVW[0], vD = 1.0 - UVW[1];
 
-    // Base, multipurpose, base normal and specular color maps.
-    float s0 = uD * MapUScale, t0 = vD * MapVScale;
+    // Base, multipurpose, base normal and specular color maps: s0 / t0.
+    // Texture animation, only with Animation Preview: U / V / rotation, each
+    // periodic(function, (phase + time) / period) * scale * source input.
+    float animU = 0.0, animV = 0.0, animR = 0.0;
+    if (AnimationPreview)
+    {
+        animU = GxPeriodic((int)UAnimationFunction, GxPeriods(UAnimationPhase + AnimationTime, UAnimationPeriod))
+              * UAnimationScale * GxSourceInput((int)UAnimationSource,
+                    ObjectFunctionA, ObjectFunctionB, ObjectFunctionC, ObjectFunctionD);
+        animV = GxPeriodic((int)VAnimationFunction, GxPeriods(VAnimationPhase + AnimationTime, VAnimationPeriod))
+              * VAnimationScale * GxSourceInput((int)VAnimationSource,
+                    ObjectFunctionA, ObjectFunctionB, ObjectFunctionC, ObjectFunctionD);
+        animR = GxPeriodic((int)RotationAnimationFunction, GxPeriods(RotationAnimationPhase + AnimationTime, RotationAnimationPeriod))
+              * RotationAnimationScale * GxSourceInput((int)RotationAnimationSource,
+                    ObjectFunctionA, ObjectFunctionB, ObjectFunctionC, ObjectFunctionD);
+    }
+    // uA / vA: the same animation on the unscaled UV.
+    float s0, t0, uA, vA;
+    GxAnimatedUV(uD, vD, MapUScale, MapVScale, animU, animV, animR,
+                 RotationAnimationCenterX, RotationAnimationCenterY, s0, t0);
+    GxAnimatedUV(uD, vD, 1.0, 1.0, animU, animV, animR,
+                 RotationAnimationCenterX, RotationAnimationCenterY, uA, vA);
 
     // Detail maps tile on top of the base map's tiling.
     float d1v = DetailMapScale  * OneIfZero(DetailMapVScale);
@@ -305,8 +427,8 @@ shader shader_model_extended
     // Detail normals: on the unscaled UV; a scale of 0 also means 1.
     float n1 = OneIfZero(DetailNormal1Scale);
     float n2 = OneIfZero(DetailNormal2Scale);
-    float sn1 = uD * n1, tn1 = vD * n1 * OneIfZero(DetailNormal1VScale);
-    float sn2 = uD * n2, tn2 = vD * n2 * OneIfZero(DetailNormal2VScale);
+    float sn1 = uA * n1, tn1 = vA * n1 * OneIfZero(DetailNormal1VScale);
+    float sn2 = uA * n2, tn2 = vA * n2 * OneIfZero(DetailNormal2VScale);
 
     // ---- Extended features ----------------------------------------------------
     // With EnableExtended off the shader renders exactly like shader_model.
@@ -430,7 +552,16 @@ shader shader_model_extended
     }
 
     // ---- Diffuse light + self-illumination -----------------------------------
-    color diffuse_light = Sat(diffuse_light_base + mpG * SelfIlluminationColor);
+    // Self-illumination color: with Animation Preview, the tag's animation
+    // (lower bound to upper bound, by the periodic function).  The engine also
+    // gives each object a random phase and can tint it with the object's color
+    // (Self Illum Color Source); here the phase is 0 and there is no tint.
+    color self_illum_color = SelfIlluminationColor;
+    if (AnimationPreview)
+        self_illum_color = mix(AnimationColorLowerBound, AnimationColorUpperBound,
+            GxPeriodic((int)SelfIlluminationAnimationFunction,
+                       GxPeriods(AnimationTime, SelfIlluminationAnimationPeriod)));
+    color diffuse_light = Sat(diffuse_light_base + mpG * self_illum_color);
 
     // ---- Reflection mask and alpha -------------------------------------------------
     float SRCALPHA, reflection_mask_raw;

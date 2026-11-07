@@ -279,7 +279,7 @@ float RippleAnimationAngle
 
 float RippleAnimationVelocity
 <
-    string UIName   = "Ripple Animation Velocity  (not animated in viewport)";
+    string UIName   = "Ripple Animation Velocity";
     string UIGroup  = "Ripple Properties";
     string UIWidget = "slider";
     int    UIOrder = 21;
@@ -367,7 +367,7 @@ float Ripple0_AnimationAngle
 
 float Ripple0_AnimationVelocity
 <
-    string UIName   = "Animation Velocity  (not animated in viewport)";
+    string UIName   = "Animation Velocity";
     string UIGroup  = "Ripple 0";
     string UIWidget = "slider";
     int    UIOrder = 31;
@@ -440,7 +440,7 @@ float Ripple1_AnimationAngle
 
 float Ripple1_AnimationVelocity
 <
-    string UIName   = "Animation Velocity  (not animated in viewport)";
+    string UIName   = "Animation Velocity";
     string UIGroup  = "Ripple 1";
     string UIWidget = "slider";
     int    UIOrder = 39;
@@ -513,7 +513,7 @@ float Ripple2_AnimationAngle
 
 float Ripple2_AnimationVelocity
 <
-    string UIName   = "Animation Velocity  (not animated in viewport)";
+    string UIName   = "Animation Velocity";
     string UIGroup  = "Ripple 2";
     string UIWidget = "slider";
     int    UIOrder = 47;
@@ -586,7 +586,7 @@ float Ripple3_AnimationAngle
 
 float Ripple3_AnimationVelocity
 <
-    string UIName   = "Animation Velocity  (not animated in viewport)";
+    string UIName   = "Animation Velocity";
     string UIGroup  = "Ripple 3";
     string UIWidget = "slider";
     int    UIOrder = 55;
@@ -731,5 +731,32 @@ float CubemapPitch
     int    UIOrder = 70;
     float  UIMin = -1.57; float UIMax = 1.57; float UIStep = 0.01;
 > = -0.0;
+
+
+// ----------------------------------------------------------------------------
+// Animation Preview (Only for 3ds Max, not tag data)
+// Plays the ripple animation (the ripple maps scrolling at their angle and
+// velocity) in the viewport, as the engine does.  The toolkit drives
+// AnimationTime from the scene time.  With Animation Preview off nothing
+// moves, as before.  The viewport only redraws an animated material parameter
+// by itself while the Slate Material Editor is open.
+// ----------------------------------------------------------------------------
+bool AnimationPreview
+<
+    string UIName  = "Animation Preview";
+    string UIGroup = "Animation Preview (Only for 3ds Max)";
+    int    UIOrder = 71;
+> = false;
+
+// Game time in seconds.  A plain animatable float: key it, or wire it to the
+// scene time with an expression controller (S = seconds).
+float AnimationTime
+<
+    string UIName   = "Animation Time  (Seconds)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 72;
+    float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
 
 #endif // GLYPHFX_TRANSPARENT_WATER_PARAMS_FXH

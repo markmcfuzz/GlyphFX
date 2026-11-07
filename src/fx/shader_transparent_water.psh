@@ -109,8 +109,22 @@ float ComputeRippleFade(float2 rippleUV)
 //
 // UVs match the engine's two-step scaling: the surface samples the convolved
 // bump map with (uv * ripple scale), and the convolution itself sampled each
-// ripple map with (uv * map repeats + map offset).
+// ripple map with (uv * map repeats + map offset).  With Animation Preview,
+// both steps also scroll with time, as the engine does: the bump map by the
+// global ripple animation, each ripple map by its own.
 // ----------------------------------------------------------------------------
+
+// How far a ripple animation has scrolled: time * velocity along its angle
+// (rasterizer_xbox_water.c, the bump map build and the reflection pass).
+// The angle is in degrees here; the engine stores it in radians.
+float2 RippleScroll(float angleDeg, float velocity)
+{
+    float t = AnimationPreview ? AnimationTime : 0.0;
+    float s, c;
+    sincos(radians(angleDeg), s, c);
+    return t * velocity * float2(c, s);
+}
+
 float3 ComputeRippleNormal(float2 baseUV)
 {
     // Default flat normal in tangent space (points straight up)
@@ -119,7 +133,8 @@ float3 ComputeRippleNormal(float2 baseUV)
     if (!EnableRippleMaps)
         return flatN;
 
-    float2 uv = baseUV * max(RippleScale, 0.001);
+    float2 uv = baseUV * max(RippleScale, 0.001)
+              + RippleScroll(RippleAnimationAngle, RippleAnimationVelocity);
 
     float3 blended     = float3(0, 0, 0);
     float  totalWeight = 0;
@@ -128,7 +143,8 @@ float3 ComputeRippleNormal(float2 baseUV)
     [branch] if (EnableRipple0 && Ripple0_ContributionFactor > 0)
     {
         float2 ruv = uv * max(Ripple0_MapRepeats, 0.001)
-                    + float2(Ripple0_MapOffsetU, Ripple0_MapOffsetV);
+                    + float2(Ripple0_MapOffsetU, Ripple0_MapOffsetV)
+                    + RippleScroll(Ripple0_AnimationAngle, Ripple0_AnimationVelocity);
         float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple0_ContributionFactor;
@@ -139,7 +155,8 @@ float3 ComputeRippleNormal(float2 baseUV)
     [branch] if (EnableRipple1 && Ripple1_ContributionFactor > 0)
     {
         float2 ruv = uv * max(Ripple1_MapRepeats, 0.001)
-                    + float2(Ripple1_MapOffsetU, Ripple1_MapOffsetV);
+                    + float2(Ripple1_MapOffsetU, Ripple1_MapOffsetV)
+                    + RippleScroll(Ripple1_AnimationAngle, Ripple1_AnimationVelocity);
         float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple1_ContributionFactor;
@@ -150,7 +167,8 @@ float3 ComputeRippleNormal(float2 baseUV)
     [branch] if (EnableRipple2 && Ripple2_ContributionFactor > 0)
     {
         float2 ruv = uv * max(Ripple2_MapRepeats, 0.001)
-                    + float2(Ripple2_MapOffsetU, Ripple2_MapOffsetV);
+                    + float2(Ripple2_MapOffsetU, Ripple2_MapOffsetV)
+                    + RippleScroll(Ripple2_AnimationAngle, Ripple2_AnimationVelocity);
         float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple2_ContributionFactor;
@@ -161,7 +179,8 @@ float3 ComputeRippleNormal(float2 baseUV)
     [branch] if (EnableRipple3 && Ripple3_ContributionFactor > 0)
     {
         float2 ruv = uv * max(Ripple3_MapRepeats, 0.001)
-                    + float2(Ripple3_MapOffsetU, Ripple3_MapOffsetV);
+                    + float2(Ripple3_MapOffsetU, Ripple3_MapOffsetV)
+                    + RippleScroll(Ripple3_AnimationAngle, Ripple3_AnimationVelocity);
         float3 n = RippleMapsTexture.SampleBias(smpWrap, ruv, RippleMipmapDetailBias).rgb
                    * 2.0 - 1.0;
         blended     += n * Ripple3_ContributionFactor;

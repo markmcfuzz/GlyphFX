@@ -759,4 +759,18 @@ float AnimationTime
     float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
 
+// Loop length in seconds, 0 = off.  The toolkit sets it to the timeline
+// length ("Loop to Timeline"): each scroll then moves a whole
+// number of texture repeats per axis in it, the nearest to the game's, so
+// the timeline loops without a jump.  If that is 0 on every axis it keeps
+// the game's speed (and the loop jumps).
+float AnimationLoopLength
+<
+    string UIName   = "Animation Loop Length  (Seconds, 0 = Off)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 73;
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
+
 #endif // GLYPHFX_TRANSPARENT_WATER_PARAMS_FXH

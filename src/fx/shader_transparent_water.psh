@@ -117,12 +117,22 @@ float ComputeRippleFade(float2 rippleUV)
 // How far a ripple animation has scrolled: time * velocity along its angle
 // (rasterizer_xbox_water.c, the bump map build and the reflection pass).
 // The angle is in degrees here; the engine stores it in radians.
+// With AnimationLoopLength the scroll over the loop is rounded, per axis, to
+// whole repeats of the map (it wraps every 1), so the loop has no jump; if
+// that is 0 on both axes it keeps the game's speed.
 float2 RippleScroll(float angleDeg, float velocity)
 {
     float t = AnimationPreview ? AnimationTime : 0.0;
     float s, c;
     sincos(radians(angleDeg), s, c);
-    return t * velocity * float2(c, s);
+    float2 perSecond = velocity * float2(c, s);
+    if (AnimationLoopLength > 0.0)
+    {
+        float2 repeats = round(perSecond * AnimationLoopLength);
+        if (any(repeats != 0.0))
+            return t * repeats / AnimationLoopLength;
+    }
+    return t * perSecond;
 }
 
 float3 ComputeRippleNormal(float2 baseUV)

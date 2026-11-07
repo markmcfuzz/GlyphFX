@@ -18,6 +18,24 @@
 //            applied to R_POSITION)
 // ----------------------------------------------------------------------------
 
+// How far a noise map has moved after AnimationTime: time / period *
+// direction (0 without Animation Preview, or with a period of 0).  With
+// AnimationLoopLength the move over the loop is rounded, per axis, to whole
+// repeats of the noise volume (it wraps every 1 on each axis), so the loop
+// has no jump; if that is 0 on every axis it keeps the game's speed.
+float3 NoiseMove(float period, float3 direction)
+{
+    if (!AnimationPreview || period == 0.0) return (float3)0;
+    float3 perSecond = direction / period;
+    if (AnimationLoopLength > 0.0)
+    {
+        float3 repeats = round(perSecond * AnimationLoopLength);
+        if (any(repeats != 0.0))
+            return AnimationTime * repeats / AnimationLoopLength;
+    }
+    return AnimationTime * perSecond;
+}
+
 TP_VS_OUTPUT VS_Main(TP_VS_INPUT v)
 {
     TP_VS_OUTPUT o;
@@ -42,15 +60,14 @@ TP_VS_OUTPUT VS_Main(TP_VS_INPUT v)
 
     // Noise animation (rasterizer_xbox_plasma_energy.c): each noise map moves
     // along its direction by time / period, in noise map units.
-    float t = AnimationPreview ? AnimationTime : 0.0;
-    float3 primaryMove   = PrimaryAnimationPeriod   == 0.0 ? (float3)0
-        : t / PrimaryAnimationPeriod * float3(PrimaryAnimationDirectionI,
-                                              PrimaryAnimationDirectionJ,
-                                              PrimaryAnimationDirectionK);
-    float3 secondaryMove = SecondaryAnimationPeriod == 0.0 ? (float3)0
-        : t / SecondaryAnimationPeriod * float3(SecondaryAnimationDirectionI,
-                                                SecondaryAnimationDirectionJ,
-                                                SecondaryAnimationDirectionK);
+    float3 primaryMove   = NoiseMove(PrimaryAnimationPeriod,
+                                     float3(PrimaryAnimationDirectionI,
+                                            PrimaryAnimationDirectionJ,
+                                            PrimaryAnimationDirectionK));
+    float3 secondaryMove = NoiseMove(SecondaryAnimationPeriod,
+                                     float3(SecondaryAnimationDirectionI,
+                                            SecondaryAnimationDirectionJ,
+                                            SecondaryAnimationDirectionK));
 
     o.T0 = wPos / max(PrimaryNoiseMapScale,   0.0001) + primaryMove;
     o.T1 = wPos / max(SecondaryNoiseMapScale, 0.0001) + secondaryMove;

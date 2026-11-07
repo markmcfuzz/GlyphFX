@@ -3833,6 +3833,19 @@ float AnimationTime
     float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
 > = 0.0;
 
+// Loop length in seconds, 0 = off.  The toolkit sets it to the timeline
+// length ("Loop to Timeline"): cosine, diagonal wave and slide then run a
+// whole number of cycles in it, a bit faster or slower than in game, so the
+// timeline loops without a jump.  The random functions keep their speed.
+float AnimationLoopLength
+<
+    string UIName   = "Animation Loop Length  (Seconds, 0 = Off)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 420;
+    float  UIMin = 0; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
+
 // The object's A-D Out function values.  An animation whose source is A-D
 // Out is multiplied by them; "A-Out Controls Color0 Animation" uses A Out
 // as its function value.  0 = idle.
@@ -3841,7 +3854,7 @@ float ObjectFunctionA
     string UIName   = "A Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 420;
+    int    UIOrder = 421;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3850,7 +3863,7 @@ float ObjectFunctionB
     string UIName   = "B Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 421;
+    int    UIOrder = 422;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3859,7 +3872,7 @@ float ObjectFunctionC
     string UIName   = "C Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 422;
+    int    UIOrder = 423;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3868,7 +3881,7 @@ float ObjectFunctionD
     string UIName   = "D Out  [0,1]  (preview of the object's function)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 423;
+    int    UIOrder = 424;
     float  UIMin = 0; float UIMax = 1; float UIStep = 0.01;
 > = 0.0;
 
@@ -3883,7 +3896,7 @@ float ModelBaseMapScaleU
     string UIName   = "Model Base Map U Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 424;
+    int    UIOrder = 425;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
 
@@ -3892,7 +3905,7 @@ float ModelBaseMapScaleV
     string UIName   = "Model Base Map V Scale  (0 = 1. Leave at 0 on imported gbxmodels, their UVs already have it)";
     string UIGroup  = "Animation Preview (Only for 3ds Max)";
     string UIWidget = "slider";
-    int    UIOrder = 425;
+    int    UIOrder = 426;
     float  UIMin = -16; float UIMax = 16; float UIStep = 0.01;
 > = 0.0;
 

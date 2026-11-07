@@ -114,9 +114,23 @@ void TangentFrame(vector Nw, output vector Tw, output vector Bw)
 }
 
 // ---- Animation Preview helpers ---------------------------------------------
-// Time in periods.  A period of 0 counts as 1 (the engine treats it so, or
-// asserts it is not 0).
-float GxPeriods(float seconds, float period) { return seconds / ((period == 0.0) ? 1.0 : period); }
+// An animation's time in periods: (phase + seconds) / period.  A period of 0
+// counts as 1 (the engine treats it so, or asserts it is not 0).
+// With a loop length (AnimationLoopLength, seconds, 0 = off), cosine, diagonal
+// wave and slide (0.7 cycles per period) run the whole number of cycles
+// nearest to the game's in it, at least one, so the loop has no jump; the
+// random functions are unchanged.  As AnimationSlotTime in
+// fx/_texture_animation.fxh.
+float GxPeriods(int fn, float phase, float seconds, float period, float loopLength)
+{
+    float p = (period == 0.0) ? 1.0 : period;
+    if (loopLength > 0.0 && (fn == 2 || fn == 4 || fn == 6))
+    {
+        float cycles = max(1.0, round(loopLength * 0.7 / abs(p)));
+        return phase / p + sign(p) * seconds * cycles / (0.7 * loopLength);
+    }
+    return (phase + seconds) / p;
+}
 
 // ---- Halo periodic functions -------------------------------------------------
 // periodic_function_evaluate (source/math/periodic_functions.c, OpenCE), as
@@ -190,6 +204,7 @@ shader shader_environment
     // viewport.  The toolkit drives AnimationTime from the scene time.
     int    AnimationPreview = 0 [[ string label = "Animation Preview", string widget = "checkBox" ]],
     float  AnimationTime = 0.0 [[ string label = "Animation Time (Seconds)" ]],
+    float  AnimationLoopLength = 0.0 [[ string label = "Animation Loop Length (Seconds, 0 = Off)", float min = 0 ]],
 
     // ---- Viewport light (3ds Max only) -----------------------------------
     int    LampFromView = 1 [[ string label = "Light From View", string widget = "checkBox" ]],
@@ -343,14 +358,14 @@ shader shader_environment
     float plasma_value    = PlasmaAnimationValue;
     if (AnimationPreview)
     {
-        uD += GxPeriodic((int)UAnimationFunction, GxPeriods(AnimationTime, UAnimationPeriod)) * UAnimationScale;
-        vD += GxPeriodic((int)VAnimationFunction, GxPeriods(AnimationTime, VAnimationPeriod)) * VAnimationScale;
+        uD += GxPeriodic((int)UAnimationFunction, GxPeriods((int)UAnimationFunction, 0.0, AnimationTime, UAnimationPeriod, AnimationLoopLength)) * UAnimationScale;
+        vD += GxPeriodic((int)VAnimationFunction, GxPeriods((int)VAnimationFunction, 0.0, AnimationTime, VAnimationPeriod, AnimationLoopLength)) * VAnimationScale;
         primary_value   = GxPeriodic((int)PrimaryAnimationFunction,
-                              GxPeriods(AnimationTime + PrimaryAnimationPhase, PrimaryAnimationPeriod));
+                              GxPeriods((int)PrimaryAnimationFunction, PrimaryAnimationPhase, AnimationTime, PrimaryAnimationPeriod, AnimationLoopLength));
         secondary_value = GxPeriodic((int)SecondaryAnimationFunction,
-                              GxPeriods(AnimationTime + SecondaryAnimationPhase, SecondaryAnimationPeriod));
+                              GxPeriods((int)SecondaryAnimationFunction, SecondaryAnimationPhase, AnimationTime, SecondaryAnimationPeriod, AnimationLoopLength));
         plasma_value    = GxPeriodic((int)PlasmaAnimationFunction,
-                              GxPeriods(AnimationTime + PlasmaAnimationPhase, PlasmaAnimationPeriod));
+                              GxPeriods((int)PlasmaAnimationFunction, PlasmaAnimationPhase, AnimationTime, PlasmaAnimationPeriod, AnimationLoopLength));
     }
 
     // "Rescale detail maps" / "rescale bump map": keyed off the base map's

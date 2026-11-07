@@ -224,7 +224,7 @@ int TintColorSource
 // ----------------------------------------------------------------------------
 float PrimaryAnimationPeriod
 <
-    string UIName   = "Primary Animation Period  (Seconds)  (not animated in viewport)";
+    string UIName   = "Primary Animation Period  (Seconds)";
     string UIGroup  = "Primary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 18;
@@ -233,7 +233,7 @@ float PrimaryAnimationPeriod
 
 float PrimaryAnimationDirectionI
 <
-    string UIName   = "Primary Animation Direction (i)  (not animated in viewport)";
+    string UIName   = "Primary Animation Direction (i)";
     string UIGroup  = "Primary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 19;
@@ -242,7 +242,7 @@ float PrimaryAnimationDirectionI
 
 float PrimaryAnimationDirectionJ
 <
-    string UIName   = "Primary Animation Direction (j)  (not animated in viewport)";
+    string UIName   = "Primary Animation Direction (j)";
     string UIGroup  = "Primary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 20;
@@ -251,7 +251,7 @@ float PrimaryAnimationDirectionJ
 
 float PrimaryAnimationDirectionK
 <
-    string UIName   = "Primary Animation Direction (k)  (not animated in viewport)";
+    string UIName   = "Primary Animation Direction (k)";
     string UIGroup  = "Primary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 21;
@@ -317,7 +317,7 @@ float PrimaryNoiseBorderTexelsV
 // ----------------------------------------------------------------------------
 float SecondaryAnimationPeriod
 <
-    string UIName   = "Secondary Animation Period  (Seconds)  (not animated in viewport)";
+    string UIName   = "Secondary Animation Period  (Seconds)";
     string UIGroup  = "Secondary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 28;
@@ -326,7 +326,7 @@ float SecondaryAnimationPeriod
 
 float SecondaryAnimationDirectionI
 <
-    string UIName   = "Secondary Animation Direction (i)  (not animated in viewport)";
+    string UIName   = "Secondary Animation Direction (i)";
     string UIGroup  = "Secondary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 29;
@@ -335,7 +335,7 @@ float SecondaryAnimationDirectionI
 
 float SecondaryAnimationDirectionJ
 <
-    string UIName   = "Secondary Animation Direction (j)  (not animated in viewport)";
+    string UIName   = "Secondary Animation Direction (j)";
     string UIGroup  = "Secondary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 30;
@@ -344,7 +344,7 @@ float SecondaryAnimationDirectionJ
 
 float SecondaryAnimationDirectionK
 <
-    string UIName   = "Secondary Animation Direction (k)  (not animated in viewport)";
+    string UIName   = "Secondary Animation Direction (k)";
     string UIGroup  = "Secondary Noise Map";
     string UIWidget = "slider";
     int    UIOrder = 31;
@@ -423,5 +423,32 @@ int DebugMode
     int    UIOrder = 38;
     float  UIMin = 0; float UIMax = 4; float UIStep = 1;
 > = 0;
+
+
+// ----------------------------------------------------------------------------
+// Animation Preview (Only for 3ds Max, not tag data)
+// Plays the noise map animation (each noise map moving along its direction
+// once per period) in the viewport, as the engine does.  The toolkit drives
+// AnimationTime from the scene time.  With Animation Preview off nothing
+// moves, as before.  The viewport only redraws an animated material parameter
+// by itself while the Slate Material Editor is open.
+// ----------------------------------------------------------------------------
+bool AnimationPreview
+<
+    string UIName  = "Animation Preview";
+    string UIGroup = "Animation Preview (Only for 3ds Max)";
+    int    UIOrder = 39;
+> = false;
+
+// Game time in seconds.  A plain animatable float: key it, or wire it to the
+// scene time with an expression controller (S = seconds).
+float AnimationTime
+<
+    string UIName   = "Animation Time  (Seconds)";
+    string UIGroup  = "Animation Preview (Only for 3ds Max)";
+    string UIWidget = "Spinner";
+    int    UIOrder = 40;
+    float  UIMin = -1000000; float UIMax = 1000000; float UIStep = 0.01;
+> = 0.0;
 
 #endif // GLYPHFX_TRANSPARENT_PLASMA_PARAMS_FXH

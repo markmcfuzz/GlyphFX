@@ -40,8 +40,20 @@ TP_VS_OUTPUT VS_Main(TP_VS_INPUT v)
         lerp(ParallelTintColor.rgb, PerpendicularTintColor.rgb, NdotV),
         lerp(ParallelBrightness,    PerpendicularBrightness,    NdotV)));
 
-    o.T0 = wPos / max(PrimaryNoiseMapScale,   0.0001);
-    o.T1 = wPos / max(SecondaryNoiseMapScale, 0.0001);
+    // Noise animation (rasterizer_xbox_plasma_energy.c): each noise map moves
+    // along its direction by time / period, in noise map units.
+    float t = AnimationPreview ? AnimationTime : 0.0;
+    float3 primaryMove   = PrimaryAnimationPeriod   == 0.0 ? (float3)0
+        : t / PrimaryAnimationPeriod * float3(PrimaryAnimationDirectionI,
+                                              PrimaryAnimationDirectionJ,
+                                              PrimaryAnimationDirectionK);
+    float3 secondaryMove = SecondaryAnimationPeriod == 0.0 ? (float3)0
+        : t / SecondaryAnimationPeriod * float3(SecondaryAnimationDirectionI,
+                                                SecondaryAnimationDirectionJ,
+                                                SecondaryAnimationDirectionK);
+
+    o.T0 = wPos / max(PrimaryNoiseMapScale,   0.0001) + primaryMove;
+    o.T1 = wPos / max(SecondaryNoiseMapScale, 0.0001) + secondaryMove;
 
     return o;
 }

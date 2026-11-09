@@ -9,6 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation of all developed shaders and parameters. Detailed 3ds max setup and usage instructions for each shader.
 
+## [1.0.0] - 2026-11-08
+
+### Added
+
+- **OSL versions of `shader_model`, `shader_model_extended` and `shader_environment`** (`src/osl/`), with the same parameters as the `.fx`. Transparent objects no longer disappear behind opaque ones in the viewport.
+  - Alpha test and alpha-blended decals work (e.g. the jackal's spikes are cut out).
+  - New `Light From View` option to light from the camera. On by default in `shader_environment`, so large maps no longer look dark.
+- **Animation Preview** plays the tag's animations in the viewport:
+  - generic and chicago: texture animations (generic also the color animation);
+  - water: ripples;
+  - plasma: noise maps;
+  - OSL `shader_model` / `shader_model_extended`: texture animation and self-illumination;
+  - OSL `shader_environment`: texture scrolling and self-illumination.
+- **Animation Loop Length** (every shader with Animation Preview) makes the preview loop with the 3ds Max timeline without a jump. Cosine, diagonal wave and slide, and the water and plasma scrolling, adjust their speed slightly to fit it; the random functions keep theirs.
+- **Shader Transparent Generic:** four change colors (`Change Color A`..`D`) instead of one. Scenes saved with the old `Change Color` lose its value.
+
+### Changed
+
+- **OSL shaders:** the enum parameters (animation functions and sources, detail function and mask, material type, debug mode...) are dropdowns with their names instead of number sliders.
+- **OSL `shader_model_extended`:** the viewport-only tuning parameters (`Specular Lighting Tightness`, `Reflection Blur`, the cubemap offsets and pitch, `Fix Mirrored UV Tangents`) are hidden.
+- **All transparent shaders:** smooth transparency instead of a dither, blended as in game. Effects no longer look twice as bright (e.g. the jackal shield).
+- **Two Sided** now works in generic, chicago, glass and meter.
+- **Shader Transparent Generic / Chicago:**
+  - One technique each; `Framebuffer Blend Function` picks the blend, as in the tag.
+  - Much faster to load in 3ds Max (generic 4.9 s -> 0.5 s).
+  - Map rotation follows the engine order.
+- **Shader Transparent Chicago:** a map scale of 0 now means 1, as in the tag.
+
+### Removed
+
+- **Transparent shaders:** the dither parameters (`Viewport Blend` group and similar), no longer needed.
+
+### Fixed
+
+- **Shader Transparent Generic:** the lens flare fields are always available.
+- **Shader Model:** `Animation Center X/Y` are back in their group.
+- **Shader Transparent Chicago:** parameter order, a misnamed group and some wrong labels.
+
+### Notes
+
+- Tag fields can't be hidden in the DirectX Shader material, so in the `.fx` shaders all of them stay visible.
+
 ## [0.9.3] - 2026-11-03
 
 ### Added

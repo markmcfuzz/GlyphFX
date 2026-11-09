@@ -232,11 +232,11 @@ shader shader_model
     int    SimpleParameterization = 0 [[ string label = "Simple Parameterization", string widget = "checkBox" ]],
     int    IgnoreNormals = 0 [[ string label = "Ignore Normals", string widget = "checkBox" ]],
     int    TransparentLit = 0 [[ string label = "Transparent Lit", string widget = "checkBox" ]],
-    int    DetailLevel = 0 [[ string label = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]" ]],
+    int    DetailLevel = 0 [[ string label = "Detail Level", string widget = "mapper", string options = "High:0|Medium:1|Low:2|Turd:3", int connectable = 0 ]],
     float  Power = 1.0 [[ string label = "Power" ]],
     color  ColorOfEmittedLight = color(0) [[ string label = "Color of Emitted Light" ]],
     color  TintColor = color(1) [[ string label = "Tint Color" ]],
-    float  MaterialType = 0 [[ string label = "Material Type" ]],
+    int    MaterialType = 0 [[ string label = "Material Type", string widget = "mapper", string options = "Dirt:0|Sand:1|Stone:2|Snow:3|Wood:4|Metal Hollow:5|Metal Thin:6|Metal Thick:7|Rubber:8|Glass:9|Force Field:10|Grunt:11|Hunter Armor:12|Hunter Skin:13|Elite:14|Jackal:15|Jackal Energy Shield:16|Engineer Skin:17|Engineer Force Field:18|Flood Combat Form:19|Flood Carrier Form:20|Cyborg Armor:21|Cyborg Energy Shield:22|Human Armor:23|Human Skin:24|Sentinel:25|Monitor:26|Plastic:27|Water:28|Leaves:29|Elite Energy Shield:30|Ice:31|Hunter Shield:32", int connectable = 0 ]],
 
     // ---- Shader Model Flags ----------------------------------------------
     int    DetailAfterReflection = 0 [[ string label = "Detail After Reflection", string widget = "checkBox" ]],
@@ -249,13 +249,13 @@ shader shader_model
     float  Translucency = 0.0 [[ string label = "Translucency" ]],
 
     // ---- Change Color ----------------------------------------------------
-    int    ChangeColorSource = 0 [[ string label = "Change Color Source  [0=none  1=A  2=B  3=C  4=D]" ]],
+    int    ChangeColorSource = 0 [[ string label = "Change Color Source", string widget = "mapper", string options = "None:0|A:1|B:2|C:3|D:4", int connectable = 0 ]],
     color  ChangeColor = color(1) [[ string label = "Change Color (Only for 3ds Max)" ]],
 
     // ---- Self Illumination -----------------------------------------------
     int    NoRandomPhaseFlag = 0 [[ string label = "No Random Phase", string widget = "checkBox" ]],
-    int    SelfIlluminationColorSource = 0 [[ string label = "Self Illum Color Source" ]],
-    int    SelfIlluminationAnimationFunction = 0 [[ string label = "Self Illum Animation Function" ]],
+    int    SelfIlluminationColorSource = 0 [[ string label = "Self Illum Color Source", string widget = "mapper", string options = "None:0|A:1|B:2|C:3|D:4", int connectable = 0 ]],
+    int    SelfIlluminationAnimationFunction = 0 [[ string label = "Self Illum Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  SelfIlluminationAnimationPeriod = 0.0 [[ string label = "Self Illum Animation Period (Seconds)" ]],
     color  AnimationColorLowerBound = color(0) [[ string label = "Animation Color Lower Bound" ]],
     color  AnimationColorUpperBound = color(0) [[ string label = "Animation Color Upper Bound" ]],
@@ -270,26 +270,26 @@ shader shader_model
     // ---- Multipurpose / Detail -------------------------------------------
     int    EnableMultipurposeMap = 1 [[ string label = "Enable Multipurpose Map (only for 3ds Max)", string widget = "checkBox" ]],
     string MultipurposeMapTexture = "" [[ string label = "Multipurpose Map", string widget = "filename" ]],
-    int    DetailFunction = 0 [[ string label = "Detail Function  [0=Double Biased Multiply  1=Multiply  2=Biased Add]" ]],
-    int    DetailMask = 0 [[ string label = "Detail Mask  [0=None  1=Refl_Inv  2=Refl  3=SI_Inv  4=SI  5=CC_Inv  6=CC  7=Aux_Inv  8=Aux]" ]],
+    int    DetailFunction = 0 [[ string label = "Detail Function", string widget = "mapper", string options = "Double Biased Multiply:0|Multiply:1|Biased Add:2", int connectable = 0 ]],
+    int    DetailMask = 0 [[ string label = "Detail Mask", string widget = "mapper", string options = "None:0|Reflection Mask Inverse:1|Reflection Mask:2|Self Illumination Mask Inverse:3|Self Illumination Mask:4|Change Color Mask Inverse:5|Change Color Mask:6|Auxiliary Mask Inverse:7|Auxiliary Mask:8", int connectable = 0 ]],
     float  DetailMapScale = 1.0 [[ string label = "Detail Map Scale" ]],
     int    EnableDetailMap = 1 [[ string label = "Enable Detail Map (only for 3ds Max)", string widget = "checkBox" ]],
     string DetailMapTexture = "" [[ string label = "Detail Map", string widget = "filename" ]],
     float  DetailMapVScale = 0.0 [[ string label = "Detail Map V Scale  (multiplier of Detail Map Scale)" ]],
 
     // ---- Texture Scrolling Animation (tag data, not animated here) --------
-    int    UAnimationSource = 0 [[ string label = "U Animation Source" ]],
-    int    UAnimationFunction = 0 [[ string label = "U Animation Function" ]],
+    int    UAnimationSource = 0 [[ string label = "U Animation Source", string widget = "mapper", string options = "None:0|A Out:1|B Out:2|C Out:3|D Out:4", int connectable = 0 ]],
+    int    UAnimationFunction = 0 [[ string label = "U Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  UAnimationPeriod = 0.0 [[ string label = "U Animation Period (Seconds)" ]],
     float  UAnimationPhase = 0.0 [[ string label = "U Animation Phase" ]],
     float  UAnimationScale = 0.0 [[ string label = "U Animation Scale (Repeats)" ]],
-    float  VAnimationSource = 0 [[ string label = "V Animation Source" ]],
-    float  VAnimationFunction = 0 [[ string label = "V Animation Function" ]],
+    int    VAnimationSource = 0 [[ string label = "V Animation Source", string widget = "mapper", string options = "None:0|A Out:1|B Out:2|C Out:3|D Out:4", int connectable = 0 ]],
+    int    VAnimationFunction = 0 [[ string label = "V Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  VAnimationPeriod = 0.0 [[ string label = "V Animation Period (Seconds)" ]],
     float  VAnimationPhase = 0.0 [[ string label = "V Animation Phase" ]],
     float  VAnimationScale = 0.0 [[ string label = "V Animation Scale (Repeats)" ]],
-    float  RotationAnimationSource = 0 [[ string label = "Rotation Animation Source" ]],
-    float  RotationAnimationFunction = 0 [[ string label = "Rotation Animation Function" ]],
+    int    RotationAnimationSource = 0 [[ string label = "Rotation Animation Source", string widget = "mapper", string options = "None:0|A Out:1|B Out:2|C Out:3|D Out:4", int connectable = 0 ]],
+    int    RotationAnimationFunction = 0 [[ string label = "Rotation Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  RotationAnimationPeriod = 0.0 [[ string label = "Rotation Animation Period (Seconds)" ]],
     float  RotationAnimationPhase = 0.0 [[ string label = "Rotation Animation Phase" ]],
     float  RotationAnimationScale = 0.0 [[ string label = "Rotation Animation Scale" ]],
@@ -305,7 +305,7 @@ shader shader_model
     int    EnableReflectionCube = 1 [[ string label = "Enable Reflection Cube (only for 3ds Max)", string widget = "checkBox" ]],
     string ReflectionCubeTexture = "" [[ string label = "Reflection Cube Map", string widget = "filename" ]],
 
-    int    DebugMode = 0 [[ string label = "Debug Mode  [0=Off 1=Base 2=MP.RGB 3=MP.R 4=MP.G 5=MP.B 6=MP.A 7=Detail 8=ReflOnly]" ]],
+    int    DebugMode = 0 [[ string label = "Debug Mode", string widget = "mapper", string options = "None:0|Base Map:1|Multipurpose All Channels:2|Multipurpose Red:3|Multipurpose Green:4|Multipurpose Blue:5|Multipurpose Alpha:6|Detail Map:7|Reflection Only:8", int connectable = 0 ]],
 
     // ---- Other (shader constants) -----------------------------------------
     float  c_alpha_ref = 0.5 [[ string widget = "null" ]],

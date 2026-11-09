@@ -225,11 +225,11 @@ shader shader_environment
     int    SimpleParameterization = 0 [[ string label = "Simple Parameterization", string widget = "checkBox" ]],
     int    IgnoreNormals = 0 [[ string label = "Ignore Normals", string widget = "checkBox" ]],
     int    TransparentLit = 0 [[ string label = "Transparent Lit", string widget = "checkBox" ]],
-    int    DetailLevel = 0 [[ string label = "Detail Level  [0=High  1=Medium  2=Low 3=Turd]", int min = 0, int max = 3 ]],
+    int    DetailLevel = 0 [[ string label = "Detail Level", string widget = "mapper", string options = "High:0|Medium:1|Low:2|Turd:3", int connectable = 0 ]],
     float  Power = 1.0 [[ string label = "Power" ]],
     color  ColorOfEmittedLight = color(0) [[ string label = "Color of Emitted Light" ]],
     color  TintColor = color(1) [[ string label = "Tint Color" ]],
-    float  MaterialType = 0 [[ string label = "Material Type" ]],
+    int    MaterialType = 0 [[ string label = "Material Type", string widget = "mapper", string options = "Dirt:0|Sand:1|Stone:2|Snow:3|Wood:4|Metal Hollow:5|Metal Thin:6|Metal Thick:7|Rubber:8|Glass:9|Force Field:10|Grunt:11|Hunter Armor:12|Hunter Skin:13|Elite:14|Jackal:15|Jackal Energy Shield:16|Engineer Skin:17|Engineer Force Field:18|Flood Combat Form:19|Flood Carrier Form:20|Cyborg Armor:21|Cyborg Energy Shield:22|Human Armor:23|Human Skin:24|Sentinel:25|Monitor:26|Plastic:27|Water:28|Leaves:29|Elite Energy Shield:30|Ice:31|Hunter Shield:32", int connectable = 0 ]],
 
     // ---- Environment Shader Flags ----------------------------------------
     int    AlphaTested = 0 [[ string label = "Alpha Tested", string widget = "checkBox" ]],
@@ -238,7 +238,7 @@ shader shader_environment
     int    BumpAttenuation = 0 [[ string label = "Use Variant 2 for Calculation Bump Attenuation", string widget = "checkBox" ]],
 
     // ---- Environment Shader Type -----------------------------------------
-    int    EnvironmentType = 0 [[ string label = "Type  [0=Normal  1=Blended  2=Blended Base Specular]", int min = 0, int max = 2 ]],
+    int    EnvironmentType = 0 [[ string label = "Type", string widget = "mapper", string options = "Normal:0|Blended:1|Blended Base Specular:2", int connectable = 0 ]],
 
     // ---- Lens Flares -------------------------------------------------------
     int    LensFlareSpacing = 0 [[ string label = "Lens Flare Spacing" ]],
@@ -249,7 +249,7 @@ shader shader_environment
     int    RescaleBumpMap = 0 [[ string label = "Rescale Bump Map", string widget = "checkBox" ]],
     int    EnableBaseMap = 0 [[ string label = "Enable Base Map", string widget = "checkBox" ]],
     string BaseMapTexture = "" [[ string label = "Base Map", string widget = "filename" ]],
-    int    DetailMapFunction = 0 [[ string label = "Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]", int min = 0, int max = 2 ]],
+    int    DetailMapFunction = 0 [[ string label = "Detail Map Function", string widget = "mapper", string options = "Double/Biased Multiply:0|Multiply:1|Double/Biased Add:2", int connectable = 0 ]],
     int    EnablePrimaryDetailMap = 0 [[ string label = "Enable Primary Detail Map", string widget = "checkBox" ]],
     float  PrimaryDetailMapScale = 0.0 [[ string label = "Primary Detail Map Scale" ]],
     string PrimaryDetailMapTexture = "" [[ string label = "Primary Detail Map", string widget = "filename" ]],
@@ -257,7 +257,7 @@ shader shader_environment
     float  SecondaryDetailMapScale = 0.0 [[ string label = "Secondary Detail Map Scale" ]],
     string SecondaryDetailMapTexture = "" [[ string label = "Secondary Detail Map", string widget = "filename" ]],
     int    EnableMicroDetailMap = 0 [[ string label = "Enable Micro Detail Map", string widget = "checkBox" ]],
-    int    MicroDetailMapFunction = 0 [[ string label = "Micro Detail Map Function  [0=Double/Biased Multiply  1=Multiply 2=Double/Biased Add]", int min = 0, int max = 2 ]],
+    int    MicroDetailMapFunction = 0 [[ string label = "Micro Detail Map Function", string widget = "mapper", string options = "Double/Biased Multiply:0|Multiply:1|Double/Biased Add:2", int connectable = 0 ]],
     float  MicroDetailMapScale = 0.0 [[ string label = "Micro Detail Map Scale" ]],
     string MicroDetailMapTexture = "" [[ string label = "Micro Detail Map", string widget = "filename" ]],
     color  MaterialColor = color(0) [[ string label = "Material Color" ]],
@@ -268,10 +268,10 @@ shader shader_environment
     string BumpMapTexture = "" [[ string label = "Bump Map", string widget = "filename" ]],
 
     // ---- Texture Scrolling Animation (tag data, not animated here) --------
-    int    UAnimationFunction = 0 [[ string label = "U Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    int    UAnimationFunction = 0 [[ string label = "U Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  UAnimationPeriod = 0.0 [[ string label = "U Animation Period................(Seconds)" ]],
     float  UAnimationScale = 0.0 [[ string label = "U Animation Scale................(Repeats)" ]],
-    int    VAnimationFunction = 0 [[ string label = "V Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    int    VAnimationFunction = 0 [[ string label = "V Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  VAnimationPeriod = 0.0 [[ string label = "V Animation Period................(Seconds)" ]],
     float  VAnimationScale = 0.0 [[ string label = "V Animation Scale................(Repeats)" ]],
 
@@ -279,19 +279,19 @@ shader shader_environment
     int    unfilteredFlag = 0 [[ string label = "Unfiltered", string widget = "checkBox" ]],
     color  PrimaryOnColor = color(0) [[ string label = "Primary On Color" ]],
     color  PrimaryOffColor = color(0) [[ string label = "Primary Off Color" ]],
-    int    PrimaryAnimationFunction = 0 [[ string label = "Primary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    int    PrimaryAnimationFunction = 0 [[ string label = "Primary Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  PrimaryAnimationPeriod = 0.0 [[ string label = "Primary Animation Period................(Seconds)" ]],
     float  PrimaryAnimationPhase = 0.0 [[ string label = "Primary Animation Phase" ]],
     float  PrimaryAnimationValue = 0.0 [[ string widget = "null" ]],
     color  SecondaryOnColor = color(0) [[ string label = "Secondary On Color" ]],
     color  SecondaryOffColor = color(0) [[ string label = "Secondary Off Color" ]],
-    int    SecondaryAnimationFunction = 0 [[ string label = "Secondary Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    int    SecondaryAnimationFunction = 0 [[ string label = "Secondary Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  SecondaryAnimationPeriod = 0.0 [[ string label = "Secondary Animation Period................(Seconds)" ]],
     float  SecondaryAnimationPhase = 0.0 [[ string label = "Secondary Animation Phase" ]],
     float  SecondaryAnimationValue = 0.0 [[ string widget = "null" ]],
     color  PlasmaOnColor = color(0) [[ string label = "Plasma On Color" ]],
     color  PlasmaOffColor = color(0) [[ string label = "Plasma Off Color" ]],
-    int    PlasmaAnimationFunction = 0 [[ string label = "Plasma Animation Function  [0=None  1=Zero  2=Cosine  3=Cosine (Variable Period) 4=Diagonal Wave  5=Diagonal Wave (Variable Period)  6=Slide  7=Slide (Variable Period) 8=Noise 9=Jitter 10=Wander 11=Spark]" ]],
+    int    PlasmaAnimationFunction = 0 [[ string label = "Plasma Animation Function", string widget = "mapper", string options = "One:0|Zero:1|Cosine:2|Cosine (Variable Period):3|Diagonal Wave:4|Diagonal Wave (Variable Period):5|Slide:6|Slide (Variable Period):7|Noise:8|Jitter:9|Wander:10|Spark:11", int connectable = 0 ]],
     float  PlasmaAnimationPeriod = 0.0 [[ string label = "Plasma Animation Period................(Seconds)" ]],
     float  PlasmaAnimationPhase = 0.0 [[ string label = "Plasma Animation Phase" ]],
     float  PlasmaAnimationValue = 0.0 [[ string widget = "null" ]],
@@ -309,7 +309,7 @@ shader shader_environment
 
     // ---- Reflection Properties -------------------------------------------
     int    DynamicMirror = 0 [[ string label = "Dynamic Mirror", string widget = "checkBox" ]],
-    int    ReflectionType = 0 [[ string label = "Reflection Type  [0=Bumped Cube Map  1=Flat Cube Map  2=Bumped Radiosity]", int min = 0, int max = 2 ]],
+    int    ReflectionType = 0 [[ string label = "Reflection Type", string widget = "mapper", string options = "Bumped Cube Map:0|Flat Cube Map:1|Bumped Radiosity:2", int connectable = 0 ]],
     float  LightmapBrightnessScale = 0.0 [[ string label = "Lightmap Brightness Scale", float min = 0, float max = 1 ]],
     float  ReflPerpendicularBrightness = 0.0 [[ string label = "Perpendicular Brightness", float min = 0, float max = 1 ]],
     float  ReflParallelBrightness = 0.0 [[ string label = "Parallel Brightness", float min = 0, float max = 1 ]],
@@ -317,7 +317,7 @@ shader shader_environment
     string ReflectionCubeTexture = "" [[ string label = "Reflection Cube Map", string widget = "filename" ]],
 
     // ---- Debug (3ds Max only) --------------------------------------------
-    int    DebugMode = 0 [[ string label = "Debug Mode  [0=Normal  1=Base Map  2=Primary Detail Map  3=Secondary Detail Map  4=Micro Detail Map  5=Bump Map Normal  6=Self-Illumination Map  7=Specular Mask  8=Reflection Only  9=Blend Factor]", int min = 0, int max = 9 ]],
+    int    DebugMode = 0 [[ string label = "Debug Mode", string widget = "mapper", string options = "None:0|Base Map:1|Primary Detail Map:2|Secondary Detail Map:3|Micro Detail Map:4|Bump Map Normal:5|Self-Illumination Map:6|Specular Mask:7|Reflection Only:8|Blend Factor:9", int connectable = 0 ]],
     float  BumpStrength = 0.8 [[ string label = "Bump Strength", float min = 0, float max = 2 ]],
 
     // ---- Other (shader constants) -----------------------------------------
